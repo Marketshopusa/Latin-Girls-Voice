@@ -134,6 +134,7 @@ const ChatPage = () => {
               key={message.id}
               message={message}
               characterName={character.name}
+              voiceType={character.voice}
             />
           ))}
           

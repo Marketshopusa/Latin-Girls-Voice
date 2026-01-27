@@ -1,20 +1,20 @@
-import { Play, Pause } from 'lucide-react';
-import { Message } from '@/types';
+import { Play, Pause, Loader2, Volume2 } from 'lucide-react';
+import { Message, VoiceType } from '@/types';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useTTS } from '@/hooks/useTTS';
 
 interface ChatBubbleProps {
   message: Message;
   characterName?: string;
+  voiceType?: VoiceType;
 }
 
-export const ChatBubble = ({ message, characterName }: ChatBubbleProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+export const ChatBubble = ({ message, characterName, voiceType = 'ARGENTINA_SUAVE' }: ChatBubbleProps) => {
   const isUser = message.role === 'user';
+  const { playAudio, isLoading, isPlaying } = useTTS({ voiceType });
 
-  const toggleAudio = () => {
-    setIsPlaying(!isPlaying);
-    // Audio playback logic would go here
+  const handlePlayAudio = () => {
+    playAudio(message.text);
   };
 
   return (
@@ -35,17 +35,23 @@ export const ChatBubble = ({ message, characterName }: ChatBubbleProps) => {
         </p>
 
         {/* Audio player for AI messages */}
-        {!isUser && message.audioDuration && (
+        {!isUser && (
           <button
-            onClick={toggleAudio}
-            className="audio-button mt-3"
+            onClick={handlePlayAudio}
+            disabled={isLoading}
+            className="audio-button mt-3 flex items-center gap-2"
           >
-            {isPlaying ? (
+            {isLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : isPlaying ? (
               <Pause className="h-3.5 w-3.5" />
             ) : (
               <Play className="h-3.5 w-3.5" />
             )}
-            <span>{message.audioDuration}"</span>
+            <Volume2 className="h-3 w-3 opacity-60" />
+            <span className="text-xs">
+              {isLoading ? 'Generando...' : isPlaying ? 'Pausar' : 'Escuchar'}
+            </span>
           </button>
         )}
       </div>
