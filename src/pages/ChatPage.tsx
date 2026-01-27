@@ -7,58 +7,47 @@ import { CharacterPanel } from '@/components/chat/CharacterPanel';
 import { CharacterConfigModal } from '@/components/characters/CharacterConfigModal';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
+import { useConversation } from '@/hooks/useConversation';
 import { mockCharacters } from '@/data/characters';
-import { Message, Character } from '@/types';
+import { Character } from '@/types';
 
 const ChatPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
   const [character, setCharacter] = useState<Character | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
+  const { messages, isLoading, addMessage, setInitialMessage } = useConversation(id);
+
+  // Load character data
   useEffect(() => {
     const found = mockCharacters.find((c) => c.id === id);
     if (found) {
       setCharacter(found);
-      // Initialize with welcome message
-      setMessages([
-        {
-          id: '1',
-          role: 'assistant',
-          text: found.welcomeMessage,
-          timestamp: new Date(),
-          audioDuration: 12,
-        },
-      ]);
     }
   }, [id]);
 
-  const handleSendMessage = (text: string) => {
+  // Set welcome message when conversation is ready
+  useEffect(() => {
+    if (character && !isLoading) {
+      setInitialMessage(character.welcomeMessage);
+    }
+  }, [character, isLoading, setInitialMessage]);
+
+  const handleSendMessage = async (text: string) => {
     if (!character) return;
 
     // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      text,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMessage]);
+    await addMessage('user', text);
 
     // Simulate AI response
     setIsTyping(true);
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        text: getSimulatedResponse(character, text),
-        timestamp: new Date(),
-        audioDuration: Math.floor(Math.random() * 30) + 5,
-      };
-      setMessages((prev) => [...prev, aiResponse]);
+    setTimeout(async () => {
+      const responseText = getSimulatedResponse(character, text);
+      const audioDuration = Math.floor(Math.random() * 30) + 5;
+      await addMessage('assistant', responseText, audioDuration);
       setIsTyping(false);
     }, 1500);
   };
@@ -73,7 +62,7 @@ const ChatPage = () => {
     navigate(`/chat/${char.id}`);
   };
 
-  if (!character) {
+  if (!character || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Cargando...</p>
