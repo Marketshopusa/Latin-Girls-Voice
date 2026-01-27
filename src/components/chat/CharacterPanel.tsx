@@ -8,54 +8,52 @@ interface CharacterPanelProps {
 
 export const CharacterPanel = ({ character, onOpenDetails }: CharacterPanelProps) => {
   return (
-    <div className="w-80 xl:w-96 bg-card border-l border-border flex flex-col h-full overflow-hidden">
-      {/* Character Image */}
-      <div className="relative aspect-[3/4] overflow-hidden">
+    <div className="w-[380px] bg-card flex flex-col h-screen relative">
+      {/* Full-height character image */}
+      <div className="absolute inset-0">
         <img
           src={character.image}
           alt={character.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-top"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-        
-        {/* Character info overlay */}
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="font-display font-bold text-xl text-foreground">
-              {character.name}
-            </h2>
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <MessageCircle className="h-4 w-4" />
-              <span className="text-sm">{character.messageCount || 0}</span>
-            </div>
-          </div>
-          
-          {/* Tags */}
-          <div className="flex flex-wrap gap-1.5">
-            {character.tags.map((tag) => (
-              <span key={tag} className="tag-chip">
-                {tag}
-              </span>
-            ))}
-            {character.style && (
-              <span className="tag-chip">{character.style}</span>
-            )}
+        {/* Gradient overlay at bottom for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" style={{ top: '50%' }} />
+      </div>
+      
+      {/* Content overlay at bottom */}
+      <div className="relative mt-auto p-4 z-10">
+        {/* Character name and message count */}
+        <div className="flex items-center gap-3 mb-3">
+          <h2 className="font-display font-bold text-xl text-foreground">
+            {character.name}
+          </h2>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-sm">{character.messageCount || 0}</span>
           </div>
         </div>
-      </div>
+        
+        {/* Tags */}
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {character.tags.map((tag) => (
+            <span key={tag} className="tag-chip">
+              {tag}
+            </span>
+          ))}
+          {character.style && (
+            <span className="tag-chip">{character.style}</span>
+          )}
+        </div>
 
-      {/* Character description */}
-      <div className="p-4 flex-1 overflow-y-auto scrollbar-thin">
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        {/* Character description */}
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-4">
           {character.history}
         </p>
-      </div>
 
-      {/* Details button */}
-      <div className="p-4 border-t border-border">
+        {/* Details button */}
         <button
           onClick={onOpenDetails}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-card/80 backdrop-blur-sm border border-border hover:bg-secondary/80 transition-colors"
         >
           <span className="text-sm font-medium">Detalles del personaje</span>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
