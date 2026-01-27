@@ -8,7 +8,7 @@ interface CharacterPanelProps {
 
 export const CharacterPanel = ({ character, onOpenDetails }: CharacterPanelProps) => {
   return (
-    <div className="w-[420px] bg-card flex flex-col h-screen relative">
+    <div className="w-[480px] bg-card flex flex-col h-screen relative">
       {/* Full-height character image */}
       <div className="absolute inset-0">
         <img
