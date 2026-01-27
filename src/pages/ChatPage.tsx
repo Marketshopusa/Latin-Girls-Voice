@@ -81,9 +81,9 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Conversation List (hidden on mobile) */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block h-screen overflow-hidden">
         <ConversationList
           characters={mockCharacters}
           activeId={character.id}
@@ -154,7 +154,7 @@ const ChatPage = () => {
       </div>
 
       {/* Character Panel (hidden on mobile) */}
-      <div className="hidden xl:block">
+      <div className="hidden xl:flex h-screen">
         <CharacterPanel
           character={character}
           onOpenDetails={() => setIsConfigOpen(true)}
