@@ -1,10 +1,9 @@
-import { forwardRef } from 'react';
 import { CharacterCard } from '@/components/characters/CharacterCard';
 import { mockCharacters } from '@/data/characters';
 import { Character } from '@/types';
 import { useNavigate } from 'react-router-dom';
 
-const DiscoverPage = forwardRef<HTMLDivElement, Record<string, never>>((_, ref) => {
+const DiscoverPage = () => {
   const navigate = useNavigate();
 
   const handleCharacterClick = (character: Character) => {
@@ -12,7 +11,7 @@ const DiscoverPage = forwardRef<HTMLDivElement, Record<string, never>>((_, ref) 
   };
 
   return (
-    <div ref={ref} className="min-h-screen">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-between px-6 py-4">
@@ -33,8 +32,6 @@ const DiscoverPage = forwardRef<HTMLDivElement, Record<string, never>>((_, ref) 
       </main>
     </div>
   );
-});
-
-DiscoverPage.displayName = 'DiscoverPage';
+};
 
 export default DiscoverPage;
