@@ -1,18 +1,20 @@
+import { forwardRef } from 'react';
 import { Heart, X } from 'lucide-react';
 import { Character } from '@/types';
-import { cn } from '@/lib/utils';
 
 interface CharacterCardProps {
   character: Character;
   onClick: (character: Character) => void;
 }
 
-export const CharacterCard = ({ character, onClick }: CharacterCardProps) => {
-  return (
-    <div 
-      className="card-character group cursor-pointer"
-      onClick={() => onClick(character)}
-    >
+export const CharacterCard = forwardRef<HTMLDivElement, CharacterCardProps>(
+  ({ character, onClick }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className="card-character group cursor-pointer"
+        onClick={() => onClick(character)}
+      >
       {/* Image */}
       <div className="relative aspect-[3/4] overflow-hidden">
         <img
@@ -27,13 +29,13 @@ export const CharacterCard = ({ character, onClick }: CharacterCardProps) => {
         {/* Action buttons */}
         <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <button 
-            className="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
             onClick={(e) => {
               e.stopPropagation();
               // Like action
             }}
           >
-            <Heart className="h-4 w-4 text-white fill-white" />
+            <Heart className="h-4 w-4 text-primary-foreground fill-primary-foreground" />
           </button>
           <button 
             className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
@@ -59,6 +61,9 @@ export const CharacterCard = ({ character, onClick }: CharacterCardProps) => {
           </p>
         </div>
       </div>
-    </div>
-  );
-};
+      </div>
+    );
+  }
+);
+
+CharacterCard.displayName = 'CharacterCard';
