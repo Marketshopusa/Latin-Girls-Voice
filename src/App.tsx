@@ -25,14 +25,7 @@ const App = () => (
             <Route path="/create" element={<CreateCharacterPage />} />
             <Route path="/credits" element={<DiscoverPage />} />
           </Route>
-          <Route path="/chat/:id" element={
-            <div className="flex min-h-screen bg-background">
-              <div className="hidden lg:block w-16 lg:w-56" />
-              <div className="flex-1">
-                <ChatPage />
-              </div>
-            </div>
-          } />
+          <Route path="/chat/:id" element={<ChatPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

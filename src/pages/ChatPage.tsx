@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, Eye } from 'lucide-react';
+import { ArrowLeft, Eye } from 'lucide-react';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { CharacterPanel } from '@/components/chat/CharacterPanel';
 import { CharacterConfigModal } from '@/components/characters/CharacterConfigModal';
 import { ConversationList } from '@/components/chat/ConversationList';
+import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { mockCharacters } from '@/data/characters';
 import { Message, Character } from '@/types';
 
@@ -82,7 +83,10 @@ const ChatPage = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Conversation List (hidden on mobile) */}
+      {/* Icon Sidebar */}
+      <ChatSidebar />
+
+      {/* Conversation List */}
       <div className="hidden lg:block h-screen overflow-hidden">
         <ConversationList
           characters={mockCharacters}
