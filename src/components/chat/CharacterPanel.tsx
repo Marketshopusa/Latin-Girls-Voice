@@ -6,16 +6,37 @@ interface CharacterPanelProps {
   onOpenDetails: () => void;
 }
 
+// Helper to check if URL is a video
+const isVideoUrl = (url: string): boolean => {
+  if (!url) return false;
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+  const lowerUrl = url.toLowerCase();
+  return videoExtensions.some(ext => lowerUrl.includes(ext));
+};
+
 export const CharacterPanel = ({ character, onOpenDetails }: CharacterPanelProps) => {
+  const isVideo = isVideoUrl(character.image);
+
   return (
     <div className="w-[480px] bg-card flex flex-col h-screen relative">
-      {/* Full-height character image */}
+      {/* Full-height character image or video */}
       <div className="absolute inset-0">
-        <img
-          src={character.image}
-          alt={character.name}
-          className="w-full h-full object-cover object-top"
-        />
+        {isVideo ? (
+          <video
+            src={character.image}
+            className="w-full h-full object-cover object-top"
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+        ) : (
+          <img
+            src={character.image}
+            alt={character.name}
+            className="w-full h-full object-cover object-top"
+          />
+        )}
         {/* Gradient overlay at bottom for text readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" style={{ top: '50%' }} />
       </div>
