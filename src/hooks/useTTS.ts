@@ -5,18 +5,26 @@ interface UseTTSOptions {
   voiceType: VoiceType;
 }
 
+// Map voice types to Web Speech API voice names (browser fallback)
+const WEB_SPEECH_VOICE_MAP: Record<string, { lang: string; namePattern: RegExp }> = {
+  COLOMBIANA_PAISA: { lang: 'es-CO', namePattern: /colombia|spanish.*colombia/i },
+  VENEZOLANA_GOCHA: { lang: 'es-VE', namePattern: /venezuela|spanish.*venezuela/i },
+  VENEZOLANA_CARACAS: { lang: 'es-VE', namePattern: /venezuela|spanish.*venezuela/i },
+  ARGENTINA_SUAVE: { lang: 'es-AR', namePattern: /argentin|spanish.*argentin/i },
+  MEXICANA_NORTENA: { lang: 'es-MX', namePattern: /mexic|spanish.*mexic/i },
+  MASCULINA_PROFUNDA: { lang: 'es-MX', namePattern: /mexic|spanish.*mexic/i },
+  MASCULINA_SUAVE: { lang: 'es-AR', namePattern: /argentin|spanish.*argentin/i },
+};
+
 export const useTTS = ({ voiceType }: UseTTSOptions) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const prepareTextForTTS = useCallback((raw: string) => {
-    // Our chat format is:
-    // - Dialogue lines: **_..._**
-    // - Meta lines: _Acción: ..._ / _Pensamiento: ..._
-    // For TTS we only want spoken dialogue (and we strip markdown wrappers).
     const lines = raw.split("\n");
     const spoken: string[] = [];
 
@@ -24,11 +32,9 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       const trimmed = line.trim();
       if (!trimmed) continue;
 
-      // Remove surrounding underscores first (meta lines are italicized)
       const noOuterItalics = trimmed.replace(/^_/, "").replace(/_$/, "").trim();
       const lower = noOuterItalics.toLowerCase();
 
-      // Skip actions/thoughts for audio
       if (
         lower.startsWith("acción:") ||
         lower.startsWith("accion:") ||
@@ -37,36 +43,79 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
         continue;
       }
 
-      // Unwrap **_dialogue_**
       const unwrappedDialogue = trimmed
         .replace(/^\*\*_/, "")
         .replace(/_\*\*$/, "")
         .trim();
 
-      // Also remove any leftover markdown emphasis markers
       const cleaned = unwrappedDialogue.replace(/\*|_/g, "").trim();
       if (cleaned) spoken.push(cleaned);
     }
 
-    // TTS performs better with a reasonable length.
     const joined = spoken.join("\n");
     const MAX_CHARS = 1500;
     return joined.length > MAX_CHARS ? joined.slice(0, MAX_CHARS) : joined;
   }, []);
 
   const stopAudio = useCallback(() => {
+    // Stop HTML Audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      setIsPlaying(false);
     }
+    // Stop Web Speech
+    if (utteranceRef.current) {
+      window.speechSynthesis.cancel();
+      utteranceRef.current = null;
+    }
+    setIsPlaying(false);
   }, []);
+
+  // Web Speech API fallback
+  const playWithWebSpeech = useCallback((text: string) => {
+    return new Promise<void>((resolve, reject) => {
+      if (!('speechSynthesis' in window)) {
+        reject(new Error('Web Speech API no disponible'));
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utteranceRef.current = utterance;
+
+      const voiceConfig = WEB_SPEECH_VOICE_MAP[voiceType] || { lang: 'es-ES', namePattern: /spanish/i };
+      utterance.lang = voiceConfig.lang;
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+
+      // Try to find a matching voice
+      const voices = window.speechSynthesis.getVoices();
+      const matchingVoice = voices.find(v => 
+        v.lang.startsWith(voiceConfig.lang.split('-')[0]) && voiceConfig.namePattern.test(v.name)
+      ) || voices.find(v => v.lang.startsWith('es'));
+      
+      if (matchingVoice) {
+        utterance.voice = matchingVoice;
+      }
+
+      utterance.onend = () => {
+        setIsPlaying(false);
+        resolve();
+      };
+
+      utterance.onerror = (e) => {
+        setIsPlaying(false);
+        reject(new Error(e.error || 'Error de síntesis de voz'));
+      };
+
+      window.speechSynthesis.speak(utterance);
+      setIsPlaying(true);
+    });
+  }, [voiceType]);
 
   const playAudio = useCallback(async (text: string) => {
     if (isLoading) return;
 
-    // If already playing, stop it
-    if (isPlaying && audioRef.current) {
+    if (isPlaying) {
       stopAudio();
       return;
     }
@@ -80,9 +129,9 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
         throw new Error('No hay texto hablado para reproducir.');
       }
 
-      // Try TTSForFree first (free neural voices with regional accents)
-      let response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ttsforfree`,
+      // Try ElevenLabs first (best quality)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
         {
           method: "POST",
           headers: {
@@ -94,31 +143,15 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
         }
       );
 
-      // If TTSForFree fails, fallback to ElevenLabs
       if (!response.ok) {
-        console.log("TTSForFree failed, trying ElevenLabs fallback...");
-        response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            },
-            body: JSON.stringify({ text: ttsText, voiceType }),
-          }
-        );
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({} as any));
-        throw new Error((errorData as any).error || `TTS request failed: ${response.status}`);
+        console.log("ElevenLabs failed, using Web Speech API fallback...");
+        setIsLoading(false);
+        await playWithWebSpeech(ttsText);
+        return;
       }
 
       const audioBlob = await response.blob();
       
-      // Clean up previous audio URL
       if (audioUrlRef.current) {
         URL.revokeObjectURL(audioUrlRef.current);
       }
@@ -126,7 +159,6 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       const audioUrl = URL.createObjectURL(audioBlob);
       audioUrlRef.current = audioUrl;
 
-      // Create and play audio
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
@@ -143,11 +175,21 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       setIsPlaying(true);
     } catch (err) {
       console.error("TTS error:", err);
+      // Final fallback to Web Speech
+      try {
+        const ttsText = prepareTextForTTS(text);
+        if (ttsText) {
+          await playWithWebSpeech(ttsText);
+          return;
+        }
+      } catch {
+        // Ignore fallback error
+      }
       setError(err instanceof Error ? err.message : "Failed to generate audio");
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType]);
+  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType, playWithWebSpeech]);
 
   return {
     playAudio,
