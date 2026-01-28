@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye } from 'lucide-react';
 import { ChatBubble } from '@/components/chat/ChatBubble';
@@ -9,10 +9,11 @@ import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { useConversation } from '@/hooks/useConversation';
 import { useCharacters } from '@/hooks/useCharacters';
+import { useChatAI } from '@/hooks/useChatAI';
 import { mockCharacters } from '@/data/characters';
 import { Character, VoiceType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-
+import { toast } from 'sonner';
 const ChatPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -21,9 +22,14 @@ const ChatPage = () => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [characterLoading, setCharacterLoading] = useState(true);
+  const [lastAIMessageId, setLastAIMessageId] = useState<string | null>(null);
 
   const { characters } = useCharacters();
   const { messages, isLoading, addMessage, setInitialMessage } = useConversation(id);
+  
+  const { sendMessage: sendAIMessage, isLoading: isAILoading, error: aiError } = useChatAI({
+    character: character!,
+  });
 
   // Load character data - first check mocks, then DB
   useEffect(() => {
@@ -93,14 +99,27 @@ const ChatPage = () => {
     // Add user message
     await addMessage('user', text);
 
-    // Simulate AI response
+    // Get AI response
     setIsTyping(true);
-    setTimeout(async () => {
-      const responseText = getSimulatedResponse(character, text);
-      const audioDuration = Math.floor(Math.random() * 30) + 5;
-      await addMessage('assistant', responseText, audioDuration);
+    
+    try {
+      const aiResponse = await sendAIMessage(text, messages);
+      
+      if (aiResponse) {
+        const audioDuration = Math.floor(aiResponse.length / 15); // Estimate based on text length
+        const newMessage = await addMessage('assistant', aiResponse, audioDuration);
+        if (newMessage) {
+          setLastAIMessageId(newMessage.id);
+        }
+      } else if (aiError) {
+        toast.error(aiError);
+      }
+    } catch (err) {
+      console.error('Error getting AI response:', err);
+      toast.error('Error al obtener respuesta del personaje');
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleSaveConfig = (updates: Partial<Character>) => {
@@ -175,6 +194,7 @@ const ChatPage = () => {
               message={message}
               characterName={character.name}
               voiceType={character.voice}
+              autoPlay={message.id === lastAIMessageId}
             />
           ))}
           
@@ -216,39 +236,5 @@ const ChatPage = () => {
     </div>
   );
 };
-
-// Simulated responses based on character voice
-function getSimulatedResponse(character: Character, userMessage: string): string {
-  const responses: Record<string, string[]> = {
-    COLOMBIANA_PAISA: [
-      '¿En serio, mor? *sonríe pícaramente* Ay, qué cosita más linda sos vos, pues.',
-      'Ay, bebé, no me digas eso que me pongo toda rojita, pues... *se muerde el labio*',
-      'Ven acá, parce, que te cuento un secretito al oído...',
-    ],
-    VENEZOLANA_GOCHA: [
-      'Ay, ¿usted cree? *baja la mirada tímidamente* Es que... es que usted me pone nerviosa...',
-      'P-pues... *juega con un mechón de cabello* Y-yo también pienso en usted, ¿sabe?',
-      'N-no me diga esas cosas... *susurra* ...que me derrito todita...',
-    ],
-    ARGENTINA_SUAVE: [
-      '¿Vos sabés lo que me provocás? *suspira* Sos... sos demasiado, che...',
-      'Mirá, yo no soy así con cualquiera, ¿viste? Pero con vos... *sonríe lentamente*',
-      'Dale, vení... sentate acá conmigo que tenemos que hablar de algunas cosas...',
-    ],
-    MASCULINA_PROFUNDA: [
-      '*te mira intensamente* No tenés idea de lo que me provocás cuando hablás así.',
-      'Acercate. Ahora. *su voz grave resuena* Tengo algo importante que mostrarte.',
-      '*suspira profundamente* Sos la única que me hace sentir así, ¿lo sabés?',
-    ],
-    default: [
-      '*sonríe* Me encanta hablar contigo...',
-      '¿De verdad piensas eso? *se sonroja* Qué lindo...',
-      'Sigamos conversando, me haces sentir tan bien...',
-    ],
-  };
-
-  const voiceResponses = responses[character.voice] || responses.default;
-  return voiceResponses[Math.floor(Math.random() * voiceResponses.length)];
-}
 
 export default ChatPage;
