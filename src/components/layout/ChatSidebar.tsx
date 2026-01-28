@@ -1,6 +1,10 @@
-import { Home, MessageCircle, Mail, Settings, Globe } from 'lucide-react';
+import { useState } from 'react';
+import { Home, MessageCircle, Mail, Settings, Globe, LogIn, Loader2 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { toast } from 'sonner';
 
 const navigation = [
   { name: 'Descubrir', href: '/', icon: Home },
@@ -10,6 +14,28 @@ const navigation = [
 
 export const ChatSidebar = () => {
   const location = useLocation();
+  const { user, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  const handleAuth = async () => {
+    if (user) {
+      try {
+        await signOut();
+        toast.success('Sesión cerrada');
+      } catch {
+        toast.error('Error al cerrar sesión');
+      }
+    } else {
+      try {
+        setIsSigningIn(true);
+        await signInWithGoogle();
+      } catch {
+        toast.error('Error al iniciar sesión');
+      } finally {
+        setIsSigningIn(false);
+      }
+    }
+  };
 
   return (
     <aside className="w-14 bg-sidebar border-r border-sidebar-border flex flex-col h-screen flex-shrink-0">
@@ -36,12 +62,23 @@ export const ChatSidebar = () => {
       {/* Footer */}
       <div className="p-2 border-t border-sidebar-border space-y-1">
         <button 
+          onClick={handleAuth}
+          disabled={authLoading || isSigningIn}
           className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-          title="Usuario"
+          title={user ? user.user_metadata?.full_name || 'Usuario' : 'Iniciar sesión'}
         >
-          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
-            <span className="text-xs font-medium text-primary">W</span>
-          </div>
+          {authLoading || isSigningIn ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : user ? (
+            <Avatar className="h-7 w-7">
+              <AvatarImage src={user.user_metadata?.avatar_url} />
+              <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                {user.user_metadata?.full_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <LogIn className="h-5 w-5" />
+          )}
         </button>
         
         <button 
