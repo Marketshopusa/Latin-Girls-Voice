@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Volume2, Shield, Sparkles } from 'lucide-react';
-import { VOICE_OPTIONS, VoiceType, Character } from '@/types';
+import { ArrowLeft, Upload, Volume2, Shield, Sparkles, Loader2 } from 'lucide-react';
+import { VOICE_OPTIONS, VoiceType } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { useCreateCharacter } from '@/hooks/useCharacters';
+import { toast } from 'sonner';
 
 const CreateCharacterPage = () => {
   const navigate = useNavigate();
+  const { createCharacter, loading, error } = useCreateCharacter();
   
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
@@ -26,11 +29,21 @@ const CreateCharacterPage = () => {
     }
   };
 
-  const handleCreate = () => {
-    // In a real app, this would save to the backend
-    console.log({
+  const handleCreate = async () => {
+    if (!name || !age || !history || !tagline || !welcomeMessage) {
+      toast.error('Por favor completa todos los campos requeridos');
+      return;
+    }
+
+    const ageNum = parseInt(age);
+    if (ageNum < 18) {
+      toast.error('El personaje debe tener al menos 18 años');
+      return;
+    }
+
+    const result = await createCharacter({
       name,
-      age: parseInt(age),
+      age: ageNum,
       tagline,
       history,
       welcomeMessage,
@@ -38,7 +51,13 @@ const CreateCharacterPage = () => {
       nsfw,
       image,
     });
-    navigate('/');
+
+    if (result) {
+      toast.success(`¡${name} ha sido creado exitosamente!`);
+      navigate('/');
+    } else if (error) {
+      toast.error(error);
+    }
   };
 
   return (
@@ -232,10 +251,17 @@ const CreateCharacterPage = () => {
             {/* Create Button */}
             <button
               onClick={handleCreate}
-              disabled={!name || !age || !history}
-              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-glow"
+              disabled={loading || !name || !age || !history || !tagline || !welcomeMessage}
+              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-glow flex items-center justify-center gap-2"
             >
-              Crear Personaje
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Creando...
+                </>
+              ) : (
+                'Crear Personaje'
+              )}
             </button>
           </div>
         </div>

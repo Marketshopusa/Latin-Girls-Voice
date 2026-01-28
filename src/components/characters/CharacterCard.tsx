@@ -1,5 +1,4 @@
-import { forwardRef } from 'react';
-import { Heart, X } from 'lucide-react';
+import { Heart, X, Shield } from 'lucide-react';
 import { Character } from '@/types';
 
 interface CharacterCardProps {
@@ -7,14 +6,12 @@ interface CharacterCardProps {
   onClick: (character: Character) => void;
 }
 
-export const CharacterCard = forwardRef<HTMLDivElement, CharacterCardProps>(
-  ({ character, onClick }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className="card-character group cursor-pointer"
-        onClick={() => onClick(character)}
-      >
+export const CharacterCard = ({ character, onClick }: CharacterCardProps) => {
+  return (
+    <div
+      className="card-character group cursor-pointer"
+      onClick={() => onClick(character)}
+    >
       {/* Image */}
       <div className="relative aspect-[3/4] overflow-hidden">
         <img
@@ -25,6 +22,14 @@ export const CharacterCard = forwardRef<HTMLDivElement, CharacterCardProps>(
         
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        
+        {/* NSFW Badge */}
+        {character.nsfw && (
+          <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-medium">
+            <Shield className="h-3 w-3" />
+            +18
+          </div>
+        )}
         
         {/* Action buttons */}
         <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -61,9 +66,8 @@ export const CharacterCard = forwardRef<HTMLDivElement, CharacterCardProps>(
           </p>
         </div>
       </div>
-      </div>
-    );
-  }
-);
+    </div>
+  );
+};
 
 CharacterCard.displayName = 'CharacterCard';
