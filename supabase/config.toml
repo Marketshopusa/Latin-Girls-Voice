@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.huggingface-tts]
 verify_jwt = false
+
+[functions.google-tts]
+verify_jwt = false

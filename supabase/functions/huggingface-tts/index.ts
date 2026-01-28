@@ -5,6 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Spanish MMS-TTS model
+const TTS_MODEL = "facebook/mms-tts-spa";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -29,10 +32,10 @@ serve(async (req) => {
       );
     }
 
-    // Use Microsoft SpeechT5 - well supported model
-    const modelUrl = "https://router.huggingface.co/hf-inference/models/microsoft/speecht5_tts";
+    // Use Facebook MMS-TTS Spanish model (free, multilingual)
+    const modelUrl = `https://router.huggingface.co/hf-inference/models/${TTS_MODEL}`;
     
-    console.log(`Generating TTS with SpeechT5 for ${text.length} chars`);
+    console.log(`Generating TTS with MMS-TTS Spanish for ${text.length} chars`);
 
     const response = await fetch(modelUrl, {
       method: "POST",
@@ -41,7 +44,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        inputs: text.slice(0, 500), // Limit text length
+        inputs: text.slice(0, 500),
       }),
     });
 
@@ -52,7 +55,7 @@ serve(async (req) => {
       if (response.status === 503) {
         return new Response(
           JSON.stringify({ 
-            error: "Modelo cargando, intenta de nuevo en unos segundos",
+            error: "Modelo cargando, intenta de nuevo en 20 segundos",
             code: "MODEL_LOADING",
             retry: true 
           }),
@@ -67,11 +70,12 @@ serve(async (req) => {
     }
 
     const audioBuffer = await response.arrayBuffer();
+    const contentType = response.headers.get("content-type") || "audio/flac";
 
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
-        "Content-Type": "audio/flac",
+        "Content-Type": contentType,
       },
     });
   } catch (error) {
