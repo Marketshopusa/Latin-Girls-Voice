@@ -5,24 +5,121 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Google Cloud TTS voice mapping - Using best available voices per region
-// Neural2 available for: es-ES, es-US
-// Wavenet available for: es-MX, es-ES, es-US
-// Studio (highest quality) available for: es-US
-const VOICE_CONFIG: Record<string, { languageCode: string; name: string; ssmlGender: string; speakingRate?: number; pitch?: number }> = {
-  // Colombian - warm and melodic
-  COLOMBIANA_PAISA: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.05, pitch: 1.0 },
-  // Venezuelan - softer tones
-  VENEZOLANA_GOCHA: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE", speakingRate: 0.95, pitch: 0.5 },
-  VENEZOLANA_CARACAS: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.1, pitch: 0 },
-  // Argentine - distinctive cadence
-  ARGENTINA_SUAVE: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE", speakingRate: 0.95, pitch: -0.5 },
-  // Mexican - using Wavenet (best available for es-MX)
-  MEXICANA_NORTENA: { languageCode: "es-MX", name: "es-MX-Wavenet-A", ssmlGender: "FEMALE", speakingRate: 1.0, pitch: 0 },
-  // Male voices - using Neural2
-  MASCULINA_PROFUNDA: { languageCode: "es-US", name: "es-US-Neural2-B", ssmlGender: "MALE", speakingRate: 0.9, pitch: -2 },
-  MASCULINA_SUAVE: { languageCode: "es-US", name: "es-US-Neural2-C", ssmlGender: "MALE", speakingRate: 0.95, pitch: -1 },
+type GoogleSsmlGender = "SSML_VOICE_GENDER_UNSPECIFIED" | "MALE" | "FEMALE" | "NEUTRAL";
+
+interface GoogleVoice {
+  name: string;
+  languageCodes: string[];
+  ssmlGender: GoogleSsmlGender;
+  naturalSampleRateHertz: number;
+}
+
+interface VoiceConfig {
+  languageCode: string;
+  ssmlGender: Exclude<GoogleSsmlGender, "SSML_VOICE_GENDER_UNSPECIFIED">;
+  /** A soft preference; we'll only pick it if it exists in the real voices list. */
+  preferNameIncludes?: string[];
+  speakingRate?: number;
+  pitch?: number;
+}
+
+// IMPORTANT: No hardcoded voice names.
+// We only specify languageCode + ssmlGender and then pick a real voice name
+// from Google's /voices endpoint (cached) to avoid INVALID_ARGUMENT errors.
+const VOICE_CONFIG: Record<string, VoiceConfig> = {
+  COLOMBIANA_PAISA: {
+    languageCode: "es-US",
+    ssmlGender: "FEMALE",
+    preferNameIncludes: ["Neural2", "Wavenet"],
+    speakingRate: 1.05,
+    pitch: 1.0,
+  },
+  VENEZOLANA_GOCHA: {
+    languageCode: "es-US",
+    ssmlGender: "FEMALE",
+    preferNameIncludes: ["Neural2", "Wavenet"],
+    speakingRate: 0.95,
+    pitch: 0.5,
+  },
+  VENEZOLANA_CARACAS: {
+    languageCode: "es-US",
+    ssmlGender: "FEMALE",
+    preferNameIncludes: ["Neural2", "Wavenet"],
+    speakingRate: 1.1,
+    pitch: 0,
+  },
+  ARGENTINA_SUAVE: {
+    languageCode: "es-US",
+    ssmlGender: "FEMALE",
+    preferNameIncludes: ["Neural2", "Wavenet"],
+    speakingRate: 0.95,
+    pitch: -0.5,
+  },
+  // Mexican accent: request es-MX; pick whatever real voice exists for that locale
+  MEXICANA_NORTENA: {
+    languageCode: "es-MX",
+    ssmlGender: "FEMALE",
+    preferNameIncludes: ["Wavenet", "Neural2", "Standard"],
+    speakingRate: 1.0,
+    pitch: 0,
+  },
+  MASCULINA_PROFUNDA: {
+    languageCode: "es-US",
+    ssmlGender: "MALE",
+    preferNameIncludes: ["Neural2", "Wavenet"],
+    speakingRate: 0.9,
+    pitch: -2,
+  },
+  MASCULINA_SUAVE: {
+    languageCode: "es-US",
+    ssmlGender: "MALE",
+    preferNameIncludes: ["Neural2", "Wavenet"],
+    speakingRate: 0.95,
+    pitch: -1,
+  },
 };
+
+let cachedVoices: GoogleVoice[] | null = null;
+let cachedVoicesAt = 0;
+const VOICES_TTL_MS = 1000 * 60 * 60; // 1h
+
+async function getVoices(apiKey: string): Promise<GoogleVoice[]> {
+  const now = Date.now();
+  if (cachedVoices && now - cachedVoicesAt < VOICES_TTL_MS) return cachedVoices;
+
+  const res = await fetch(`https://texttospeech.googleapis.com/v1/voices?key=${apiKey}`);
+  if (!res.ok) {
+    const t = await res.text();
+    console.error("Failed to fetch voices list:", res.status, t);
+    // Fallback to empty; request will still work without voice.name
+    cachedVoices = [];
+    cachedVoicesAt = now;
+    return cachedVoices;
+  }
+
+  const data = await res.json().catch(() => ({}));
+  const voices = (data?.voices || []) as GoogleVoice[];
+  cachedVoices = voices;
+  cachedVoicesAt = now;
+  return voices;
+}
+
+function pickVoiceName(voices: GoogleVoice[], cfg: VoiceConfig): string | undefined {
+  if (!voices.length) return undefined;
+
+  const langMatches = voices.filter((v) => v.languageCodes?.includes(cfg.languageCode));
+  const pool1 = langMatches.length ? langMatches : voices;
+
+  const genderMatches = pool1.filter((v) => v.ssmlGender === cfg.ssmlGender);
+  const pool2 = genderMatches.length ? genderMatches : pool1;
+
+  const preferred = (cfg.preferNameIncludes || [])
+    .flatMap((needle) => pool2.filter((v) => v.name?.includes(needle)));
+  const pool3 = preferred.length ? preferred : pool2;
+
+  // Stable pick: first candidate
+  return pool3[0]?.name;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -54,14 +151,18 @@ serve(async (req) => {
     // Limit text length to avoid excessive costs
     const cleanText = text.slice(0, 1000);
 
-    console.log(`Generating TTS with Google Cloud for ${cleanText.length} chars, voice: ${voiceConfig.name}`);
+    const voices = await getVoices(apiKey);
+    const pickedVoiceName = pickVoiceName(voices, voiceConfig);
+    console.log(
+      `Generating TTS with Google Cloud for ${cleanText.length} chars, lang=${voiceConfig.languageCode}, picked=${pickedVoiceName ?? "(default)"}`
+    );
 
     const requestBody = {
       input: { text: cleanText },
       voice: {
         languageCode: voiceConfig.languageCode,
-        name: voiceConfig.name,
         ssmlGender: voiceConfig.ssmlGender,
+        ...(pickedVoiceName ? { name: pickedVoiceName } : {}),
       },
       audioConfig: {
         audioEncoding: "MP3",
