@@ -175,15 +175,9 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
         throw new Error('No hay texto hablado para reproducir.');
       }
 
-      // Try TTS providers in order of quality
-      // 1. ElevenLabs (best quality, but quota limited)
-      let audioBlob = await tryTTSEndpoint('elevenlabs-tts', ttsText);
-      
-      // 2. Google TTS (free, good quality for Spanish)
-      if (!audioBlob) {
-        console.log("Trying Google TTS...");
-        audioBlob = await tryTTSEndpoint('google-tts', ttsText);
-      }
+      // Try TTS providers - ElevenLabs disabled due to recurring errors
+      // 1. Google TTS (free, good quality for Spanish)
+      const audioBlob = await tryTTSEndpoint('google-tts', ttsText);
 
       // 3. If all cloud TTS fail, use Web Speech API
       if (!audioBlob) {
