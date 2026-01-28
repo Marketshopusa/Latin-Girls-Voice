@@ -65,9 +65,24 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", response.status, errorText);
+
+      const isUnusualActivityBlocked =
+        response.status === 401 &&
+        (errorText.includes("detected_unusual_activity") ||
+          errorText.includes("Free Tier usage disabled"));
+
       return new Response(
-        JSON.stringify({ error: "TTS generation failed", details: errorText }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: isUnusualActivityBlocked
+            ? "TTS no disponible: el proveedor bloqueó el plan gratis por actividad inusual"
+            : "TTS generation failed",
+          code: isUnusualActivityBlocked ? "ELEVENLABS_UNUSUAL_ACTIVITY" : "ELEVENLABS_ERROR",
+          details: errorText,
+        }),
+        {
+          status: response.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
