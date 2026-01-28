@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.google-tts]
 verify_jwt = false
+
+[functions.google-cloud-tts]
+verify_jwt = false
