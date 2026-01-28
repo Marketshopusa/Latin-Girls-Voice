@@ -23,7 +23,8 @@ const ChatPage = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [characterLoading, setCharacterLoading] = useState(true);
   const [lastAIMessageId, setLastAIMessageId] = useState<string | null>(null);
-
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { characters } = useCharacters();
   const { messages, isLoading, addMessage, setInitialMessage } = useConversation(id);
   
@@ -92,6 +93,11 @@ const ChatPage = () => {
       setInitialMessage(character.welcomeMessage);
     }
   }, [character, isLoading, setInitialMessage]);
+
+  // Auto-scroll to bottom when messages change or typing state changes
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
   const handleSendMessage = async (text: string) => {
     if (!character) return;
@@ -208,6 +214,9 @@ const ChatPage = () => {
               <span>{character.name} está escribiendo...</span>
             </div>
           )}
+          
+          {/* Auto-scroll anchor */}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
