@@ -5,21 +5,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Google Cloud TTS voice mapping - Using regional Spanish voices for authenticity
-// es-MX = Mexican Spanish, es-ES = Spain Spanish (closest to South American cadence)
+// Google Cloud TTS voice mapping - Using best available voices per region
+// Neural2 available for: es-ES, es-US
+// Wavenet available for: es-MX, es-ES, es-US
+// Studio (highest quality) available for: es-US
 const VOICE_CONFIG: Record<string, { languageCode: string; name: string; ssmlGender: string; speakingRate?: number; pitch?: number }> = {
-  // Colombian - using Spain Spanish with slightly higher pitch for warmth
-  COLOMBIANA_PAISA: { languageCode: "es-ES", name: "es-ES-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.05, pitch: 1.5 },
-  // Venezuelan voices - softer, using Spain Spanish
-  VENEZOLANA_GOCHA: { languageCode: "es-ES", name: "es-ES-Neural2-A", ssmlGender: "FEMALE", speakingRate: 0.95, pitch: 0.5 },
-  VENEZOLANA_CARACAS: { languageCode: "es-ES", name: "es-ES-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.1, pitch: 0 },
+  // Colombian - warm and melodic
+  COLOMBIANA_PAISA: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.05, pitch: 1.0 },
+  // Venezuelan - softer tones
+  VENEZOLANA_GOCHA: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE", speakingRate: 0.95, pitch: 0.5 },
+  VENEZOLANA_CARACAS: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.1, pitch: 0 },
   // Argentine - distinctive cadence
-  ARGENTINA_SUAVE: { languageCode: "es-ES", name: "es-ES-Neural2-A", ssmlGender: "FEMALE", speakingRate: 0.95, pitch: -1 },
-  // Mexican - using actual Mexican Spanish voice!
-  MEXICANA_NORTENA: { languageCode: "es-MX", name: "es-MX-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.0, pitch: 0 },
-  // Male voices
-  MASCULINA_PROFUNDA: { languageCode: "es-ES", name: "es-ES-Neural2-B", ssmlGender: "MALE", speakingRate: 0.9, pitch: -3 },
-  MASCULINA_SUAVE: { languageCode: "es-ES", name: "es-ES-Neural2-C", ssmlGender: "MALE", speakingRate: 0.95, pitch: -1 },
+  ARGENTINA_SUAVE: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE", speakingRate: 0.95, pitch: -0.5 },
+  // Mexican - using Wavenet (best available for es-MX)
+  MEXICANA_NORTENA: { languageCode: "es-MX", name: "es-MX-Wavenet-A", ssmlGender: "FEMALE", speakingRate: 1.0, pitch: 0 },
+  // Male voices - using Neural2
+  MASCULINA_PROFUNDA: { languageCode: "es-US", name: "es-US-Neural2-B", ssmlGender: "MALE", speakingRate: 0.9, pitch: -2 },
+  MASCULINA_SUAVE: { languageCode: "es-US", name: "es-US-Neural2-C", ssmlGender: "MALE", speakingRate: 0.95, pitch: -1 },
 };
 
 serve(async (req) => {
