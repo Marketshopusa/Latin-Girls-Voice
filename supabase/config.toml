@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.ttsforfree]
 verify_jwt = false
+
+[functions.huggingface-tts]
+verify_jwt = false
