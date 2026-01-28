@@ -18,13 +18,17 @@ const CreateCharacterPage = () => {
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [voice, setVoice] = useState<VoiceType>('COLOMBIANA_PAISA');
   const [nsfw, setNsfw] = useState(false);
-  const [image, setImage] = useState<string | null>(null);
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const isVideo = file.type.startsWith('video/');
+      setMediaType(isVideo ? 'video' : 'image');
+      
       const reader = new FileReader();
-      reader.onload = () => setImage(reader.result as string);
+      reader.onload = () => setMediaUrl(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -49,7 +53,7 @@ const CreateCharacterPage = () => {
       welcomeMessage,
       voice,
       nsfw,
-      image,
+      image: mediaUrl,
     });
 
     if (result) {
@@ -84,23 +88,34 @@ const CreateCharacterPage = () => {
                 Avatar / Video de Perfil
               </label>
               <label className="block aspect-[3/4] rounded-xl border-2 border-dashed border-border bg-muted/50 hover:bg-muted transition-colors cursor-pointer overflow-hidden">
-                {image ? (
-                  <img 
-                    src={image} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover"
-                  />
+                {mediaUrl ? (
+                  mediaType === 'video' ? (
+                    <video 
+                      src={mediaUrl} 
+                      className="w-full h-full object-cover"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <img 
+                      src={mediaUrl} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  )
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
                     <Upload className="h-12 w-12 mb-3" />
                     <span className="font-medium">Subir imagen o video</span>
-                    <span className="text-xs mt-1">Formatos: JPG, PNG, GIF, MP4</span>
+                    <span className="text-xs mt-1">Formatos: JPG, PNG, GIF, MP4, WEBM</span>
                   </div>
                 )}
                 <input
                   type="file"
                   accept="image/*,video/*"
-                  onChange={handleImageUpload}
+                  onChange={handleMediaUpload}
                   className="hidden"
                 />
               </label>
