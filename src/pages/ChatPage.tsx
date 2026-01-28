@@ -8,8 +8,10 @@ import { CharacterConfigModal } from '@/components/characters/CharacterConfigMod
 import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { useConversation } from '@/hooks/useConversation';
+import { useCharacters } from '@/hooks/useCharacters';
 import { mockCharacters } from '@/data/characters';
-import { Character } from '@/types';
+import { Character, VoiceType } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 const ChatPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,14 +20,63 @@ const ChatPage = () => {
   const [character, setCharacter] = useState<Character | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [characterLoading, setCharacterLoading] = useState(true);
 
+  const { characters } = useCharacters();
   const { messages, isLoading, addMessage, setInitialMessage } = useConversation(id);
 
-  // Load character data
+  // Load character data - first check mocks, then DB
   useEffect(() => {
-    const found = mockCharacters.find((c) => c.id === id);
-    if (found) {
-      setCharacter(found);
+    const loadCharacter = async () => {
+      setCharacterLoading(true);
+      
+      // First check mock characters
+      const mockFound = mockCharacters.find((c) => c.id === id);
+      if (mockFound) {
+        setCharacter(mockFound);
+        setCharacterLoading(false);
+        return;
+      }
+
+      // Then check database
+      try {
+        const { data, error } = await supabase
+          .from('characters')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching character:', error);
+          setCharacterLoading(false);
+          return;
+        }
+
+        if (data) {
+          const dbChar: Character = {
+            id: data.id,
+            name: data.name,
+            age: data.age,
+            tagline: data.tagline,
+            history: data.history,
+            welcomeMessage: data.welcome_message,
+            image: data.image_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop',
+            tags: data.nsfw ? ['NSFW', '+18'] : ['SFW'],
+            voice: data.voice as VoiceType,
+            nsfw: data.nsfw,
+            style: 'Realistic',
+          };
+          setCharacter(dbChar);
+        }
+      } catch (err) {
+        console.error('Error loading character:', err);
+      } finally {
+        setCharacterLoading(false);
+      }
+    };
+
+    if (id) {
+      loadCharacter();
     }
   }, [id]);
 
@@ -62,7 +113,7 @@ const ChatPage = () => {
     navigate(`/chat/${char.id}`);
   };
 
-  if (!character || isLoading) {
+  if (characterLoading || !character || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Cargando...</p>
