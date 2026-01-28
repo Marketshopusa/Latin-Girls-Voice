@@ -52,8 +52,8 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       if (cleaned) spoken.push(cleaned);
     }
 
-    const joined = spoken.join("\n");
-    const MAX_CHARS = 1000;
+    const joined = spoken.join(" ");
+    const MAX_CHARS = 500;
     return joined.length > MAX_CHARS ? joined.slice(0, MAX_CHARS) : joined;
   }, []);
 
@@ -144,11 +144,13 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       );
 
       if (response.ok) {
-        return await response.blob();
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('audio')) {
+          return await response.blob();
+        }
       }
       
-      const errorData = await response.json().catch(() => ({}));
-      console.log(`${endpoint} failed:`, (errorData as any)?.error || response.status);
+      console.log(`${endpoint} failed:`, response.status);
       return null;
     } catch (err) {
       console.log(`${endpoint} error:`, err);
@@ -177,16 +179,16 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       // 1. ElevenLabs (best quality, but quota limited)
       let audioBlob = await tryTTSEndpoint('elevenlabs-tts', ttsText);
       
-      // 2. Hugging Face MeloTTS (free, good quality)
+      // 2. Google TTS (free, good quality for Spanish)
       if (!audioBlob) {
-        console.log("Trying Hugging Face TTS...");
-        audioBlob = await tryTTSEndpoint('huggingface-tts', ttsText);
+        console.log("Trying Google TTS...");
+        audioBlob = await tryTTSEndpoint('google-tts', ttsText);
       }
 
       // 3. If all cloud TTS fail, use Web Speech API
       if (!audioBlob) {
         console.log("All cloud TTS failed, using Web Speech API...");
-        setError("Usando voz del navegador (calidad reducida)");
+        setError("Usando voz del navegador");
         setIsLoading(false);
         await playWithWebSpeech(ttsText);
         return;
@@ -216,7 +218,6 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       setIsPlaying(true);
     } catch (err) {
       console.error("TTS error:", err);
-      // Final fallback to Web Speech
       try {
         const ttsText = prepareTextForTTS(text);
         if (ttsText) {
