@@ -47,8 +47,23 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `TTS request failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({} as any));
+
+        const rawDetails = typeof (errorData as any)?.details === 'string'
+          ? (errorData as any).details
+          : '';
+
+        // ElevenLabs can block Free Tier keys with "detected_unusual_activity".
+        if (
+          response.status === 401 &&
+          (rawDetails.includes('detected_unusual_activity') || rawDetails.includes('Free Tier usage disabled'))
+        ) {
+          throw new Error(
+            'TTS no disponible: el proveedor bloqueó el plan gratis por “actividad inusual”. Usa una API key de pago o desactiva VPN/proxy.'
+          );
+        }
+
+        throw new Error((errorData as any).error || `TTS request failed: ${response.status}`);
       }
 
       const audioBlob = await response.blob();
