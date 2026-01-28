@@ -5,15 +5,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Google Cloud TTS voice mapping - Neural2 voices for high quality
-const VOICE_CONFIG: Record<string, { languageCode: string; name: string; ssmlGender: string }> = {
-  COLOMBIANA_PAISA: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE" },
-  VENEZOLANA_GOCHA: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE" },
-  VENEZOLANA_CARACAS: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE" },
-  ARGENTINA_SUAVE: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE" },
-  MEXICANA_NORTENA: { languageCode: "es-US", name: "es-US-Neural2-A", ssmlGender: "FEMALE" },
-  MASCULINA_PROFUNDA: { languageCode: "es-US", name: "es-US-Neural2-B", ssmlGender: "MALE" },
-  MASCULINA_SUAVE: { languageCode: "es-US", name: "es-US-Neural2-C", ssmlGender: "MALE" },
+// Google Cloud TTS voice mapping - Using regional Spanish voices for authenticity
+// es-MX = Mexican Spanish, es-ES = Spain Spanish (closest to South American cadence)
+const VOICE_CONFIG: Record<string, { languageCode: string; name: string; ssmlGender: string; speakingRate?: number; pitch?: number }> = {
+  // Colombian - using Spain Spanish with slightly higher pitch for warmth
+  COLOMBIANA_PAISA: { languageCode: "es-ES", name: "es-ES-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.05, pitch: 1.5 },
+  // Venezuelan voices - softer, using Spain Spanish
+  VENEZOLANA_GOCHA: { languageCode: "es-ES", name: "es-ES-Neural2-A", ssmlGender: "FEMALE", speakingRate: 0.95, pitch: 0.5 },
+  VENEZOLANA_CARACAS: { languageCode: "es-ES", name: "es-ES-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.1, pitch: 0 },
+  // Argentine - distinctive cadence
+  ARGENTINA_SUAVE: { languageCode: "es-ES", name: "es-ES-Neural2-A", ssmlGender: "FEMALE", speakingRate: 0.95, pitch: -1 },
+  // Mexican - using actual Mexican Spanish voice!
+  MEXICANA_NORTENA: { languageCode: "es-MX", name: "es-MX-Neural2-A", ssmlGender: "FEMALE", speakingRate: 1.0, pitch: 0 },
+  // Male voices
+  MASCULINA_PROFUNDA: { languageCode: "es-ES", name: "es-ES-Neural2-B", ssmlGender: "MALE", speakingRate: 0.9, pitch: -3 },
+  MASCULINA_SUAVE: { languageCode: "es-ES", name: "es-ES-Neural2-C", ssmlGender: "MALE", speakingRate: 0.95, pitch: -1 },
 };
 
 serve(async (req) => {
@@ -57,8 +63,8 @@ serve(async (req) => {
       },
       audioConfig: {
         audioEncoding: "MP3",
-        speakingRate: 1.0,
-        pitch: 0,
+        speakingRate: voiceConfig.speakingRate || 1.0,
+        pitch: voiceConfig.pitch || 0,
         effectsProfileId: ["small-bluetooth-speaker-class-device"],
       },
     };
