@@ -48,7 +48,7 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       if (cleaned) spoken.push(cleaned);
     }
 
-    // ElevenLabs performs better with a reasonable length.
+    // TTS performs better with a reasonable length.
     const joined = spoken.join("\n");
     const MAX_CHARS = 1500;
     return joined.length > MAX_CHARS ? joined.slice(0, MAX_CHARS) : joined;
@@ -80,8 +80,9 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
         throw new Error('No hay texto hablado para reproducir.');
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
+      // Try TTSForFree first (free neural voices with regional accents)
+      let response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ttsforfree`,
         {
           method: "POST",
           headers: {
@@ -93,23 +94,25 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
         }
       );
 
+      // If TTSForFree fails, fallback to ElevenLabs
+      if (!response.ok) {
+        console.log("TTSForFree failed, trying ElevenLabs fallback...");
+        response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ text: ttsText, voiceType }),
+          }
+        );
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({} as any));
-
-        const rawDetails = typeof (errorData as any)?.details === 'string'
-          ? (errorData as any).details
-          : '';
-
-        // ElevenLabs can block Free Tier keys with "detected_unusual_activity".
-        if (
-          response.status === 401 &&
-          (rawDetails.includes('detected_unusual_activity') || rawDetails.includes('Free Tier usage disabled'))
-        ) {
-          throw new Error(
-            'TTS no disponible: el proveedor bloqueó el plan gratis por “actividad inusual”. Usa una API key de pago o desactiva VPN/proxy.'
-          );
-        }
-
         throw new Error((errorData as any).error || `TTS request failed: ${response.status}`);
       }
 
