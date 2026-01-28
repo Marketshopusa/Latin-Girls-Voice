@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      characters: {
+        Row: {
+          age: number
+          created_at: string
+          creator_id: string | null
+          history: string
+          id: string
+          image_url: string | null
+          is_public: boolean
+          name: string
+          nsfw: boolean
+          tagline: string
+          updated_at: string
+          voice: string
+          welcome_message: string
+        }
+        Insert: {
+          age: number
+          created_at?: string
+          creator_id?: string | null
+          history: string
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          name: string
+          nsfw?: boolean
+          tagline: string
+          updated_at?: string
+          voice?: string
+          welcome_message: string
+        }
+        Update: {
+          age?: number
+          created_at?: string
+          creator_id?: string | null
+          history?: string
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          name?: string
+          nsfw?: boolean
+          tagline?: string
+          updated_at?: string
+          voice?: string
+          welcome_message?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           character_id: string
