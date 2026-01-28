@@ -2,3 +2,6 @@ project_id = "mwrahnkynhfulzkljeqs"
 
 [functions.elevenlabs-tts]
 verify_jwt = false
+
+[functions.ttsforfree]
+verify_jwt = false
