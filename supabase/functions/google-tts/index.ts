@@ -33,35 +33,82 @@ serve(async (req) => {
     }
 
     const lang = VOICE_LANG_MAP[voiceType] || "es";
-    const cleanText = text.slice(0, 200); // Google TTS has length limits
+    // Split text into smaller chunks for smoother audio (Google has ~200 char limit per request)
+    const maxChunkSize = 180;
+    const cleanText = text.slice(0, 500); // Total limit
     
-    // Google Translate TTS endpoint (free, no API key)
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(cleanText)}`;
+    // For shorter texts, use single request
+    if (cleanText.length <= maxChunkSize) {
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(cleanText)}&ttsspeed=0.9`;
+      
+      console.log(`Generating TTS with Google Translate for ${cleanText.length} chars`);
+
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Referer": "https://translate.google.com/",
+        },
+      });
+
+      if (!response.ok) {
+        console.error("Google TTS error:", response.status);
+        return new Response(
+          JSON.stringify({ error: `TTS failed: ${response.status}` }),
+          { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const audioBuffer = await response.arrayBuffer();
+      return new Response(audioBuffer, {
+        headers: { ...corsHeaders, "Content-Type": "audio/mpeg" },
+      });
+    }
+
+    // For longer texts, split into sentences and concatenate audio
+    const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+    const audioChunks: ArrayBuffer[] = [];
     
-    console.log(`Generating TTS with Google Translate for ${cleanText.length} chars`);
+    for (const sentence of sentences) {
+      const trimmed = sentence.trim();
+      if (!trimmed) continue;
+      
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(trimmed)}&ttsspeed=0.9`;
+      console.log(`Generating TTS chunk: ${trimmed.length} chars`);
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Referer": "https://translate.google.com/",
-      },
-    });
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Referer": "https://translate.google.com/",
+        },
+      });
 
-    if (!response.ok) {
-      console.error("Google TTS error:", response.status);
+      if (!response.ok) {
+        console.error("Google TTS chunk error:", response.status);
+        continue;
+      }
+
+      const chunk = await response.arrayBuffer();
+      audioChunks.push(chunk);
+    }
+
+    if (audioChunks.length === 0) {
       return new Response(
-        JSON.stringify({ error: `TTS failed: ${response.status}` }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "No audio generated" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const audioBuffer = await response.arrayBuffer();
+    // Concatenate all audio chunks
+    const totalLength = audioChunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of audioChunks) {
+      combined.set(new Uint8Array(chunk), offset);
+      offset += chunk.byteLength;
+    }
 
-    return new Response(audioBuffer, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "audio/mpeg",
-      },
+    return new Response(combined.buffer, {
+      headers: { ...corsHeaders, "Content-Type": "audio/mpeg" },
     });
   } catch (error) {
     console.error("TTS error:", error);
