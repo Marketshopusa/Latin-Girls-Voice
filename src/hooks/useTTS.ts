@@ -12,6 +12,48 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
+  const prepareTextForTTS = useCallback((raw: string) => {
+    // Our chat format is:
+    // - Dialogue lines: **_..._**
+    // - Meta lines: _Acción: ..._ / _Pensamiento: ..._
+    // For TTS we only want spoken dialogue (and we strip markdown wrappers).
+    const lines = raw.split("\n");
+    const spoken: string[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // Remove surrounding underscores first (meta lines are italicized)
+      const noOuterItalics = trimmed.replace(/^_/, "").replace(/_$/, "").trim();
+      const lower = noOuterItalics.toLowerCase();
+
+      // Skip actions/thoughts for audio
+      if (
+        lower.startsWith("acción:") ||
+        lower.startsWith("accion:") ||
+        lower.startsWith("pensamiento:")
+      ) {
+        continue;
+      }
+
+      // Unwrap **_dialogue_**
+      const unwrappedDialogue = trimmed
+        .replace(/^\*\*_/, "")
+        .replace(/_\*\*$/, "")
+        .trim();
+
+      // Also remove any leftover markdown emphasis markers
+      const cleaned = unwrappedDialogue.replace(/\*|_/g, "").trim();
+      if (cleaned) spoken.push(cleaned);
+    }
+
+    // ElevenLabs performs better with a reasonable length.
+    const joined = spoken.join("\n");
+    const MAX_CHARS = 1500;
+    return joined.length > MAX_CHARS ? joined.slice(0, MAX_CHARS) : joined;
+  }, []);
+
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -33,6 +75,11 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
     setError(null);
 
     try {
+      const ttsText = prepareTextForTTS(text);
+      if (!ttsText) {
+        throw new Error('No hay texto hablado para reproducir.');
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
         {
@@ -42,7 +89,7 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ text, voiceType }),
+          body: JSON.stringify({ text: ttsText, voiceType }),
         }
       );
 
@@ -97,7 +144,7 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, isPlaying, stopAudio, voiceType]);
+  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType]);
 
   return {
     playAudio,
