@@ -228,11 +228,65 @@ export const useConversation = (characterId: string | undefined) => {
     [messages.length, conversationId, userId, addMessage]
   );
 
+  // Reset conversation with a new welcome message (for when user edits character)
+  const resetConversationWithNewWelcome = useCallback(
+    async (newWelcomeMessage: string) => {
+      // Clear local messages
+      setMessages([]);
+      
+      if (conversationId && userId) {
+        try {
+          // Delete existing messages from this conversation
+          await supabase
+            .from('messages')
+            .delete()
+            .eq('conversation_id', conversationId);
+          
+          // Add the new welcome message
+          const { data, error } = await supabase
+            .from('messages')
+            .insert({
+              conversation_id: conversationId,
+              role: 'assistant',
+              content: newWelcomeMessage,
+              audio_duration: 12,
+            })
+            .select()
+            .single();
+
+          if (!error && data) {
+            const msg = data as DbMessage;
+            setMessages([{
+              id: msg.id,
+              role: msg.role as 'user' | 'assistant',
+              text: msg.content,
+              timestamp: new Date(msg.created_at),
+              audioDuration: msg.audio_duration ?? undefined,
+            }]);
+          }
+        } catch (error) {
+          console.error('Error resetting conversation:', error);
+        }
+      } else {
+        // For non-authenticated users, just set local
+        setMessages([{
+          id: Date.now().toString(),
+          role: 'assistant',
+          text: newWelcomeMessage,
+          timestamp: new Date(),
+          audioDuration: 12,
+        }]);
+      }
+    },
+    [conversationId, userId]
+  );
+
   return {
     messages,
     isLoading,
     addMessage,
     setInitialMessage,
+    resetConversationWithNewWelcome,
     isAuthenticated: !!userId,
   };
 };

@@ -29,7 +29,7 @@ const ChatPage = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { characters } = useCharacters();
-  const { messages, isLoading, addMessage, setInitialMessage } = useConversation(id);
+  const { messages, isLoading, addMessage, setInitialMessage, resetConversationWithNewWelcome } = useConversation(id);
   
   const { sendMessage: sendAIMessage, isLoading: isAILoading, error: aiError } = useChatAI({
     character: character!,
@@ -131,9 +131,22 @@ const ChatPage = () => {
     }
   };
 
-  const handleSaveConfig = (updates: Partial<Character>) => {
+  const handleSaveConfig = async (updates: Partial<Character>) => {
     if (character) {
-      setCharacter({ ...character, ...updates });
+      const updatedCharacter = { ...character, ...updates };
+      setCharacter(updatedCharacter);
+      
+      // Si se cambió el welcomeMessage, reiniciar la conversación
+      if (updates.welcomeMessage && updates.welcomeMessage !== character.welcomeMessage) {
+        // Limpiar mensajes existentes y establecer el nuevo mensaje de bienvenida
+        await resetConversationWithNewWelcome(updates.welcomeMessage);
+        toast.success('Personaje actualizado. La conversación se reinició con el nuevo mensaje.');
+      } else if (updates.history && updates.history !== character.history) {
+        // Si solo cambió la historia, notificar que afectará futuras respuestas
+        toast.success('Historia actualizada. El personaje usará la nueva personalidad.');
+      } else {
+        toast.success('Configuración guardada');
+      }
     }
   };
 
