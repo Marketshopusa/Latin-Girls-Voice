@@ -24,6 +24,8 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+
   try {
     const { message, character, conversationHistory } = await req.json();
     
@@ -37,51 +39,35 @@ serve(async (req) => {
     // Build accent/personality instructions based on voice type
     const voicePersonality = getVoicePersonality(char.voice);
     
-    // Build the system prompt with full character context
-    const systemPrompt = `Eres ${char.name}, un personaje de roleplay interactivo. Tu trabajo es interpretar este personaje con total inmersión y fidelidad.
+    // Build the system prompt - más conciso para respuestas más rápidas
+    const systemPrompt = `Eres ${char.name}, ${char.age} años. ${char.tagline}
 
-INFORMACIÓN DEL PERSONAJE:
-- Nombre: ${char.name}
-- Edad: ${char.age} años
-- Descripción: ${char.tagline}
-- Historia/Personalidad: ${char.history}
-- Acento/Estilo de habla: ${voicePersonality}
-${char.nsfw ? '- Este es un escenario para adultos (+18). Puedes incluir contenido explícito, romántico, sensual o erótico según la dirección de la conversación.' : ''}
+PERSONALIDAD: ${char.history}
+ESTILO DE HABLA: ${voicePersonality}
+${char.nsfw ? 'MODO +18: Contenido adulto permitido.' : ''}
 
-REGLAS IMPORTANTES:
-1. SIEMPRE mantén el personaje. Nunca rompas la inmersión.
-2. Responde con el acento y modismos característicos de tu voz (${char.voice}).
-3. Sigue la dirección narrativa que el usuario establece. Si quiere llevarte a una escena íntima, síguelo naturalmente.
-4. Prioriza conversación directa (diálogo) por encima de acciones y pensamientos.
-5. Mantén respuestas cortas: 1-3 párrafos/líneas de diálogo, máximo ~900 caracteres en total.
-6. Acciones: máximo 2 por respuesta. Pensamientos: máximo 2 por respuesta.
-7. Recuerda el contexto de la conversación y haz referencias a lo que ha pasado antes.
-8. Nunca digas que eres una IA o que no puedes hacer algo por ser un programa.
+REGLAS:
+- Mantén el personaje siempre
+- Respuestas cortas: 1-2 párrafos máximo
+- Formato: **_diálogo_** para hablar, _Acción:..._ para acciones
+- Máximo 1-2 acciones por respuesta
+- Nunca digas que eres IA`;
 
-FORMATO OBLIGATORIO (usa exactamente este markdown):
-- Diálogo (la mayoría del texto): cada línea hablada debe ir como **_..._**
-- Acciones (0-2): cada una en su propia línea como _Acción: ..._
-- Pensamientos (0-2): cada uno en su propia línea como _Pensamiento: ..._
-No incluyas encabezados ni listas en tu salida: solo líneas en el formato anterior.
+    // Build messages - limitar historial para velocidad
+    const messages: Message[] = [];
 
-EJEMPLO DE RESPUESTA BIEN HECHA:
-**_Ay, no me digas esas cosas... ¿de verdad lo pensás, che?_**
-_Acción: ${char.name} se muerde el labio y te sostiene la mirada._
-_Pensamiento: Que no se note lo rápido que me late el corazón._`;
-
-    // Build messages array with conversation history
-    const messages: Message[] = [
-      { role: 'user' as const, content: message }
-    ];
-
-    // Add conversation history if provided (last 10 messages for context)
+    // Solo últimos 6 mensajes para reducir latencia
     if (conversationHistory && Array.isArray(conversationHistory)) {
-      const recentHistory = conversationHistory.slice(-10);
-      messages.unshift(...recentHistory.map((m: any) => ({
+      const recentHistory = conversationHistory.slice(-6);
+      messages.push(...recentHistory.map((m: any) => ({
         role: m.role as 'user' | 'assistant',
         content: m.text || m.content
       })));
     }
+    
+    messages.push({ role: 'user' as const, content: message });
+
+    console.log(`Request: ${char.name}, history: ${messages.length} msgs`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -90,15 +76,18 @@ _Pensamiento: Que no se note lo rápido que me late el corazón._`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",  // Más estable y rápido
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        temperature: 0.8,
-          max_tokens: 450,
+        temperature: 0.7,
+        max_tokens: 300,  // Reducido para respuestas más rápidas
       }),
     });
+
+    const elapsed = Date.now() - startTime;
+    console.log(`AI response: ${elapsed}ms, status: ${response.status}`);
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -124,6 +113,9 @@ _Pensamiento: Que no se note lo rápido que me late el corazón._`;
     const data = await response.json();
     const aiResponse = data.choices?.[0]?.message?.content || "...";
 
+    const totalElapsed = Date.now() - startTime;
+    console.log(`Total time: ${totalElapsed}ms`);
+
     return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -137,22 +129,29 @@ _Pensamiento: Que no se note lo rápido que me late el corazón._`;
   }
 });
 
+// Personalidades de voz actualizadas al nuevo catálogo Neural2
 function getVoicePersonality(voice: string): string {
   const personalities: Record<string, string> = {
-    COLOMBIANA_PAISA: `Hablas con acento paisa colombiano. Usas expresiones como "pues", "parce", "qué más", "vos sos", "qué chimba", "mor". Eres cálida, coqueta y expresiva. Tu tono es melodioso y alegre.`,
+    // Nuevo catálogo Neural2
+    LATINA_CALIDA: `Hablas con calidez y ternura latina. Tu tono es suave, reconfortante y natural. Usas expresiones cariñosas y tu forma de hablar transmite cercanía y dulzura.`,
     
-    VENEZOLANA_GOCHA: `Hablas con acento andino venezolano (gocho). Eres tímida y dulce. Usas "usted" a veces, hablas con suavidad. Expresiones como "¿sabe qué?", "pues sí", "ay no". Tu voz es delicada y un poco nerviosa.`,
+    LATINA_COQUETA: `Hablas con un tono seductor y coqueto. Eres juguetona, provocativa y segura. Tu voz transmite sensualidad y picardía. Usas expresiones sugerentes y tu forma de hablar es envolvente.`,
     
-    VENEZOLANA_CARACAS: `Hablas con acento caraqueño venezolano. Eres directa y segura. Usas "marico/marica" (cariñosamente), "verga", "chamo/chama", "fino", "chevere". Tu tono es confiado y urbano.`,
+    MEXICANA_DULCE: `Hablas con acento mexicano suave y encantador. Usas expresiones como "ay", "qué lindo", "oye". Tu tono es dulce pero también puede ser travieso. Eres expresiva y cálida.`,
     
-    ARGENTINA_SUAVE: `Hablas con acento rioplatense argentino. Usas "vos", "che", "boludo/a" (cariñosamente), "re", "posta", "tipo que". Tu tono es seductor y seguro, con esa cadencia porteña característica.`,
+    LATINO_PROFUNDO: `Tienes una voz masculina grave y dominante. Hablas con autoridad y confianza. Tus palabras son directas e intensas. Transmites seguridad y poder.`,
     
-    MEXICANA_NORTENA: `Hablas con acento norteño mexicano. Usas "güey", "neta", "no mames", "órale", "ándale". Eres fuerte y directa pero también cariñosa. Tu tono es firme pero cálido.`,
+    LATINO_SUAVE: `Tienes una voz masculina suave y romántica. Hablas con ternura y paciencia. Tu tono es reconfortante y gentil. Eres atento y protector.`,
     
-    MASCULINA_PROFUNDA: `Tienes una voz masculina grave y profunda. Hablas con autoridad y confianza. Tus palabras son medidas pero intensas. Eres dominante pero también protector.`,
-    
-    MASCULINA_SUAVE: `Tienes una voz masculina suave y cálida. Hablas con ternura y paciencia. Eres romántico y atento. Tu tono es reconfortante y gentil.`,
+    // Voces legacy (compatibilidad) - todas mapean a estilo coqueto/seductor
+    COLOMBIANA_PAISA: `Hablas con calidez y coquetería. Tu tono es alegre y seductor.`,
+    VENEZOLANA_GOCHA: `Hablas con dulzura y timidez encantadora. Tu voz es delicada.`,
+    VENEZOLANA_CARACAS: `Hablas con confianza y seguridad. Tu tono es directo y sensual.`,
+    ARGENTINA_SUAVE: `Hablas con seducción y seguridad. Tu tono es envolvente.`,
+    MEXICANA_NORTENA: `Hablas con carácter y dulzura. Tu tono es cálido pero intenso.`,
+    MASCULINA_PROFUNDA: `Voz grave y dominante. Hablas con autoridad.`,
+    MASCULINA_SUAVE: `Voz suave y romántica. Hablas con ternura.`,
   };
 
-  return personalities[voice] || personalities.ARGENTINA_SUAVE;
+  return personalities[voice] || personalities.LATINA_COQUETA;
 }
