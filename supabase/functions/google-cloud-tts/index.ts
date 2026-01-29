@@ -17,71 +17,66 @@ interface GoogleVoice {
 interface VoiceConfig {
   languageCode: string;
   ssmlGender: Exclude<GoogleSsmlGender, "SSML_VOICE_GENDER_UNSPECIFIED">;
-  /** A soft preference; we'll only pick it if it exists in the real voices list. */
   preferNameIncludes?: string[];
   speakingRate?: number;
   pitch?: number;
 }
 
-// IMPORTANT: No hardcoded voice names.
-// We only specify languageCode + ssmlGender and then pick a real voice name
-// from Google's /voices endpoint (cached) to avoid INVALID_ARGUMENT errors.
 const VOICE_CONFIG: Record<string, VoiceConfig> = {
   COLOMBIANA_PAISA: {
     languageCode: "es-US",
     ssmlGender: "FEMALE",
     preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 1.05,
+    speakingRate: 1.0,
     pitch: 1.0,
   },
   VENEZOLANA_GOCHA: {
     languageCode: "es-US",
     ssmlGender: "FEMALE",
     preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 0.95,
+    speakingRate: 0.92,
     pitch: 0.5,
   },
   VENEZOLANA_CARACAS: {
     languageCode: "es-US",
     ssmlGender: "FEMALE",
     preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 1.1,
+    speakingRate: 1.05,
     pitch: 0,
   },
   ARGENTINA_SUAVE: {
     languageCode: "es-US",
     ssmlGender: "FEMALE",
     preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 0.95,
+    speakingRate: 0.92,
     pitch: -0.5,
   },
-  // Mexican accent: request es-MX; pick whatever real voice exists for that locale
   MEXICANA_NORTENA: {
     languageCode: "es-MX",
     ssmlGender: "FEMALE",
     preferNameIncludes: ["Wavenet", "Neural2", "Standard"],
-    speakingRate: 1.0,
+    speakingRate: 0.95,
     pitch: 0,
   },
   MASCULINA_PROFUNDA: {
     languageCode: "es-US",
     ssmlGender: "MALE",
     preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 0.9,
+    speakingRate: 0.88,
     pitch: -2,
   },
   MASCULINA_SUAVE: {
     languageCode: "es-US",
     ssmlGender: "MALE",
     preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 0.95,
+    speakingRate: 0.9,
     pitch: -1,
   },
 };
 
 let cachedVoices: GoogleVoice[] | null = null;
 let cachedVoicesAt = 0;
-const VOICES_TTL_MS = 1000 * 60 * 60; // 1h
+const VOICES_TTL_MS = 1000 * 60 * 60;
 
 async function getVoices(apiKey: string): Promise<GoogleVoice[]> {
   const now = Date.now();
@@ -91,7 +86,6 @@ async function getVoices(apiKey: string): Promise<GoogleVoice[]> {
   if (!res.ok) {
     const t = await res.text();
     console.error("Failed to fetch voices list:", res.status, t);
-    // Fallback to empty; request will still work without voice.name
     cachedVoices = [];
     cachedVoicesAt = now;
     return cachedVoices;
@@ -117,8 +111,92 @@ function pickVoiceName(voices: GoogleVoice[], cfg: VoiceConfig): string | undefi
     .flatMap((needle) => pool2.filter((v) => v.name?.includes(needle)));
   const pool3 = preferred.length ? preferred : pool2;
 
-  // Stable pick: first candidate
   return pool3[0]?.name;
+}
+
+/**
+ * Convert plain text to SSML with natural pauses, emphasis, and prosody.
+ * This makes the TTS output sound more conversational and expressive.
+ */
+function textToSSML(text: string): string {
+  let ssml = text;
+
+  // Escape XML special characters first
+  ssml = ssml
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+  // Add pauses for punctuation - natural conversation rhythm
+  // Ellipsis gets a longer thoughtful pause
+  ssml = ssml.replace(/\.{3,}/g, '<break time="600ms"/>');
+  
+  // Period followed by space or end - medium pause
+  ssml = ssml.replace(/\.(\s|$)/g, '.<break time="400ms"/>$1');
+  
+  // Comma - short breath pause
+  ssml = ssml.replace(/,(\s)/g, ',<break time="200ms"/>$1');
+  
+  // Semicolon and colon - medium pause
+  ssml = ssml.replace(/;(\s)/g, ';<break time="300ms"/>$1');
+  ssml = ssml.replace(/:(\s)/g, ':<break time="250ms"/>$1');
+  
+  // Question mark - pause with rising intonation feel
+  ssml = ssml.replace(/\?(\s|$)/g, '?<break time="450ms"/>$1');
+  
+  // Exclamation - slightly shorter energetic pause
+  ssml = ssml.replace(/!(\s|$)/g, '!<break time="350ms"/>$1');
+  
+  // Dash/hyphen used for interruption or aside
+  ssml = ssml.replace(/\s—\s/g, ' <break time="200ms"/>—<break time="200ms"/> ');
+  ssml = ssml.replace(/\s-\s/g, ' <break time="150ms"/>-<break time="150ms"/> ');
+
+  // Emphasize words in ALL CAPS (common in expressive text)
+  ssml = ssml.replace(/\b([A-ZÁÉÍÓÚÑ]{2,})\b/g, '<emphasis level="strong">$1</emphasis>');
+
+  // Handle common interjections with appropriate emphasis
+  const interjections = [
+    { pattern: /\b(ay|Ay|AY)\b/gi, replacement: '<emphasis level="moderate">ay</emphasis>' },
+    { pattern: /\b(uy|Uy|UY)\b/gi, replacement: '<emphasis level="moderate">uy</emphasis>' },
+    { pattern: /\b(oh|Oh|OH)\b/gi, replacement: '<emphasis level="moderate">oh</emphasis>' },
+    { pattern: /\b(ah|Ah|AH)\b/gi, replacement: '<emphasis level="moderate">ah</emphasis>' },
+    { pattern: /\b(eh|Eh|EH)\b/gi, replacement: '<emphasis level="moderate">eh</emphasis>' },
+    { pattern: /\b(mmm|Mmm|MMM)\b/gi, replacement: '<emphasis level="reduced">mmm</emphasis>' },
+    { pattern: /\b(hmm|Hmm|HMM)\b/gi, replacement: '<emphasis level="reduced">hmm</emphasis>' },
+  ];
+
+  for (const { pattern, replacement } of interjections) {
+    ssml = ssml.replace(pattern, replacement);
+  }
+
+  // Handle repeated letters for emphasis (e.g., "nooo", "síííí")
+  ssml = ssml.replace(/([aeiouáéíóú])\1{2,}/gi, (match) => {
+    const vowel = match[0];
+    return `<prosody rate="slow">${vowel}${vowel}${vowel}</prosody>`;
+  });
+
+  // Words indicating emotion get slight prosody changes
+  // Excitement/happiness
+  ssml = ssml.replace(
+    /\b(increíble|genial|maravilloso|fantástico|excelente|perfecto)\b/gi,
+    '<prosody pitch="+10%">$1</prosody>'
+  );
+  
+  // Sadness/worry
+  ssml = ssml.replace(
+    /\b(triste|preocupado|preocupada|nervioso|nerviosa|asustado|asustada)\b/gi,
+    '<prosody pitch="-10%" rate="95%">$1</prosody>'
+  );
+
+  // Add slight pause before question words for natural rhythm
+  ssml = ssml.replace(
+    /(\s)(qué|cómo|cuándo|dónde|por qué|quién|cuál)/gi,
+    '$1<break time="100ms"/>$2'
+  );
+
+  // Wrap in speak tags
+  return `<speak>${ssml}</speak>`;
 }
 
 serve(async (req) => {
@@ -145,20 +223,22 @@ serve(async (req) => {
       );
     }
 
-    // Get voice config or default to female Spanish voice
     const voiceConfig = VOICE_CONFIG[voiceType] || VOICE_CONFIG.ARGENTINA_SUAVE;
     
-    // Limit text length to avoid excessive costs
+    // Limit text length
     const cleanText = text.slice(0, 1000);
+    
+    // Convert to SSML for natural speech
+    const ssmlText = textToSSML(cleanText);
 
     const voices = await getVoices(apiKey);
     const pickedVoiceName = pickVoiceName(voices, voiceConfig);
     console.log(
-      `Generating TTS with Google Cloud for ${cleanText.length} chars, lang=${voiceConfig.languageCode}, picked=${pickedVoiceName ?? "(default)"}`
+      `Generating TTS with SSML for ${cleanText.length} chars, lang=${voiceConfig.languageCode}, picked=${pickedVoiceName ?? "(default)"}`
     );
 
     const requestBody = {
-      input: { text: cleanText },
+      input: { ssml: ssmlText },
       voice: {
         languageCode: voiceConfig.languageCode,
         ssmlGender: voiceConfig.ssmlGender,
@@ -168,7 +248,10 @@ serve(async (req) => {
         audioEncoding: "MP3",
         speakingRate: voiceConfig.speakingRate || 1.0,
         pitch: voiceConfig.pitch || 0,
-        effectsProfileId: ["small-bluetooth-speaker-class-device"],
+        // Use headphone profile for better quality
+        effectsProfileId: ["headphone-class-device"],
+        // Enable volume gain for clarity
+        volumeGainDb: 1.0,
       },
     };
 
@@ -209,7 +292,7 @@ serve(async (req) => {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    console.log(`Successfully generated ${bytes.length} bytes of audio`);
+    console.log(`Successfully generated ${bytes.length} bytes of audio with SSML`);
 
     return new Response(bytes.buffer, {
       headers: { ...corsHeaders, "Content-Type": "audio/mpeg" },
