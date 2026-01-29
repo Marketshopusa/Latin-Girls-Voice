@@ -241,6 +241,7 @@ const ChatPage = () => {
         <ChatInput
           characterName={character.name}
           onSend={handleSendMessage}
+          onRestart={() => character && resetConversationWithNewWelcome(character.welcomeMessage)}
           disabled={isTyping}
         />
       </div>
@@ -276,11 +277,7 @@ const ChatPage = () => {
 
       {/* Conversation List */}
       <div className="hidden lg:block h-screen overflow-hidden">
-        <ConversationList
-          characters={mockCharacters}
-          activeId={character.id}
-          onSelect={handleSelectConversation}
-        />
+        <ConversationList activeId={character.id} />
       </div>
 
       {/* Main Chat Area */}
@@ -346,6 +343,7 @@ const ChatPage = () => {
         <ChatInput
           characterName={character.name}
           onSend={handleSendMessage}
+          onRestart={() => character && resetConversationWithNewWelcome(character.welcomeMessage)}
           disabled={isTyping}
         />
       </div>
