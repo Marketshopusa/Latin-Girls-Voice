@@ -7,9 +7,11 @@ import { CharacterPanel } from '@/components/chat/CharacterPanel';
 import { CharacterConfigModal } from '@/components/characters/CharacterConfigModal';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
+import { MobileChatOverlay } from '@/components/chat/MobileChatOverlay';
 import { useConversation } from '@/hooks/useConversation';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useChatAI } from '@/hooks/useChatAI';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { mockCharacters } from '@/data/characters';
 import { Character, VoiceType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +19,7 @@ import { toast } from 'sonner';
 const ChatPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   const [character, setCharacter] = useState<Character | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -146,6 +149,113 @@ const ChatPage = () => {
     );
   }
 
+  // Helper function to check if URL is a video
+  const isVideoUrl = (url: string): boolean => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+    const lowerUrl = url.toLowerCase();
+    return videoExtensions.some(ext => lowerUrl.includes(ext));
+  };
+
+  // Background element for mobile overlay
+  const backgroundElement = (
+    <div className="w-full h-full">
+      {isVideoUrl(character.image) ? (
+        <video
+          src={character.image}
+          className="w-full h-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      ) : (
+        <img
+          src={character.image}
+          alt={character.name}
+          className="w-full h-full object-cover"
+          loading="eager"
+        />
+      )}
+    </div>
+  );
+
+  // Mobile chat content
+  const mobileChatContent = (
+    <>
+      {/* Mobile Header */}
+      <header className="flex items-center gap-4 px-4 py-3 bg-background/50 backdrop-blur-sm">
+        <button
+          onClick={() => navigate('/')}
+          className="p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        
+        <div className="flex-1 min-w-0">
+          <h2 className="font-display font-semibold text-outline">{character.name}</h2>
+        </div>
+      </header>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+        {messages.map((message) => (
+          <ChatBubble
+            key={message.id}
+            message={message}
+            characterName={character.name}
+            voiceType={character.voice}
+            autoPlay={message.id === lastAIMessageId}
+          />
+        ))}
+        
+        {isTyping && (
+          <div className="flex items-center gap-2 text-foreground text-sm text-outline">
+            <div className="flex gap-1">
+              <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+            <span>{character.name} está escribiendo...</span>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="bg-background/70 backdrop-blur-sm">
+        <ChatInput
+          characterName={character.name}
+          onSend={handleSendMessage}
+          disabled={isTyping}
+        />
+      </div>
+    </>
+  );
+
+  // Mobile layout
+  if (isMobile) {
+    return (
+      <>
+        <MobileChatOverlay
+          backgroundElement={backgroundElement}
+          characterName={character.name}
+        >
+          {mobileChatContent}
+        </MobileChatOverlay>
+
+        <CharacterConfigModal
+          character={character}
+          isOpen={isConfigOpen}
+          onClose={() => setIsConfigOpen(false)}
+          onSave={handleSaveConfig}
+        />
+      </>
+    );
+  }
+
+  // Desktop layout (unchanged)
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Icon Sidebar */}

@@ -88,6 +88,24 @@
     @apply rounded-2xl rounded-bl-sm px-4 py-3 border border-border;
   }
 
+  /* Mobile transparent chat bubbles with text outline for readability */
+  .chat-bubble-mobile-user {
+    @apply rounded-2xl rounded-br-sm px-4 py-3 bg-primary/80 backdrop-blur-sm;
+  }
+
+  .chat-bubble-mobile-ai {
+    @apply rounded-2xl rounded-bl-sm px-4 py-3 bg-card/70 backdrop-blur-sm border border-border/50;
+  }
+
+  .text-outline {
+    text-shadow: 
+      -1px -1px 0 hsl(var(--background)),
+      1px -1px 0 hsl(var(--background)),
+      -1px 1px 0 hsl(var(--background)),
+      1px 1px 0 hsl(var(--background)),
+      0 0 8px hsl(var(--background) / 0.8);
+  }
+
   .card-character {
     @apply relative overflow-hidden rounded-xl bg-card border border-border transition-all duration-300;
     box-shadow: var(--shadow-card);
