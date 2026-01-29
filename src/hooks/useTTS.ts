@@ -35,6 +35,7 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       const noOuterItalics = trimmed.replace(/^_/, "").replace(/_$/, "").trim();
       const lower = noOuterItalics.toLowerCase();
 
+      // Skip action and thought lines
       if (
         lower.startsWith("acción:") ||
         lower.startsWith("accion:") ||
@@ -48,12 +49,26 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
         .replace(/_\*\*$/, "")
         .trim();
 
-      const cleaned = unwrappedDialogue.replace(/\*|_/g, "").trim();
+      // Clean markdown but preserve punctuation for natural speech
+      let cleaned = unwrappedDialogue.replace(/\*|_/g, "").trim();
+      
+      // Normalize multiple spaces
+      cleaned = cleaned.replace(/\s+/g, " ");
+      
       if (cleaned) spoken.push(cleaned);
     }
 
-    const joined = spoken.join(" ");
-    const MAX_CHARS = 500;
+    // Join with proper sentence spacing
+    let joined = spoken.join(" ");
+    
+    // Ensure proper spacing after punctuation for natural pauses
+    joined = joined.replace(/([.!?])([A-ZÁÉÍÓÚÑ])/g, "$1 $2");
+    
+    // Add natural pause markers for emotional expressions
+    joined = joined.replace(/¡+/g, "¡");
+    joined = joined.replace(/¿+/g, "¿");
+    
+    const MAX_CHARS = 800; // Increased for more context
     return joined.length > MAX_CHARS ? joined.slice(0, MAX_CHARS) : joined;
   }, []);
 
