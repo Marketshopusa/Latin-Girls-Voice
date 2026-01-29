@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, ReactNode } from 'react';
+import { useState, useRef, ReactNode } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MobileChatOverlayProps {
@@ -60,23 +61,16 @@ export const MobileChatOverlay = ({
     return isHidden ? window.innerWidth : 0;
   };
 
+  const toggleVisibility = () => {
+    setIsHidden(!isHidden);
+  };
+
   return (
     <div className="relative h-screen w-full overflow-hidden">
       {/* Full-screen background with character image/video */}
       <div className="absolute inset-0 z-0">
         {backgroundElement}
       </div>
-
-      {/* Swipe indicator when chat is hidden */}
-      {isHidden && (
-        <button
-          onClick={() => setIsHidden(false)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-30 flex items-center gap-2 px-3 py-2 rounded-full bg-background/80 backdrop-blur-sm border border-border text-foreground text-sm animate-pulse"
-        >
-          <span>←</span>
-          <span>Desliza para chatear</span>
-        </button>
-      )}
 
       {/* Chat overlay with transparent background */}
       <div
@@ -99,12 +93,39 @@ export const MobileChatOverlay = ({
         <div className="relative z-10 flex flex-col h-full">
           {children}
         </div>
-
-        {/* Swipe hint at top when visible */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 backdrop-blur-sm text-muted-foreground text-xs">
-          <span>Desliza → para ver a {characterName}</span>
-        </div>
       </div>
+
+      {/* Bottom Arrow Indicator - Always visible */}
+      <button
+        onClick={toggleVisibility}
+        className={cn(
+          "fixed bottom-24 z-30 flex items-center gap-2 px-4 py-3 rounded-full",
+          "bg-background/40 backdrop-blur-md border border-border/30",
+          "text-foreground/80 text-sm font-medium",
+          "transition-all duration-300 hover:bg-background/60",
+          "shadow-lg",
+          isHidden ? "left-4" : "right-4"
+        )}
+      >
+        {isHidden ? (
+          <>
+            <ChevronLeft className="h-5 w-5 animate-pulse" />
+            <span className="hidden sm:inline">Volver al chat</span>
+          </>
+        ) : (
+          <>
+            <span className="hidden sm:inline">Ver a {characterName}</span>
+            <ChevronRight className="h-5 w-5 animate-pulse" />
+          </>
+        )}
+      </button>
+
+      {/* Swipe hint at top when chat is visible */}
+      {!isHidden && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/40 backdrop-blur-sm text-muted-foreground/80 text-xs">
+          <span>Desliza → o toca el botón para ver a {characterName}</span>
+        </div>
+      )}
     </div>
   );
 };
