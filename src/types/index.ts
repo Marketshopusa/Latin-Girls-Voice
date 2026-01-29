@@ -1,12 +1,17 @@
-// === Catálogo oficial de voces Neural2 de Google Cloud TTS ===
-// Solo usamos voces Neural2 (la mejor calidad de Google) sin fallbacks.
+// === Catálogo de voces Gemini 2.5 Flash TTS ===
+// Voces naturales con control de acentos latinos via prompting
 
 export type VoiceType = 
-  | 'LATINA_CALIDA'      // es-US-Neural2-A (femenina, cálida, natural)
-  | 'LATINA_COQUETA'     // es-US-Neural2-A con ajuste sutil para tono más íntimo
-  | 'MEXICANA_DULCE'     // es-MX-Neural2-A (femenina mexicana, dulce)
-  | 'LATINO_PROFUNDO'    // es-US-Neural2-B (masculino, grave, estable)
-  | 'LATINO_SUAVE';      // es-US-Neural2-C (masculino, suave, cercano)
+  // Voces base (estilo de personalidad)
+  | 'LATINA_CALIDA'      // Kore - femenina cálida y maternal
+  | 'LATINA_COQUETA'     // Kore - femenina seductora y coqueta
+  | 'MEXICANA_DULCE'     // Aoede - femenina mexicana dulce
+  | 'LATINO_PROFUNDO'    // Charon - masculino grave y dominante
+  | 'LATINO_SUAVE'       // Puck - masculino suave y romántico
+  // Acentos regionales específicos (Gemini)
+  | 'VENEZOLANA'         // Kore - acento venezolano auténtico
+  | 'COLOMBIANA'         // Kore - acento colombiano paisa
+  | 'ARGENTINA';         // Aoede - acento argentino rioplatense
 
 export interface Character {
   id: string;
@@ -40,13 +45,14 @@ export interface Conversation {
   updatedAt: Date;
 }
 
-// Catálogo de voces - solo Neural2 de Google Cloud
+// Catálogo de voces Gemini TTS
 export const VOICE_OPTIONS: { id: VoiceType; label: string; icon: string; description: string }[] = [
+  // === Voces femeninas ===
   { 
     id: 'LATINA_CALIDA', 
     label: 'Cálida', 
     icon: '🌸', 
-    description: 'Voz femenina cálida y natural, perfecta para conversaciones íntimas' 
+    description: 'Voz femenina cálida y maternal, perfecta para conversaciones íntimas' 
   },
   { 
     id: 'LATINA_COQUETA', 
@@ -56,20 +62,39 @@ export const VOICE_OPTIONS: { id: VoiceType; label: string; icon: string; descri
   },
   { 
     id: 'MEXICANA_DULCE', 
-    label: 'Mexicana Dulce', 
+    label: 'Mexicana', 
     icon: '🇲🇽', 
     description: 'Voz femenina con acento mexicano suave y encantador' 
   },
   { 
+    id: 'VENEZOLANA', 
+    label: 'Venezolana', 
+    icon: '🇻🇪', 
+    description: 'Acento venezolano auténtico con musicalidad caribeña' 
+  },
+  { 
+    id: 'COLOMBIANA', 
+    label: 'Colombiana', 
+    icon: '🇨🇴', 
+    description: 'Acento colombiano paisa, cálido y alegre' 
+  },
+  { 
+    id: 'ARGENTINA', 
+    label: 'Argentina', 
+    icon: '🇦🇷', 
+    description: 'Acento argentino rioplatense con voseo característico' 
+  },
+  // === Voces masculinas ===
+  { 
     id: 'LATINO_PROFUNDO', 
     label: 'Profundo', 
     icon: '🔥', 
-    description: 'Voz masculina grave y dominante, transmite seguridad' 
+    description: 'Voz masculina grave y dominante, transmite autoridad' 
   },
   { 
     id: 'LATINO_SUAVE', 
     label: 'Suave', 
     icon: '💫', 
-    description: 'Voz masculina suave y cercana, reconfortante y amable' 
+    description: 'Voz masculina suave y romántica, reconfortante' 
   },
 ];
