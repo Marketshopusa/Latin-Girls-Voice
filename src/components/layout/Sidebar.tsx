@@ -62,10 +62,10 @@ export const Sidebar = () => {
       <aside className="fixed left-0 top-0 z-40 h-screen w-16 lg:w-56 bg-sidebar border-r border-sidebar-border flex flex-col">
         {/* Logo */}
         <div className="h-16 flex items-center px-4 lg:px-6 border-b border-sidebar-border">
-          <h1 className="text-xl font-display font-bold text-primary glow-text hidden lg:block">
-            MATE
+          <h1 className="text-xl font-display font-bold hidden lg:block logo-3d-gold">
+            Glatinas.ai
           </h1>
-          <span className="text-xl font-display font-bold text-primary glow-text lg:hidden">M</span>
+          <span className="text-xl font-display font-bold lg:hidden logo-3d-gold">G</span>
         </div>
 
         {/* Navigation */}
