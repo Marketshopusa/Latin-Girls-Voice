@@ -6,54 +6,50 @@ const corsHeaders = {
 };
 
 /**
- * Voice configuration using EXACT Google Cloud TTS voice names.
- * No pitch or rate modifications - let Google's neural voices speak naturally.
- * 
- * Available Spanish voices from Google Cloud TTS:
- * - es-ES (Spain): Neural2-A/B/C/D/E/F, Wavenet, Standard
- * - es-US (Latin America): Neural2-A/B/C, Wavenet, Standard  
- * - es-MX (Mexico): Wavenet-A/B/C, Standard
- * 
- * Note: Google does NOT have specific voices for Venezuela, Colombia, or Argentina.
- * es-US is the general Latin American Spanish accent.
+ * Catálogo de voces Neural2 de Google Cloud TTS.
+ * Solo usamos Neural2 (la mejor calidad).
+ * NO hay modificaciones de pitch/rate - dejamos que Google maneje la prosodia naturalmente.
  */
 
 interface VoiceConfig {
   voiceName: string;
   languageCode: string;
-  description: string;
+  ssmlGender: "FEMALE" | "MALE";
 }
 
-// Map our voice types to exact Google Cloud TTS voice names
-// Using Neural2 for best quality, with no pitch/rate modifications
+// Mapeo de nuestros tipos de voz a las voces exactas de Google Cloud
 const VOICE_CONFIG: Record<string, VoiceConfig> = {
-  // Catálogo limpio (solo voces Google Cloud)
-  LATINA_FEMENINA_1: {
+  // Voces femeninas latinas (Neural2 - máxima calidad)
+  LATINA_CALIDA: {
     voiceName: "es-US-Neural2-A",
     languageCode: "es-US",
-    description: "Latin American Spanish female voice (Neural2)",
+    ssmlGender: "FEMALE",
   },
-  LATINA_FEMENINA_2: {
-    voiceName: "es-US-Wavenet-A",
+  LATINA_COQUETA: {
+    voiceName: "es-US-Neural2-A",
     languageCode: "es-US",
-    description: "Latin American Spanish female voice (Wavenet)",
+    ssmlGender: "FEMALE",
   },
-  MEXICANA_FEMENINA: {
-    voiceName: "es-MX-Wavenet-A",
+  MEXICANA_DULCE: {
+    voiceName: "es-MX-Neural2-A",
     languageCode: "es-MX",
-    description: "Mexican Spanish female voice (Wavenet)",
+    ssmlGender: "FEMALE",
   },
-  LATINA_MASCULINA_1: {
+  // Voces masculinas latinas (Neural2)
+  LATINO_PROFUNDO: {
     voiceName: "es-US-Neural2-B",
     languageCode: "es-US",
-    description: "Latin American Spanish male voice (Neural2)",
+    ssmlGender: "MALE",
   },
-  LATINA_MASCULINA_2: {
+  LATINO_SUAVE: {
     voiceName: "es-US-Neural2-C",
     languageCode: "es-US",
-    description: "Latin American Spanish male voice (Neural2)",
+    ssmlGender: "MALE",
   },
 };
+
+// Fallback para voces legacy (mapear a LATINA_COQUETA)
+const DEFAULT_VOICE: VoiceConfig = VOICE_CONFIG.LATINA_COQUETA;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -79,28 +75,28 @@ serve(async (req) => {
       );
     }
 
-    // Get voice configuration - default to a Neural2 voice
-    const voiceConfig = VOICE_CONFIG[voiceType] || VOICE_CONFIG.LATINA_FEMENINA_1;
+    // Obtener configuración de voz - usar default si no existe
+    const voiceConfig = VOICE_CONFIG[voiceType] || DEFAULT_VOICE;
     
-    // Clean text - limit length but preserve natural punctuation
-    const cleanText = text.slice(0, 1500);
+    // Limpiar texto - preservar puntuación natural para pausas correctas
+    const cleanText = text.slice(0, 2000);
 
     console.log(
-      `Generating TTS: ${cleanText.length} chars, voice=${voiceConfig.voiceName}, lang=${voiceConfig.languageCode}`
+      `TTS Request: ${cleanText.length} chars, voice=${voiceConfig.voiceName}, lang=${voiceConfig.languageCode}`
     );
 
-    // Use plain text input - let Neural2/Wavenet handle natural speech patterns
-    // No SSML, no pitch/rate modifications - pure Google voice quality
+    // Request simple con texto plano - SIN SSML, SIN modificaciones de pitch/rate
+    // Dejamos que Neural2 maneje TODO naturalmente
     const requestBody = {
       input: { text: cleanText },
       voice: {
         languageCode: voiceConfig.languageCode,
         name: voiceConfig.voiceName,
+        ssmlGender: voiceConfig.ssmlGender,
       },
       audioConfig: {
         audioEncoding: "MP3",
-        // Let Google use default speaking rate (1.0) and pitch (0)
-        // No modifications that could make it sound artificial
+        // Sin pitch, sin speakingRate - valores por defecto de Google
         effectsProfileId: ["headphone-class-device"],
       },
     };
@@ -109,9 +105,7 @@ serve(async (req) => {
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
       }
     );
@@ -135,14 +129,14 @@ serve(async (req) => {
       );
     }
 
-    // Decode base64 audio content
+    // Decodificar audio base64
     const binaryString = atob(data.audioContent);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    console.log(`Successfully generated ${bytes.length} bytes of audio`);
+    console.log(`TTS Success: ${bytes.length} bytes of audio generated`);
 
     return new Response(bytes.buffer, {
       headers: { ...corsHeaders, "Content-Type": "audio/mpeg" },

@@ -20,17 +20,24 @@ interface DbCharacter {
   updated_at: string;
 }
 
-const DEFAULT_VOICE: VoiceType = 'LATINA_FEMENINA_1';
+// Voces válidas del nuevo catálogo Neural2
 const ALLOWED_VOICES = new Set<string>([
-  'LATINA_FEMENINA_1',
-  'LATINA_FEMENINA_2',
-  'MEXICANA_FEMENINA',
-  'LATINA_MASCULINA_1',
-  'LATINA_MASCULINA_2',
+  'LATINA_CALIDA',
+  'LATINA_COQUETA',
+  'MEXICANA_DULCE',
+  'LATINO_PROFUNDO',
+  'LATINO_SUAVE',
 ]);
 
+// Por defecto, todos los personajes usan LATINA_COQUETA (como eligió el usuario)
+const DEFAULT_VOICE: VoiceType = 'LATINA_COQUETA';
+
+// Normalizar voces legacy a las nuevas
 const normalizeVoiceType = (voice: string | null | undefined): VoiceType => {
-  if (voice && ALLOWED_VOICES.has(voice)) return voice as VoiceType;
+  if (voice && ALLOWED_VOICES.has(voice)) {
+    return voice as VoiceType;
+  }
+  // Mapear voces legacy - todas van a LATINA_COQUETA
   return DEFAULT_VOICE;
 };
 
@@ -56,8 +63,6 @@ export const useCharacters = () => {
   const fetchCharacters = async () => {
     setLoading(true);
     try {
-      // Fetch characters based on NSFW setting
-      // Using .from() with explicit type casting since the table was just created
       const { data, error } = await supabase
         .from('characters' as any)
         .select('*')
@@ -66,24 +71,20 @@ export const useCharacters = () => {
 
       if (error) {
         console.error('Error fetching characters:', error);
-        // Fallback to mock characters filtered by nsfw
         const filtered = mockCharacters.filter(c => nsfwEnabled || !c.nsfw);
         setCharacters(filtered);
         return;
       }
 
-      // Filter DB characters by NSFW setting
+      // Filtrar por NSFW
       const filteredDbCharacters = (data || [])
         .filter(c => nsfwEnabled || !c.nsfw)
         .map(mapDbToCharacter);
       
-      // Filter mock characters by NSFW setting
       const filteredMocks = mockCharacters.filter(c => nsfwEnabled || !c.nsfw);
       
-      // Combine DB characters (priority) with filtered mock characters
+      // Combinar (DB tiene prioridad)
       const allCharacters = [...filteredDbCharacters, ...filteredMocks];
-      
-      // Remove duplicates by id (DB characters take priority)
       const uniqueCharacters = allCharacters.filter((c, index, self) => 
         index === self.findIndex(t => t.id === c.id)
       );
@@ -111,7 +112,6 @@ export const useCreateCharacter = () => {
 
   const uploadImage = async (imageDataUrl: string): Promise<string | null> => {
     try {
-      // Convert base64 to blob
       const response = await fetch(imageDataUrl);
       const blob = await response.blob();
       
@@ -156,7 +156,6 @@ export const useCreateCharacter = () => {
     try {
       let imageUrl: string | null = null;
       
-      // Upload image if provided
       if (characterData.image && characterData.image.startsWith('data:')) {
         imageUrl = await uploadImage(characterData.image);
       } else if (characterData.image) {
