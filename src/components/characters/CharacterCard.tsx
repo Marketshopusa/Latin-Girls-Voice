@@ -26,21 +26,25 @@ export const CharacterCard = forwardRef<HTMLDivElement, CharacterCardProps>(
         onClick={() => onClick(character)}
       >
         {/* Image or Video */}
-        <div className="relative aspect-[3/4] overflow-hidden">
+        <div className="relative aspect-[3/4] overflow-hidden bg-card">
           {isVideo ? (
             <video
               src={character.image}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
               autoPlay
               loop
               muted
               playsInline
+              style={{ imageRendering: 'auto' }}
             />
           ) : (
             <img
               src={character.image}
               alt={character.name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+              loading="eager"
+              decoding="async"
+              style={{ imageRendering: 'auto' }}
             />
           )}
           

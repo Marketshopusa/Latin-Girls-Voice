@@ -20,21 +20,25 @@ export const CharacterPanel = ({ character, onOpenDetails }: CharacterPanelProps
   return (
     <div className="w-[480px] bg-card flex flex-col h-screen relative">
       {/* Full-height character image or video */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 flex items-start justify-center bg-card">
         {isVideo ? (
           <video
             src={character.image}
-            className="w-full h-full object-cover object-top"
+            className="w-full h-full object-contain object-top"
             autoPlay
             loop
             muted
             playsInline
+            style={{ imageRendering: 'auto' }}
           />
         ) : (
           <img
             src={character.image}
             alt={character.name}
-            className="w-full h-full object-cover object-top"
+            className="w-full h-full object-contain object-top"
+            loading="eager"
+            decoding="async"
+            style={{ imageRendering: 'auto' }}
           />
         )}
         {/* Gradient overlay at bottom for text readability */}
