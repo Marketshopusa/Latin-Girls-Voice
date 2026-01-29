@@ -123,7 +123,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      characters_public: {
+        Row: {
+          age: number | null
+          created_at: string | null
+          history: string | null
+          id: string | null
+          image_url: string | null
+          is_public: boolean | null
+          name: string | null
+          nsfw: boolean | null
+          tagline: string | null
+          updated_at: string | null
+          voice: string | null
+          welcome_message: string | null
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string | null
+          history?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          name?: string | null
+          nsfw?: boolean | null
+          tagline?: string | null
+          updated_at?: string | null
+          voice?: string | null
+          welcome_message?: string | null
+        }
+        Update: {
+          age?: number | null
+          created_at?: string | null
+          history?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_public?: boolean | null
+          name?: string | null
+          nsfw?: boolean | null
+          tagline?: string | null
+          updated_at?: string | null
+          voice?: string | null
+          welcome_message?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       is_conversation_owner: {
