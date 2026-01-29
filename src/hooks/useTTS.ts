@@ -5,6 +5,19 @@ interface UseTTSOptions {
   voiceType: VoiceType;
 }
 
+// Mapeo de voces regionales a voces Google Cloud TTS
+const VOICE_TO_GOOGLE_CLOUD: Record<string, string> = {
+  'LATINA_CALIDA': 'LATINA_CALIDA',
+  'LATINA_COQUETA': 'LATINA_COQUETA',
+  'MEXICANA_DULCE': 'MEXICANA_DULCE',
+  'LATINO_PROFUNDO': 'LATINO_PROFUNDO',
+  'LATINO_SUAVE': 'LATINO_SUAVE',
+  // Acentos regionales mapean a voces Google Cloud similares
+  'VENEZOLANA': 'LATINA_COQUETA',
+  'COLOMBIANA': 'LATINA_CALIDA',
+  'ARGENTINA': 'MEXICANA_DULCE',
+};
+
 export const useTTS = ({ voiceType }: UseTTSOptions) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -55,6 +68,22 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
     setIsPlaying(false);
   }, []);
 
+  // Llamar a un endpoint TTS específico
+  const callTTSEndpoint = async (endpoint: string, text: string, voice: string): Promise<Response> => {
+    return fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${endpoint}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ text, voiceType: voice }),
+      }
+    );
+  };
+
   const playAudio = useCallback(async (text: string) => {
     if (isLoading) return;
 
@@ -75,23 +104,13 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
 
       console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}`);
 
-      // Usar Gemini-TTS unificado vía Cloud TTS (150 req/min)
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-cloud-tts`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ text: ttsText, voiceType }),
-        }
-      );
+      // Primario: Google Cloud TTS (Neural2 - cuota generosa de 1000 req/min)
+      const googleVoice = VOICE_TO_GOOGLE_CLOUD[voiceType] || 'LATINA_COQUETA';
+      const response = await callTTSEndpoint("google-cloud-tts", ttsText, googleVoice);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error("TTS error:", response.status, errorData);
+        console.error("Google Cloud TTS error:", response.status, errorData);
         throw new Error(`Error de voz: ${response.status}`);
       }
 
