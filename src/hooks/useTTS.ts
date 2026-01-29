@@ -12,46 +12,36 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
-  // Preparar texto para TTS - SOLO diálogo (formato **_texto_**)
+  // Preparar texto para TTS - SOLO diálogo (extrae TODOS los bloques **_..._** aunque vengan en la misma línea)
   const prepareTextForTTS = useCallback((raw: string): string => {
-    const lines = raw.split("\n");
     const dialogueOnly: string[] = [];
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-
-      // SOLO extraer diálogo: líneas que empiezan con **_ y terminan con _**
-      if (/^\*\*_.*_\*\*$/.test(trimmed)) {
-        // Extraer solo el contenido del diálogo
-        const dialogueContent = trimmed
-          .replace(/^\*\*_/, "")
-          .replace(/_\*\*$/, "")
-          .trim();
-        
-        if (dialogueContent) {
-          dialogueOnly.push(dialogueContent);
-        }
-      }
+    // Match no-greedy across lines
+    const re = /\*\*_(.+?)_\*\*/gs;
+    for (const match of raw.matchAll(re)) {
+      const content = (match[1] || "").trim();
+      if (content) dialogueOnly.push(content);
     }
 
     // Si no hay diálogo formateado, no reproducir nada
-    if (dialogueOnly.length === 0) {
-      return "";
-    }
+    if (dialogueOnly.length === 0) return "";
 
     // Unir diálogos con espacios
     let joined = dialogueOnly.join(" ");
-    
-    // Normalizar espacios múltiples
-    joined = joined.replace(/\s+/g, " ");
-    
+
+    // Limpieza defensiva por si llega markdown suelto
+    joined = joined
+      .replace(/\*\*/g, "")
+      .replace(/_/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
     // Asegurar espaciado correcto después de puntuación
     joined = joined.replace(/([.!?])([A-ZÁÉÍÓÚÑ])/g, "$1 $2");
-    
+
     // Normalizar signos de exclamación/interrogación
     joined = joined.replace(/¡+/g, "¡").replace(/¿+/g, "¿");
-    
+
     // Límite de caracteres para TTS
     const MAX_CHARS = 1500;
     return joined.length > MAX_CHARS ? joined.slice(0, MAX_CHARS) : joined;
