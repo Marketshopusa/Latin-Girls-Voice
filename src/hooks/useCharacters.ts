@@ -20,6 +20,20 @@ interface DbCharacter {
   updated_at: string;
 }
 
+const DEFAULT_VOICE: VoiceType = 'LATINA_FEMENINA_1';
+const ALLOWED_VOICES = new Set<string>([
+  'LATINA_FEMENINA_1',
+  'LATINA_FEMENINA_2',
+  'MEXICANA_FEMENINA',
+  'LATINA_MASCULINA_1',
+  'LATINA_MASCULINA_2',
+]);
+
+const normalizeVoiceType = (voice: string | null | undefined): VoiceType => {
+  if (voice && ALLOWED_VOICES.has(voice)) return voice as VoiceType;
+  return DEFAULT_VOICE;
+};
+
 const mapDbToCharacter = (db: DbCharacter): Character => ({
   id: db.id,
   name: db.name,
@@ -29,7 +43,7 @@ const mapDbToCharacter = (db: DbCharacter): Character => ({
   welcomeMessage: db.welcome_message,
   image: db.image_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop',
   tags: db.nsfw ? ['NSFW', '+18'] : ['SFW'],
-  voice: db.voice as VoiceType,
+  voice: normalizeVoiceType(db.voice),
   nsfw: db.nsfw,
   style: 'Realistic',
 });

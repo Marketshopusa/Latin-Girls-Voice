@@ -27,7 +27,7 @@ interface VoiceConfig {
 // Map our voice types to exact Google Cloud TTS voice names
 // Using Neural2 for best quality, with no pitch/rate modifications
 const VOICE_CONFIG: Record<string, VoiceConfig> = {
-  // New simplified voice types
+  // Catálogo limpio (solo voces Google Cloud)
   LATINA_FEMENINA_1: {
     voiceName: "es-US-Neural2-A",
     languageCode: "es-US",
@@ -49,43 +49,6 @@ const VOICE_CONFIG: Record<string, VoiceConfig> = {
     description: "Latin American Spanish male voice (Neural2)",
   },
   LATINA_MASCULINA_2: {
-    voiceName: "es-US-Neural2-C",
-    languageCode: "es-US",
-    description: "Latin American Spanish male voice (Neural2)",
-  },
-  
-  // Legacy voice types for backward compatibility
-  COLOMBIANA_PAISA: {
-    voiceName: "es-US-Neural2-A",
-    languageCode: "es-US",
-    description: "Latin American Spanish female voice (Neural2)",
-  },
-  VENEZOLANA_GOCHA: {
-    voiceName: "es-US-Wavenet-A",
-    languageCode: "es-US",
-    description: "Latin American Spanish female voice (Wavenet)",
-  },
-  VENEZOLANA_CARACAS: {
-    voiceName: "es-US-Neural2-A",
-    languageCode: "es-US",
-    description: "Latin American Spanish female voice (Neural2)",
-  },
-  ARGENTINA_SUAVE: {
-    voiceName: "es-US-Wavenet-A",
-    languageCode: "es-US",
-    description: "Latin American Spanish female voice (Wavenet)",
-  },
-  MEXICANA_NORTENA: {
-    voiceName: "es-MX-Wavenet-A",
-    languageCode: "es-MX",
-    description: "Mexican Spanish female voice (Wavenet)",
-  },
-  MASCULINA_PROFUNDA: {
-    voiceName: "es-US-Neural2-B",
-    languageCode: "es-US",
-    description: "Latin American Spanish male voice (Neural2)",
-  },
-  MASCULINA_SUAVE: {
     voiceName: "es-US-Neural2-C",
     languageCode: "es-US",
     description: "Latin American Spanish male voice (Neural2)",
@@ -117,7 +80,7 @@ serve(async (req) => {
     }
 
     // Get voice configuration - default to a Neural2 voice
-    const voiceConfig = VOICE_CONFIG[voiceType] || VOICE_CONFIG.ARGENTINA_SUAVE;
+    const voiceConfig = VOICE_CONFIG[voiceType] || VOICE_CONFIG.LATINA_FEMENINA_1;
     
     // Clean text - limit length but preserve natural punctuation
     const cleanText = text.slice(0, 1500);
