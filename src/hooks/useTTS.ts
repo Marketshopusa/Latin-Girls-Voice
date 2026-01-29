@@ -5,14 +5,15 @@ interface UseTTSOptions {
   voiceType: VoiceType;
 }
 
-// Mapeo de voces Gemini a Google Cloud TTS para fallback
-const GEMINI_TO_GOOGLE_FALLBACK: Record<string, string> = {
+// Mapeo de voces para Google Cloud TTS (primario) y Gemini (fallback)
+// Google Cloud no tiene acentos regionales específicos, así que mapeamos a voces similares
+const VOICE_TO_GOOGLE_CLOUD: Record<string, string> = {
   'LATINA_CALIDA': 'LATINA_CALIDA',
   'LATINA_COQUETA': 'LATINA_COQUETA',
   'MEXICANA_DULCE': 'MEXICANA_DULCE',
   'LATINO_PROFUNDO': 'LATINO_PROFUNDO',
   'LATINO_SUAVE': 'LATINO_SUAVE',
-  // Los acentos regionales de Gemini mapean a voces similares en Google Cloud
+  // Acentos regionales mapean a voces Google Cloud similares
   'VENEZOLANA': 'LATINA_COQUETA',
   'COLOMBIANA': 'LATINA_CALIDA',
   'ARGENTINA': 'MEXICANA_DULCE',
@@ -104,26 +105,24 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
 
       console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}`);
 
-      // Intentar primero con Gemini TTS
-      let response = await callTTSEndpoint("gemini-tts", ttsText, voiceType);
+      // Primario: Google Cloud TTS (más generoso en cuota)
+      const googleVoice = VOICE_TO_GOOGLE_CLOUD[voiceType] || 'LATINA_COQUETA';
+      let response = await callTTSEndpoint("google-cloud-tts", ttsText, googleVoice);
 
-      // Si Gemini falla (429 rate limit u otro error), usar Google Cloud TTS como fallback
+      // Fallback: Gemini TTS si Google Cloud falla
       if (!response.ok) {
         const errorStatus = response.status;
-        console.warn(`Gemini TTS failed (${errorStatus}), falling back to Google Cloud TTS`);
+        console.warn(`Google Cloud TTS failed (${errorStatus}), falling back to Gemini TTS`);
         
-        // Mapear la voz de Gemini a una equivalente de Google Cloud
-        const fallbackVoice = GEMINI_TO_GOOGLE_FALLBACK[voiceType] || 'LATINA_COQUETA';
-        
-        response = await callTTSEndpoint("google-cloud-tts", ttsText, fallbackVoice);
+        response = await callTTSEndpoint("gemini-tts", ttsText, voiceType);
         
         if (!response.ok) {
           const errorData = await response.text();
-          console.error("Google Cloud TTS fallback also failed:", response.status, errorData);
+          console.error("Gemini TTS fallback also failed:", response.status, errorData);
           throw new Error(`Error de voz: ${response.status}`);
         }
         
-        console.log("Using Google Cloud TTS fallback successfully");
+        console.log("Using Gemini TTS fallback successfully");
       }
 
       const contentType = response.headers.get('content-type') || '';
