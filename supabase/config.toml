@@ -18,5 +18,8 @@ verify_jwt = false
 [functions.gemini-tts]
 verify_jwt = false
 
+[functions.gemini-cloud-tts]
+verify_jwt = false
+
 [functions.chat-ai]
 verify_jwt = false
