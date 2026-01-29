@@ -5,199 +5,92 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-type GoogleSsmlGender = "SSML_VOICE_GENDER_UNSPECIFIED" | "MALE" | "FEMALE" | "NEUTRAL";
-
-interface GoogleVoice {
-  name: string;
-  languageCodes: string[];
-  ssmlGender: GoogleSsmlGender;
-  naturalSampleRateHertz: number;
-}
+/**
+ * Voice configuration using EXACT Google Cloud TTS voice names.
+ * No pitch or rate modifications - let Google's neural voices speak naturally.
+ * 
+ * Available Spanish voices from Google Cloud TTS:
+ * - es-ES (Spain): Neural2-A/B/C/D/E/F, Wavenet, Standard
+ * - es-US (Latin America): Neural2-A/B/C, Wavenet, Standard  
+ * - es-MX (Mexico): Wavenet-A/B/C, Standard
+ * 
+ * Note: Google does NOT have specific voices for Venezuela, Colombia, or Argentina.
+ * es-US is the general Latin American Spanish accent.
+ */
 
 interface VoiceConfig {
+  voiceName: string;
   languageCode: string;
-  ssmlGender: Exclude<GoogleSsmlGender, "SSML_VOICE_GENDER_UNSPECIFIED">;
-  preferNameIncludes?: string[];
-  speakingRate?: number;
-  pitch?: number;
+  description: string;
 }
 
+// Map our voice types to exact Google Cloud TTS voice names
+// Using Neural2 for best quality, with no pitch/rate modifications
 const VOICE_CONFIG: Record<string, VoiceConfig> = {
-  COLOMBIANA_PAISA: {
+  // New simplified voice types
+  LATINA_FEMENINA_1: {
+    voiceName: "es-US-Neural2-A",
     languageCode: "es-US",
-    ssmlGender: "FEMALE",
-    preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 1.0,
-    pitch: 1.0,
+    description: "Latin American Spanish female voice (Neural2)",
+  },
+  LATINA_FEMENINA_2: {
+    voiceName: "es-US-Wavenet-A",
+    languageCode: "es-US",
+    description: "Latin American Spanish female voice (Wavenet)",
+  },
+  MEXICANA_FEMENINA: {
+    voiceName: "es-MX-Wavenet-A",
+    languageCode: "es-MX",
+    description: "Mexican Spanish female voice (Wavenet)",
+  },
+  LATINA_MASCULINA_1: {
+    voiceName: "es-US-Neural2-B",
+    languageCode: "es-US",
+    description: "Latin American Spanish male voice (Neural2)",
+  },
+  LATINA_MASCULINA_2: {
+    voiceName: "es-US-Neural2-C",
+    languageCode: "es-US",
+    description: "Latin American Spanish male voice (Neural2)",
+  },
+  
+  // Legacy voice types for backward compatibility
+  COLOMBIANA_PAISA: {
+    voiceName: "es-US-Neural2-A",
+    languageCode: "es-US",
+    description: "Latin American Spanish female voice (Neural2)",
   },
   VENEZOLANA_GOCHA: {
+    voiceName: "es-US-Wavenet-A",
     languageCode: "es-US",
-    ssmlGender: "FEMALE",
-    preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 0.92,
-    pitch: 0.5,
+    description: "Latin American Spanish female voice (Wavenet)",
   },
   VENEZOLANA_CARACAS: {
+    voiceName: "es-US-Neural2-A",
     languageCode: "es-US",
-    ssmlGender: "FEMALE",
-    preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 1.05,
-    pitch: 0,
+    description: "Latin American Spanish female voice (Neural2)",
   },
   ARGENTINA_SUAVE: {
+    voiceName: "es-US-Wavenet-A",
     languageCode: "es-US",
-    ssmlGender: "FEMALE",
-    preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 0.92,
-    pitch: -0.5,
+    description: "Latin American Spanish female voice (Wavenet)",
   },
   MEXICANA_NORTENA: {
+    voiceName: "es-MX-Wavenet-A",
     languageCode: "es-MX",
-    ssmlGender: "FEMALE",
-    preferNameIncludes: ["Wavenet", "Neural2", "Standard"],
-    speakingRate: 0.95,
-    pitch: 0,
+    description: "Mexican Spanish female voice (Wavenet)",
   },
   MASCULINA_PROFUNDA: {
+    voiceName: "es-US-Neural2-B",
     languageCode: "es-US",
-    ssmlGender: "MALE",
-    preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 0.88,
-    pitch: -2,
+    description: "Latin American Spanish male voice (Neural2)",
   },
   MASCULINA_SUAVE: {
+    voiceName: "es-US-Neural2-C",
     languageCode: "es-US",
-    ssmlGender: "MALE",
-    preferNameIncludes: ["Neural2", "Wavenet"],
-    speakingRate: 0.9,
-    pitch: -1,
+    description: "Latin American Spanish male voice (Neural2)",
   },
 };
-
-let cachedVoices: GoogleVoice[] | null = null;
-let cachedVoicesAt = 0;
-const VOICES_TTL_MS = 1000 * 60 * 60;
-
-async function getVoices(apiKey: string): Promise<GoogleVoice[]> {
-  const now = Date.now();
-  if (cachedVoices && now - cachedVoicesAt < VOICES_TTL_MS) return cachedVoices;
-
-  const res = await fetch(`https://texttospeech.googleapis.com/v1/voices?key=${apiKey}`);
-  if (!res.ok) {
-    const t = await res.text();
-    console.error("Failed to fetch voices list:", res.status, t);
-    cachedVoices = [];
-    cachedVoicesAt = now;
-    return cachedVoices;
-  }
-
-  const data = await res.json().catch(() => ({}));
-  const voices = (data?.voices || []) as GoogleVoice[];
-  cachedVoices = voices;
-  cachedVoicesAt = now;
-  return voices;
-}
-
-function pickVoiceName(voices: GoogleVoice[], cfg: VoiceConfig): string | undefined {
-  if (!voices.length) return undefined;
-
-  const langMatches = voices.filter((v) => v.languageCodes?.includes(cfg.languageCode));
-  const pool1 = langMatches.length ? langMatches : voices;
-
-  const genderMatches = pool1.filter((v) => v.ssmlGender === cfg.ssmlGender);
-  const pool2 = genderMatches.length ? genderMatches : pool1;
-
-  const preferred = (cfg.preferNameIncludes || [])
-    .flatMap((needle) => pool2.filter((v) => v.name?.includes(needle)));
-  const pool3 = preferred.length ? preferred : pool2;
-
-  return pool3[0]?.name;
-}
-
-/**
- * Convert plain text to SSML with natural pauses, emphasis, and prosody.
- * This makes the TTS output sound more conversational and expressive.
- */
-function textToSSML(text: string): string {
-  let ssml = text;
-
-  // Escape XML special characters first
-  ssml = ssml
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
-  // Add pauses for punctuation - natural conversation rhythm
-  // Ellipsis gets a longer thoughtful pause
-  ssml = ssml.replace(/\.{3,}/g, '<break time="600ms"/>');
-  
-  // Period followed by space or end - medium pause
-  ssml = ssml.replace(/\.(\s|$)/g, '.<break time="400ms"/>$1');
-  
-  // Comma - short breath pause
-  ssml = ssml.replace(/,(\s)/g, ',<break time="200ms"/>$1');
-  
-  // Semicolon and colon - medium pause
-  ssml = ssml.replace(/;(\s)/g, ';<break time="300ms"/>$1');
-  ssml = ssml.replace(/:(\s)/g, ':<break time="250ms"/>$1');
-  
-  // Question mark - pause with rising intonation feel
-  ssml = ssml.replace(/\?(\s|$)/g, '?<break time="450ms"/>$1');
-  
-  // Exclamation - slightly shorter energetic pause
-  ssml = ssml.replace(/!(\s|$)/g, '!<break time="350ms"/>$1');
-  
-  // Dash/hyphen used for interruption or aside
-  ssml = ssml.replace(/\s—\s/g, ' <break time="200ms"/>—<break time="200ms"/> ');
-  ssml = ssml.replace(/\s-\s/g, ' <break time="150ms"/>-<break time="150ms"/> ');
-
-  // Emphasize words in ALL CAPS (common in expressive text)
-  ssml = ssml.replace(/\b([A-ZÁÉÍÓÚÑ]{2,})\b/g, '<emphasis level="strong">$1</emphasis>');
-
-  // Handle common interjections with appropriate emphasis
-  const interjections = [
-    { pattern: /\b(ay|Ay|AY)\b/gi, replacement: '<emphasis level="moderate">ay</emphasis>' },
-    { pattern: /\b(uy|Uy|UY)\b/gi, replacement: '<emphasis level="moderate">uy</emphasis>' },
-    { pattern: /\b(oh|Oh|OH)\b/gi, replacement: '<emphasis level="moderate">oh</emphasis>' },
-    { pattern: /\b(ah|Ah|AH)\b/gi, replacement: '<emphasis level="moderate">ah</emphasis>' },
-    { pattern: /\b(eh|Eh|EH)\b/gi, replacement: '<emphasis level="moderate">eh</emphasis>' },
-    { pattern: /\b(mmm|Mmm|MMM)\b/gi, replacement: '<emphasis level="reduced">mmm</emphasis>' },
-    { pattern: /\b(hmm|Hmm|HMM)\b/gi, replacement: '<emphasis level="reduced">hmm</emphasis>' },
-  ];
-
-  for (const { pattern, replacement } of interjections) {
-    ssml = ssml.replace(pattern, replacement);
-  }
-
-  // Handle repeated letters for emphasis (e.g., "nooo", "síííí")
-  ssml = ssml.replace(/([aeiouáéíóú])\1{2,}/gi, (match) => {
-    const vowel = match[0];
-    return `<prosody rate="slow">${vowel}${vowel}${vowel}</prosody>`;
-  });
-
-  // Words indicating emotion get slight prosody changes
-  // Excitement/happiness
-  ssml = ssml.replace(
-    /\b(increíble|genial|maravilloso|fantástico|excelente|perfecto)\b/gi,
-    '<prosody pitch="+10%">$1</prosody>'
-  );
-  
-  // Sadness/worry
-  ssml = ssml.replace(
-    /\b(triste|preocupado|preocupada|nervioso|nerviosa|asustado|asustada)\b/gi,
-    '<prosody pitch="-10%" rate="95%">$1</prosody>'
-  );
-
-  // Add slight pause before question words for natural rhythm
-  ssml = ssml.replace(
-    /(\s)(qué|cómo|cuándo|dónde|por qué|quién|cuál)/gi,
-    '$1<break time="100ms"/>$2'
-  );
-
-  // Wrap in speak tags
-  return `<speak>${ssml}</speak>`;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -223,35 +116,29 @@ serve(async (req) => {
       );
     }
 
+    // Get voice configuration - default to a Neural2 voice
     const voiceConfig = VOICE_CONFIG[voiceType] || VOICE_CONFIG.ARGENTINA_SUAVE;
     
-    // Limit text length
-    const cleanText = text.slice(0, 1000);
-    
-    // Convert to SSML for natural speech
-    const ssmlText = textToSSML(cleanText);
+    // Clean text - limit length but preserve natural punctuation
+    const cleanText = text.slice(0, 1500);
 
-    const voices = await getVoices(apiKey);
-    const pickedVoiceName = pickVoiceName(voices, voiceConfig);
     console.log(
-      `Generating TTS with SSML for ${cleanText.length} chars, lang=${voiceConfig.languageCode}, picked=${pickedVoiceName ?? "(default)"}`
+      `Generating TTS: ${cleanText.length} chars, voice=${voiceConfig.voiceName}, lang=${voiceConfig.languageCode}`
     );
 
+    // Use plain text input - let Neural2/Wavenet handle natural speech patterns
+    // No SSML, no pitch/rate modifications - pure Google voice quality
     const requestBody = {
-      input: { ssml: ssmlText },
+      input: { text: cleanText },
       voice: {
         languageCode: voiceConfig.languageCode,
-        ssmlGender: voiceConfig.ssmlGender,
-        ...(pickedVoiceName ? { name: pickedVoiceName } : {}),
+        name: voiceConfig.voiceName,
       },
       audioConfig: {
         audioEncoding: "MP3",
-        speakingRate: voiceConfig.speakingRate || 1.0,
-        pitch: voiceConfig.pitch || 0,
-        // Use headphone profile for better quality
+        // Let Google use default speaking rate (1.0) and pitch (0)
+        // No modifications that could make it sound artificial
         effectsProfileId: ["headphone-class-device"],
-        // Enable volume gain for clarity
-        volumeGainDb: 1.0,
       },
     };
 
@@ -292,7 +179,7 @@ serve(async (req) => {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    console.log(`Successfully generated ${bytes.length} bytes of audio with SSML`);
+    console.log(`Successfully generated ${bytes.length} bytes of audio`);
 
     return new Response(bytes.buffer, {
       headers: { ...corsHeaders, "Content-Type": "audio/mpeg" },
