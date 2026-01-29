@@ -1,9 +1,12 @@
+// === Catálogo oficial de voces Neural2 de Google Cloud TTS ===
+// Solo usamos voces Neural2 (la mejor calidad de Google) sin fallbacks.
+
 export type VoiceType = 
-  | 'LATINA_FEMENINA_1'
-  | 'LATINA_FEMENINA_2'
-  | 'MEXICANA_FEMENINA'
-  | 'LATINA_MASCULINA_1'
-  | 'LATINA_MASCULINA_2';
+  | 'LATINA_CALIDA'      // es-US-Neural2-A (femenina, cálida, natural)
+  | 'LATINA_COQUETA'     // es-US-Neural2-A con ajuste sutil para tono más íntimo
+  | 'MEXICANA_DULCE'     // es-MX-Neural2-A (femenina mexicana, dulce)
+  | 'LATINO_PROFUNDO'    // es-US-Neural2-B (masculino, grave, estable)
+  | 'LATINO_SUAVE';      // es-US-Neural2-C (masculino, suave, cercano)
 
 export interface Character {
   id: string;
@@ -37,13 +40,36 @@ export interface Conversation {
   updatedAt: Date;
 }
 
-// Voice options using EXACT Google Cloud TTS voices
-// These are the actual voice names available - no modifications
-export const VOICE_OPTIONS: { id: VoiceType; label: string; country: string; description: string }[] = [
-  // Catálogo limpio (solo voces Google Cloud, sin acentos “falsos” por país)
-  { id: 'LATINA_FEMENINA_1', label: 'Latina Cálida', country: '🌎', description: 'es-US-Neural2-A · femenina, cálida y natural' },
-  { id: 'LATINA_FEMENINA_2', label: 'Latina Coqueta', country: '🌎', description: 'es-US-Wavenet-A · femenina, coqueta y “sexy”' },
-  { id: 'MEXICANA_FEMENINA', label: 'Mexicana Natural', country: 'MX', description: 'es-MX-Wavenet-A · femenina, clara y expresiva' },
-  { id: 'LATINA_MASCULINA_1', label: 'Latino Profundo', country: '🌎', description: 'es-US-Neural2-B · masculino, grave y estable' },
-  { id: 'LATINA_MASCULINA_2', label: 'Latino Suave', country: '🌎', description: 'es-US-Neural2-C · masculino, suave y cercano' },
+// Catálogo de voces - solo Neural2 de Google Cloud
+export const VOICE_OPTIONS: { id: VoiceType; label: string; icon: string; description: string }[] = [
+  { 
+    id: 'LATINA_CALIDA', 
+    label: 'Cálida', 
+    icon: '🌸', 
+    description: 'Voz femenina cálida y natural, perfecta para conversaciones íntimas' 
+  },
+  { 
+    id: 'LATINA_COQUETA', 
+    label: 'Coqueta', 
+    icon: '💋', 
+    description: 'Voz femenina seductora y expresiva, ideal para roleplay romántico' 
+  },
+  { 
+    id: 'MEXICANA_DULCE', 
+    label: 'Mexicana Dulce', 
+    icon: '🇲🇽', 
+    description: 'Voz femenina con acento mexicano suave y encantador' 
+  },
+  { 
+    id: 'LATINO_PROFUNDO', 
+    label: 'Profundo', 
+    icon: '🔥', 
+    description: 'Voz masculina grave y dominante, transmite seguridad' 
+  },
+  { 
+    id: 'LATINO_SUAVE', 
+    label: 'Suave', 
+    icon: '💫', 
+    description: 'Voz masculina suave y cercana, reconfortante y amable' 
+  },
 ];

@@ -16,7 +16,7 @@ const CreateCharacterPage = () => {
   const [tagline, setTagline] = useState('');
   const [history, setHistory] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('');
-  const [voice, setVoice] = useState<VoiceType>('LATINA_FEMENINA_1');
+  const [voice, setVoice] = useState<VoiceType>('LATINA_COQUETA');
   const [nsfw, setNsfw] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
@@ -242,8 +242,8 @@ const CreateCharacterPage = () => {
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-medium bg-secondary px-1.5 py-0.5 rounded text-muted-foreground">
-                        {option.country}
+                      <span className="text-base">
+                        {option.icon}
                       </span>
                       <span className={cn(
                         'font-medium text-sm',

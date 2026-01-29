@@ -63,7 +63,7 @@ export const Sidebar = () => {
         {/* Logo */}
         <div className="h-16 flex items-center px-4 lg:px-6 border-b border-sidebar-border">
           <h1 className="text-xl font-display font-bold hidden lg:block logo-3d-gold">
-            Glatinas.ai
+            G-Latinas.ai
           </h1>
           <span className="text-xl font-display font-bold lg:hidden logo-3d-gold">G</span>
         </div>

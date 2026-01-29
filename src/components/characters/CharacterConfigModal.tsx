@@ -102,8 +102,8 @@ export const CharacterConfigModal = ({
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {option.country}
+                    <span className="text-base">
+                      {option.icon}
                     </span>
                     <span className={cn(
                       'font-medium text-sm',
