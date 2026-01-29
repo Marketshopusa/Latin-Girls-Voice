@@ -75,9 +75,9 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
 
       console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}`);
 
-      // Llamar SOLO a Google Cloud TTS - sin fallbacks
+      // Llamar a Gemini TTS para voces naturales con acentos latinos
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-tts`,
         {
           method: "POST",
           headers: {
