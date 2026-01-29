@@ -137,8 +137,9 @@ Ahora lee el siguiente texto con naturalidad y emoción:
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini TTS error:", response.status, errorText);
+      // Devolver status code correcto para que el frontend pueda hacer fallback
       return new Response(
-        JSON.stringify({ error: `TTS failed: ${response.status}`, details: errorText }),
+        JSON.stringify({ error: `TTS failed: ${response.status}`, fallback_recommended: true }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
