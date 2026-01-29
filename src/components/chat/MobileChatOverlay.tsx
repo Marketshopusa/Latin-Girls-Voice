@@ -120,12 +120,6 @@ export const MobileChatOverlay = ({
         )}
       </button>
 
-      {/* Swipe hint at top when chat is visible */}
-      {!isHidden && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/40 backdrop-blur-sm text-muted-foreground/80 text-xs">
-          <span>Desliza → o toca el botón para ver a {characterName}</span>
-        </div>
-      )}
     </div>
   );
 };

@@ -12,43 +12,39 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
-  // Preparar texto para TTS - limpiar markdown pero preservar puntuación
+  // Preparar texto para TTS - SOLO diálogo (formato **_texto_**)
   const prepareTextForTTS = useCallback((raw: string): string => {
     const lines = raw.split("\n");
-    const spoken: string[] = [];
+    const dialogueOnly: string[] = [];
 
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
 
-      // Limpiar itálicas de bordes
-      const noOuterItalics = trimmed.replace(/^_/, "").replace(/_$/, "").trim();
-      const lower = noOuterItalics.toLowerCase();
-
-      // Saltar líneas de acción/pensamiento (no se hablan)
-      if (
-        lower.startsWith("acción:") ||
-        lower.startsWith("accion:") ||
-        lower.startsWith("pensamiento:")
-      ) {
-        continue;
+      // SOLO extraer diálogo: líneas que empiezan con **_ y terminan con _**
+      if (/^\*\*_.*_\*\*$/.test(trimmed)) {
+        // Extraer solo el contenido del diálogo
+        const dialogueContent = trimmed
+          .replace(/^\*\*_/, "")
+          .replace(/_\*\*$/, "")
+          .trim();
+        
+        if (dialogueContent) {
+          dialogueOnly.push(dialogueContent);
+        }
       }
-
-      // Limpiar markdown bold/italic
-      let cleaned = trimmed
-        .replace(/^\*\*_/, "")
-        .replace(/_\*\*$/, "")
-        .replace(/\*|_/g, "")
-        .trim();
-      
-      // Normalizar espacios múltiples
-      cleaned = cleaned.replace(/\s+/g, " ");
-      
-      if (cleaned) spoken.push(cleaned);
     }
 
-    // Unir con espacios apropiados
-    let joined = spoken.join(" ");
+    // Si no hay diálogo formateado, no reproducir nada
+    if (dialogueOnly.length === 0) {
+      return "";
+    }
+
+    // Unir diálogos con espacios
+    let joined = dialogueOnly.join(" ");
+    
+    // Normalizar espacios múltiples
+    joined = joined.replace(/\s+/g, " ");
     
     // Asegurar espaciado correcto después de puntuación
     joined = joined.replace(/([.!?])([A-ZÁÉÍÓÚÑ])/g, "$1 $2");
