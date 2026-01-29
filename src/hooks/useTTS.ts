@@ -5,6 +5,19 @@ interface UseTTSOptions {
   voiceType: VoiceType;
 }
 
+// Mapeo de voces Gemini a Google Cloud TTS para fallback
+const GEMINI_TO_GOOGLE_FALLBACK: Record<string, string> = {
+  'LATINA_CALIDA': 'LATINA_CALIDA',
+  'LATINA_COQUETA': 'LATINA_COQUETA',
+  'MEXICANA_DULCE': 'MEXICANA_DULCE',
+  'LATINO_PROFUNDO': 'LATINO_PROFUNDO',
+  'LATINO_SUAVE': 'LATINO_SUAVE',
+  // Los acentos regionales de Gemini mapean a voces similares en Google Cloud
+  'VENEZOLANA': 'LATINA_COQUETA',
+  'COLOMBIANA': 'LATINA_CALIDA',
+  'ARGENTINA': 'MEXICANA_DULCE',
+};
+
 export const useTTS = ({ voiceType }: UseTTSOptions) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -55,6 +68,22 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
     setIsPlaying(false);
   }, []);
 
+  // Llamar a un endpoint TTS específico
+  const callTTSEndpoint = async (endpoint: string, text: string, voice: string): Promise<Response> => {
+    return fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${endpoint}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ text, voiceType: voice }),
+      }
+    );
+  };
+
   const playAudio = useCallback(async (text: string) => {
     if (isLoading) return;
 
@@ -75,24 +104,26 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
 
       console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}`);
 
-      // Llamar a Gemini TTS para voces naturales con acentos latinos
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-tts`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ text: ttsText, voiceType }),
-        }
-      );
+      // Intentar primero con Gemini TTS
+      let response = await callTTSEndpoint("gemini-tts", ttsText, voiceType);
 
+      // Si Gemini falla (429 rate limit u otro error), usar Google Cloud TTS como fallback
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error("TTS Error:", response.status, errorData);
-        throw new Error(`Error de voz: ${response.status}`);
+        const errorStatus = response.status;
+        console.warn(`Gemini TTS failed (${errorStatus}), falling back to Google Cloud TTS`);
+        
+        // Mapear la voz de Gemini a una equivalente de Google Cloud
+        const fallbackVoice = GEMINI_TO_GOOGLE_FALLBACK[voiceType] || 'LATINA_COQUETA';
+        
+        response = await callTTSEndpoint("google-cloud-tts", ttsText, fallbackVoice);
+        
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error("Google Cloud TTS fallback also failed:", response.status, errorData);
+          throw new Error(`Error de voz: ${response.status}`);
+        }
+        
+        console.log("Using Google Cloud TTS fallback successfully");
       }
 
       const contentType = response.headers.get('content-type') || '';
