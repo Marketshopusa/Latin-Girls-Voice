@@ -104,9 +104,8 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
 
       console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}`);
 
-      // Primario: Google Cloud TTS (Neural2 - cuota generosa de 1000 req/min)
-      const googleVoice = VOICE_TO_GOOGLE_CLOUD[voiceType] || 'LATINA_COQUETA';
-      const response = await callTTSEndpoint("google-cloud-tts", ttsText, googleVoice);
+      // Primario: Gemini-TTS (voces expresivas Kore/Puck via Generative Language API)
+      const response = await callTTSEndpoint("gemini-cloud-tts", ttsText, voiceType);
 
       if (!response.ok) {
         const errorData = await response.text();
