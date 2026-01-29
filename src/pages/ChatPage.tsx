@@ -11,7 +11,7 @@ import { MobileChatOverlay } from '@/components/chat/MobileChatOverlay';
 import { useConversation } from '@/hooks/useConversation';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useChatAI } from '@/hooks/useChatAI';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobileOrTablet } from '@/hooks/use-mobile';
 import { mockCharacters } from '@/data/characters';
 import { Character, VoiceType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 const ChatPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
+  const isMobileOrTablet = useIsMobileOrTablet();
   
   const [character, setCharacter] = useState<Character | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -234,8 +234,8 @@ const ChatPage = () => {
     </>
   );
 
-  // Mobile layout
-  if (isMobile) {
+  // Mobile/Tablet layout with overlay
+  if (isMobileOrTablet) {
     return (
       <>
         <MobileChatOverlay
