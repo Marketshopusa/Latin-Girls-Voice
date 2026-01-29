@@ -70,9 +70,10 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("GOOGLE_CLOUD_TTS_API_KEY");
+    // Usar GEMINI_API_KEY para Gemini-TTS (150 req/min con generativelanguage.googleapis.com)
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
-      console.error("GOOGLE_CLOUD_TTS_API_KEY not configured");
+      console.error("GEMINI_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "TTS API key not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
