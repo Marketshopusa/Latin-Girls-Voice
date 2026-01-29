@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
-import { Heart, X, Shield } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { Character } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface CharacterCardProps {
   character: Character;
@@ -22,76 +23,74 @@ export const CharacterCard = forwardRef<HTMLDivElement, CharacterCardProps>(
     return (
       <div
         ref={ref}
-        className="card-character group cursor-pointer"
+        className={cn(
+          "relative overflow-hidden rounded-2xl cursor-pointer group",
+          "bg-card border border-border/50",
+          "transition-all duration-300 hover:border-primary/30",
+          "hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1"
+        )}
         onClick={() => onClick(character)}
       >
-        {/* Image or Video */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-card">
+        {/* Image/Video Container - Tall aspect ratio for mobile-first design */}
+        <div className="relative aspect-[3/4] overflow-hidden">
           {isVideo ? (
             <video
               src={character.image}
-              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               autoPlay
               loop
               muted
               playsInline
-              style={{ imageRendering: 'auto' }}
             />
           ) : (
             <img
               src={character.image}
               alt={character.name}
-              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
-              loading="eager"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
               decoding="async"
-              style={{ imageRendering: 'auto' }}
             />
           )}
           
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+          {/* Dark gradient for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
           
           {/* NSFW Badge */}
           {character.nsfw && (
-            <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-medium">
+            <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-medium backdrop-blur-sm">
               <Shield className="h-3 w-3" />
               +18
             </div>
           )}
-          
-          {/* Action buttons */}
-          <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
-              className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Like action
-              }}
-            >
-              <Heart className="h-4 w-4 text-primary-foreground fill-primary-foreground" />
-            </button>
-            <button 
-              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Dismiss action
-              }}
-            >
-              <X className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </div>
 
-          {/* Character info */}
+          {/* Content overlay at bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-display font-semibold text-lg text-foreground">
-                {character.name}
-              </h3>
-              <span className="text-muted-foreground">{character.age}</span>
-            </div>
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            {/* Character name */}
+            <h3 className="font-display font-bold text-lg text-white leading-tight mb-1">
+              {character.name}
+            </h3>
+            
+            {/* Tagline - 2 lines max */}
+            <p className="text-sm text-white/80 leading-snug line-clamp-2 mb-3">
               {character.tagline}
             </p>
+            
+            {/* Tags */}
+            <div className="flex flex-wrap gap-1.5">
+              {character.tags.slice(0, 3).map((tag) => (
+                <span 
+                  key={tag} 
+                  className="px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs font-medium"
+                >
+                  {tag}
+                </span>
+              ))}
+              {character.style && (
+                <span className="px-2.5 py-1 rounded-full bg-primary/30 backdrop-blur-sm text-primary-foreground text-xs font-medium">
+                  {character.style}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

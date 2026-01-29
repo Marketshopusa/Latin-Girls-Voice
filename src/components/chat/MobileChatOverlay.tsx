@@ -53,12 +53,12 @@ export const MobileChatOverlay = ({
     setDragOffset(0);
   };
 
-  // Calculate the actual offset for the chat overlay
-  const getTransformOffset = () => {
+  // Calculate the actual offset for the chat overlay - use 100% to ensure complete hiding
+  const getTransformValue = () => {
     if (dragOffset !== 0) {
-      return dragOffset;
+      return `${dragOffset}px`;
     }
-    return isHidden ? window.innerWidth : 0;
+    return isHidden ? '100%' : '0';
   };
 
   const toggleVisibility = () => {
@@ -80,7 +80,7 @@ export const MobileChatOverlay = ({
           isDragging.current && "transition-none"
         )}
         style={{ 
-          transform: `translateX(${getTransformOffset()}px)`,
+          transform: `translateX(${getTransformValue()})`,
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
