@@ -6,14 +6,12 @@ interface UseTTSOptions {
 }
 
 // Voice configuration for Web Speech API fallback
-const WEB_SPEECH_VOICE_CONFIG: Record<string, { lang: string; gender: 'female' | 'male' }> = {
-  COLOMBIANA_PAISA: { lang: 'es', gender: 'female' },
-  VENEZOLANA_GOCHA: { lang: 'es', gender: 'female' },
-  VENEZOLANA_CARACAS: { lang: 'es', gender: 'female' },
-  ARGENTINA_SUAVE: { lang: 'es', gender: 'female' },
-  MEXICANA_NORTENA: { lang: 'es', gender: 'female' },
-  MASCULINA_PROFUNDA: { lang: 'es', gender: 'male' },
-  MASCULINA_SUAVE: { lang: 'es', gender: 'male' },
+const WEB_SPEECH_VOICE_CONFIG: Record<VoiceType, { lang: string; gender: 'female' | 'male' }> = {
+  LATINA_FEMENINA_1: { lang: 'es-US', gender: 'female' },
+  LATINA_FEMENINA_2: { lang: 'es-US', gender: 'female' },
+  MEXICANA_FEMENINA: { lang: 'es-MX', gender: 'female' },
+  LATINA_MASCULINA_1: { lang: 'es-US', gender: 'male' },
+  LATINA_MASCULINA_2: { lang: 'es-US', gender: 'male' },
 };
 
 export const useTTS = ({ voiceType }: UseTTSOptions) => {
@@ -115,10 +113,11 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
       const utterance = new SpeechSynthesisUtterance(text);
       utteranceRef.current = utterance;
 
-      const config = WEB_SPEECH_VOICE_CONFIG[voiceType] || WEB_SPEECH_VOICE_CONFIG.ARGENTINA_SUAVE;
-      utterance.lang = 'es-ES';
-      utterance.rate = 0.95;
-      utterance.pitch = config.gender === 'female' ? 1.1 : 0.9;
+      const config = WEB_SPEECH_VOICE_CONFIG[voiceType] || WEB_SPEECH_VOICE_CONFIG.LATINA_FEMENINA_1;
+      utterance.lang = config.lang;
+      // Sin “trucos” de pitch/rate: deja que el motor maneje la prosodia
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
       const bestVoice = findBestVoice(voices, config.gender);

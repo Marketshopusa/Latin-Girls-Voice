@@ -15,7 +15,7 @@ interface ChatBubbleProps {
 export const ChatBubble = ({ 
   message, 
   characterName, 
-  voiceType = 'ARGENTINA_SUAVE',
+  voiceType = 'LATINA_FEMENINA_1',
   autoPlay = false 
 }: ChatBubbleProps) => {
   const isUser = message.role === 'user';

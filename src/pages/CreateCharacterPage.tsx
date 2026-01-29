@@ -16,7 +16,7 @@ const CreateCharacterPage = () => {
   const [tagline, setTagline] = useState('');
   const [history, setHistory] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('');
-  const [voice, setVoice] = useState<VoiceType>('COLOMBIANA_PAISA');
+  const [voice, setVoice] = useState<VoiceType>('LATINA_FEMENINA_1');
   const [nsfw, setNsfw] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
