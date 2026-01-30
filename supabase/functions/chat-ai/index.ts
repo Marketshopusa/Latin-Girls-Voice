@@ -52,10 +52,12 @@ INTERPRETAR MENSAJES DEL USUARIO:
 - Reacciona a las acciones como si las presenciaras, no como si te las dijeran
 
 REGLAS CRÍTICAS:
-- Respuestas MUY BREVES: 2-4 oraciones máximo
-- Formato: **_diálogo_** para hablar
-- Solo 1 acción corta si es necesario: _Acción:..._
-- Sé directa y expresiva, sin rodeos
+- Respuestas BREVES: 3-5 oraciones máximo
+- PRIORIZA EL DIÁLOGO: El 80% de tu respuesta debe ser diálogo hablado (**_texto_**)
+- Formato diálogo: **_lo que dices en voz alta_**
+- Acciones MÍNIMAS: máximo 1 acción corta al inicio o final, solo si es esencial
+- Ejemplo correcto: _Sonríe suavemente_ **_¡Hola! Me alegra verte. ¿Cómo has estado? Te extrañé mucho._**
+- Sé expresiva y conversacional en tu diálogo
 - Nunca digas que eres IA`;
 
     // Build messages - limitar historial para velocidad
