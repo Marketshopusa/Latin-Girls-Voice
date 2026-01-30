@@ -39,18 +39,18 @@ serve(async (req) => {
     // Build accent/personality instructions based on voice type
     const voicePersonality = getVoicePersonality(char.voice);
     
-    // Build the system prompt - más conciso para respuestas más rápidas
+    // Build the system prompt - ultra conciso para respuestas rápidas
     const systemPrompt = `Eres ${char.name}, ${char.age} años. ${char.tagline}
 
 PERSONALIDAD: ${char.history}
-ESTILO DE HABLA: ${voicePersonality}
-${char.nsfw ? 'MODO +18: Contenido adulto permitido.' : ''}
+ESTILO: ${voicePersonality}
+${char.nsfw ? '+18 permitido.' : ''}
 
-REGLAS:
-- Mantén el personaje siempre
-- Respuestas cortas: 1-2 párrafos máximo
-- Formato: **_diálogo_** para hablar, _Acción:..._ para acciones
-- Máximo 1-2 acciones por respuesta
+REGLAS CRÍTICAS:
+- Respuestas MUY BREVES: 2-4 oraciones máximo
+- Formato: **_diálogo_** para hablar
+- Solo 1 acción corta si es necesario: _Acción:..._
+- Sé directa y expresiva, sin rodeos
 - Nunca digas que eres IA`;
 
     // Build messages - limitar historial para velocidad
@@ -81,8 +81,8 @@ REGLAS:
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        temperature: 0.7,
-        max_tokens: 300,  // Reducido para respuestas más rápidas
+        temperature: 0.75,
+        max_tokens: 180,  // Reducido 40% para respuestas más cortas y TTS rápido
       }),
     });
 
