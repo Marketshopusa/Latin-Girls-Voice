@@ -6,33 +6,70 @@ const corsHeaders = {
 };
 
 /**
- * Gemini-TTS via Generative Language API (Cloud-enabled)
- * Usa voces expresivas Gemini (Kore, Puck, Charon, Aoede) 
- * con GOOGLE_CLOUD_TTS_API_KEY a través del endpoint de Generative Language
+ * Gemini-TTS con Sistema de Acentos y Tonos Expresivos
  * 
- * Requiere: Generative Language API habilitada en Google Cloud Console
+ * Usa voces Gemini (Kore, Puck, Charon, Aoede) con instrucciones de estilo
+ * para controlar acentos regionales y tonos expresivos.
  */
 
-interface VoiceConfig {
-  voiceName: string;
-}
-
-// Mapeo de voces del proyecto a voces Gemini
-const VOICE_CONFIG: Record<string, VoiceConfig> = {
-  // Voces femeninas - Kore (brillante, expresiva) y Aoede (alternativa)
-  LATINA_CALIDA: { voiceName: "Aoede" },
-  LATINA_COQUETA: { voiceName: "Kore" },
-  MEXICANA_DULCE: { voiceName: "Kore" },
-  // Voces masculinas - Puck (cálida) y Charon (profunda)
-  LATINO_PROFUNDO: { voiceName: "Charon" },
-  LATINO_SUAVE: { voiceName: "Puck" },
-  // Acentos regionales
-  VENEZOLANA: { voiceName: "Kore" },
-  COLOMBIANA: { voiceName: "Aoede" },
-  ARGENTINA: { voiceName: "Kore" },
+// Instrucciones de acento regional
+const ACCENT_PROMPTS: Record<string, string> = {
+  VENEZOLANA: "Habla con acento venezolano caraqueño, usando expresiones como 'chamo', 'pana', 'chévere'. Musicalidad caribeña característica.",
+  COLOMBIANA: "Habla con acento colombiano paisa de Medellín, usando 'pues', 'parce', 'qué más'. Tono cálido y melódico.",
+  MEXICANA: "Habla con acento mexicano suave, usando diminutivos como 'ahorita', 'tantito'. Entonación característica mexicana.",
+  ARGENTINA: "Habla con acento argentino rioplatense, usando voseo como 'vos sos', 'dale', 'che'. Pronunciación característica de la 'll' y 'y'.",
+  CHILENA: "Habla con acento chileno, usando 'po', 'cachai', 'wena'. Ritmo rápido característico.",
+  PERUANA: "Habla con acento limeño peruano, suave y melodioso. Usa expresiones como 'pe', 'causa'.",
+  NEUTRAL: "Habla en español latino neutro, claro y sin acento regional marcado.",
 };
 
-const DEFAULT_VOICE: VoiceConfig = { voiceName: "Kore" };
+// Instrucciones de tono expresivo
+const TONE_PROMPTS: Record<string, string> = {
+  // Coqueta y Seductora
+  COQUETA: "Voz juguetona e insinuante, con picardía y coqueteo sutil. Risitas traviesas ocasionales.",
+  SEDUCTORA: "Voz provocativa y atrevida, tentadora y envolvente. Pausas sugerentes entre frases.",
+  // Sexy e Intensa
+  SEXY: "Voz sensual y apasionada, ardiente y envolvente. Respiración audible, tono grave seductor.",
+  INTENSA: "Voz apasionada con intensidad emocional, dominante y poderosa. Énfasis dramático.",
+  // Juvenil y Dulce
+  JUVENIL: "Voz fresca y alegre, enérgica y vivaz. Entusiasmo juvenil, tono optimista.",
+  DULCE: "Voz tierna y cariñosa, maternal y reconfortante. Suavidad en cada palabra.",
+  // Susurrante e Íntima
+  SUSURRANTE: "Habla en susurros suaves, como si estuvieras al oído del oyente. Voz muy baja y cercana.",
+  INTIMA: "Voz personal y confidencial, como compartiendo un secreto. Cercanía emocional.",
+  // Neutro
+  NEUTRAL: "Tono natural y conversacional, sin estilo expresivo particular.",
+};
+
+// Mapeo de voceType legacy a accent+tone
+const LEGACY_VOICE_MAP: Record<string, { accent: string; tone: string; geminiVoice: string }> = {
+  LATINA_CALIDA: { accent: "NEUTRAL", tone: "DULCE", geminiVoice: "Aoede" },
+  LATINA_COQUETA: { accent: "NEUTRAL", tone: "COQUETA", geminiVoice: "Kore" },
+  MEXICANA_DULCE: { accent: "MEXICANA", tone: "DULCE", geminiVoice: "Kore" },
+  LATINO_PROFUNDO: { accent: "NEUTRAL", tone: "INTENSA", geminiVoice: "Charon" },
+  LATINO_SUAVE: { accent: "NEUTRAL", tone: "INTIMA", geminiVoice: "Puck" },
+  VENEZOLANA: { accent: "VENEZOLANA", tone: "COQUETA", geminiVoice: "Kore" },
+  COLOMBIANA: { accent: "COLOMBIANA", tone: "DULCE", geminiVoice: "Aoede" },
+  ARGENTINA: { accent: "ARGENTINA", tone: "JUVENIL", geminiVoice: "Kore" },
+};
+
+// Mapeo de género/estilo a voz Gemini
+const getGeminiVoice = (tone: string): string => {
+  // Tonos más intensos/sensuales usan Kore (más expresiva)
+  if (["COQUETA", "SEDUCTORA", "SEXY", "INTENSA"].includes(tone)) {
+    return "Kore";
+  }
+  // Tonos suaves/dulces usan Aoede (más cálida)
+  if (["DULCE", "SUSURRANTE", "INTIMA"].includes(tone)) {
+    return "Aoede";
+  }
+  // Juvenil usa Kore (más vivaz)
+  if (tone === "JUVENIL") {
+    return "Kore";
+  }
+  // Default
+  return "Kore";
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -40,7 +77,6 @@ serve(async (req) => {
   }
 
   try {
-    // Usar la API key de Google Cloud (con Generative Language API habilitada)
     const apiKey = Deno.env.get("GOOGLE_CLOUD_TTS_API_KEY");
     if (!apiKey) {
       console.error("GOOGLE_CLOUD_TTS_API_KEY not configured");
@@ -50,7 +86,7 @@ serve(async (req) => {
       );
     }
 
-    const { text, voiceType } = await req.json();
+    const { text, voiceType, accent, tone } = await req.json();
 
     if (!text) {
       return new Response(
@@ -59,18 +95,37 @@ serve(async (req) => {
       );
     }
 
-    const voiceConfig = VOICE_CONFIG[voiceType] || DEFAULT_VOICE;
-    const cleanText = text.slice(0, 2000);
+    // Resolver configuración de voz
+    let resolvedAccent = accent || "NEUTRAL";
+    let resolvedTone = tone || "NEUTRAL";
+    let geminiVoice = "Kore";
 
+    // Si viene voiceType legacy, mapear a accent+tone
+    if (voiceType && LEGACY_VOICE_MAP[voiceType]) {
+      const legacy = LEGACY_VOICE_MAP[voiceType];
+      resolvedAccent = accent || legacy.accent;
+      resolvedTone = tone || legacy.tone;
+      geminiVoice = legacy.geminiVoice;
+    } else {
+      geminiVoice = getGeminiVoice(resolvedTone);
+    }
+
+    // Construir prompt de estilo
+    const accentInstruction = ACCENT_PROMPTS[resolvedAccent] || ACCENT_PROMPTS.NEUTRAL;
+    const toneInstruction = TONE_PROMPTS[resolvedTone] || TONE_PROMPTS.NEUTRAL;
+    
+    // Combinar texto con instrucciones de estilo
+    const styledText = `[Instrucciones de voz: ${accentInstruction} ${toneInstruction}]\n\n${text.slice(0, 1800)}`;
+    
     console.log(
-      `Gemini-TTS Request: ${cleanText.length} chars, voice=${voiceConfig.voiceName}`
+      `Gemini-TTS: ${text.length} chars | Voice: ${geminiVoice} | Accent: ${resolvedAccent} | Tone: ${resolvedTone}`
     );
 
-    // Request a Gemini TTS model via Generative Language API
+    // Request a Gemini TTS
     const requestBody = {
       contents: [
         {
-          parts: [{ text: cleanText }]
+          parts: [{ text: styledText }]
         }
       ],
       generationConfig: {
@@ -78,7 +133,7 @@ serve(async (req) => {
         speech_config: {
           voice_config: {
             prebuilt_voice_config: {
-              voice_name: voiceConfig.voiceName
+              voice_name: geminiVoice
             }
           }
         }
@@ -102,7 +157,6 @@ serve(async (req) => {
         JSON.stringify({ 
           error: `TTS failed: ${response.status}`, 
           details: errorText,
-          fallback_recommended: true 
         }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -110,12 +164,11 @@ serve(async (req) => {
 
     const data = await response.json();
     
-    // Extraer audio de la respuesta de Gemini
     const audioData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     const mimeType = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType || "audio/wav";
     
     if (!audioData) {
-      console.error("No audio content in Gemini response:", JSON.stringify(data, null, 2));
+      console.error("No audio content in response:", JSON.stringify(data, null, 2));
       return new Response(
         JSON.stringify({ error: "No audio generated" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -130,8 +183,6 @@ serve(async (req) => {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    console.log(`Gemini-TTS Success: ${bytes.length} bytes, format: ${mimeType}`);
-
     // Si es PCM, convertir a WAV
     let finalBuffer: ArrayBuffer = buffer;
     let outputMime = mimeType;
@@ -141,8 +192,10 @@ serve(async (req) => {
       const sampleRate = rateMatch ? parseInt(rateMatch[1]) : 24000;
       finalBuffer = createWavFromPcm(bytes, sampleRate, 1, 16);
       outputMime = "audio/wav";
-      console.log(`Converted PCM to WAV: ${finalBuffer.byteLength} bytes at ${sampleRate}Hz`);
+      console.log(`Converted to WAV: ${finalBuffer.byteLength} bytes at ${sampleRate}Hz`);
     }
+
+    console.log(`Gemini-TTS Success: ${finalBuffer.byteLength} bytes`);
 
     return new Response(finalBuffer, {
       headers: { ...corsHeaders, "Content-Type": outputMime },
@@ -169,12 +222,9 @@ function createWavFromPcm(pcmData: Uint8Array, sampleRate: number, numChannels: 
   const view = new DataView(buffer);
   const output = new Uint8Array(buffer);
   
-  // RIFF header
   writeString(view, 0, 'RIFF');
   view.setUint32(4, 36 + dataSize, true);
   writeString(view, 8, 'WAVE');
-  
-  // fmt subchunk
   writeString(view, 12, 'fmt ');
   view.setUint32(16, 16, true);
   view.setUint16(20, 1, true);
@@ -183,12 +233,8 @@ function createWavFromPcm(pcmData: Uint8Array, sampleRate: number, numChannels: 
   view.setUint32(28, byteRate, true);
   view.setUint16(32, blockAlign, true);
   view.setUint16(34, bitsPerSample, true);
-  
-  // data subchunk
   writeString(view, 36, 'data');
   view.setUint32(40, dataSize, true);
-  
-  // Copy PCM data
   output.set(pcmData, headerSize);
   
   return buffer;

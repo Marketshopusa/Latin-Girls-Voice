@@ -1,24 +1,13 @@
 import { useState, useRef, useCallback } from 'react';
-import { VoiceType } from '@/types';
+import { VoiceType, AccentType, ToneType } from '@/types';
 
 interface UseTTSOptions {
   voiceType: VoiceType;
+  accent?: AccentType;
+  tone?: ToneType;
 }
 
-// Mapeo de voces regionales a voces Google Cloud TTS
-const VOICE_TO_GOOGLE_CLOUD: Record<string, string> = {
-  'LATINA_CALIDA': 'LATINA_CALIDA',
-  'LATINA_COQUETA': 'LATINA_COQUETA',
-  'MEXICANA_DULCE': 'MEXICANA_DULCE',
-  'LATINO_PROFUNDO': 'LATINO_PROFUNDO',
-  'LATINO_SUAVE': 'LATINO_SUAVE',
-  // Acentos regionales mapean a voces Google Cloud similares
-  'VENEZOLANA': 'LATINA_COQUETA',
-  'COLOMBIANA': 'LATINA_CALIDA',
-  'ARGENTINA': 'MEXICANA_DULCE',
-};
-
-export const useTTS = ({ voiceType }: UseTTSOptions) => {
+export const useTTS = ({ voiceType, accent, tone }: UseTTSOptions) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,10 +57,10 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
     setIsPlaying(false);
   }, []);
 
-  // Llamar a un endpoint TTS específico
-  const callTTSEndpoint = async (endpoint: string, text: string, voice: string): Promise<Response> => {
+  // Llamar al endpoint TTS con accent y tone
+  const callTTSEndpoint = async (text: string): Promise<Response> => {
     return fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${endpoint}`,
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-cloud-tts`,
       {
         method: "POST",
         headers: {
@@ -79,7 +68,12 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ text, voiceType: voice }),
+        body: JSON.stringify({ 
+          text, 
+          voiceType,
+          accent: accent || undefined,
+          tone: tone || undefined,
+        }),
       }
     );
   };
@@ -102,10 +96,10 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
         throw new Error('No hay texto para reproducir.');
       }
 
-      console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}`);
+      console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}, accent: ${accent}, tone: ${tone}`);
 
-      // Primario: Gemini-TTS (voces expresivas Kore/Puck via Generative Language API)
-      const response = await callTTSEndpoint("gemini-cloud-tts", ttsText, voiceType);
+      // Gemini-TTS con acentos y tonos expresivos
+      const response = await callTTSEndpoint(ttsText);
 
       if (!response.ok) {
         const errorData = await response.text();
@@ -150,7 +144,7 @@ export const useTTS = ({ voiceType }: UseTTSOptions) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType]);
+  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType, accent, tone]);
 
   return {
     playAudio,
