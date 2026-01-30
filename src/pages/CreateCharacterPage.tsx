@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Volume2, Shield, Sparkles, Loader2 } from 'lucide-react';
-import { VOICE_OPTIONS, VoiceType } from '@/types';
+import { VOICE_OPTIONS, VoiceType, DEFAULT_VOICE } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useCreateCharacter } from '@/hooks/useCharacters';
@@ -16,7 +16,7 @@ const CreateCharacterPage = () => {
   const [tagline, setTagline] = useState('');
   const [history, setHistory] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('');
-  const [voice, setVoice] = useState<VoiceType>('LATINA_COQUETA');
+  const [voice, setVoice] = useState<VoiceType>(DEFAULT_VOICE);
   const [nsfw, setNsfw] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);

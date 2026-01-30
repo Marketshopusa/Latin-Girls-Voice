@@ -6,50 +6,149 @@ const corsHeaders = {
 };
 
 /**
- * Catálogo de voces Neural2 de Google Cloud TTS.
- * Solo usamos Neural2 (la mejor calidad).
- * NO hay modificaciones de pitch/rate - dejamos que Google maneje la prosodia naturalmente.
+ * Google Cloud TTS - Sistema de Voces Neural2 y Chirp 3: HD
+ * 
+ * Catálogo completo de voces de alta calidad sin depender de Gemini.
+ * Solo usa la API de Google Cloud Text-to-Speech.
  */
 
 interface VoiceConfig {
   voiceName: string;
   languageCode: string;
   ssmlGender: "FEMALE" | "MALE";
+  isChirp3?: boolean;
 }
 
-// Mapeo de nuestros tipos de voz a las voces exactas de Google Cloud
+// Catálogo completo de voces Neural2 y Chirp 3: HD
 const VOICE_CONFIG: Record<string, VoiceConfig> = {
-  // Voces femeninas latinas (Neural2 - máxima calidad)
-  LATINA_CALIDA: {
+  // === NEURAL2 - ESPAÑOL LATINO (es-US) ===
+  "es-US-Neural2-A": {
     voiceName: "es-US-Neural2-A",
     languageCode: "es-US",
     ssmlGender: "FEMALE",
   },
-  LATINA_COQUETA: {
-    voiceName: "es-US-Neural2-A",
-    languageCode: "es-US",
-    ssmlGender: "FEMALE",
-  },
-  MEXICANA_DULCE: {
-    voiceName: "es-MX-Neural2-A",
-    languageCode: "es-MX",
-    ssmlGender: "FEMALE",
-  },
-  // Voces masculinas latinas (Neural2)
-  LATINO_PROFUNDO: {
+  "es-US-Neural2-B": {
     voiceName: "es-US-Neural2-B",
     languageCode: "es-US",
     ssmlGender: "MALE",
   },
-  LATINO_SUAVE: {
+  "es-US-Neural2-C": {
     voiceName: "es-US-Neural2-C",
     languageCode: "es-US",
     ssmlGender: "MALE",
   },
+  
+  // === NEURAL2 - ESPAÑOL ESPAÑA (es-ES) ===
+  "es-ES-Neural2-A": {
+    voiceName: "es-ES-Neural2-A",
+    languageCode: "es-ES",
+    ssmlGender: "FEMALE",
+  },
+  "es-ES-Neural2-B": {
+    voiceName: "es-ES-Neural2-B",
+    languageCode: "es-ES",
+    ssmlGender: "MALE",
+  },
+  "es-ES-Neural2-C": {
+    voiceName: "es-ES-Neural2-C",
+    languageCode: "es-ES",
+    ssmlGender: "FEMALE",
+  },
+  "es-ES-Neural2-D": {
+    voiceName: "es-ES-Neural2-D",
+    languageCode: "es-ES",
+    ssmlGender: "FEMALE",
+  },
+  "es-ES-Neural2-E": {
+    voiceName: "es-ES-Neural2-E",
+    languageCode: "es-ES",
+    ssmlGender: "FEMALE",
+  },
+  "es-ES-Neural2-F": {
+    voiceName: "es-ES-Neural2-F",
+    languageCode: "es-ES",
+    ssmlGender: "MALE",
+  },
+  
+  // === NEURAL2 - ESPAÑOL MÉXICO (es-MX) ===
+  "es-MX-Neural2-A": {
+    voiceName: "es-MX-Neural2-A",
+    languageCode: "es-MX",
+    ssmlGender: "FEMALE",
+  },
+  "es-MX-Neural2-B": {
+    voiceName: "es-MX-Neural2-B",
+    languageCode: "es-MX",
+    ssmlGender: "MALE",
+  },
+  
+  // === CHIRP 3: HD - VOCES PREMIUM (es-US) ===
+  "es-US-Chirp3-HD-Kore": {
+    voiceName: "Kore",
+    languageCode: "es-US",
+    ssmlGender: "FEMALE",
+    isChirp3: true,
+  },
+  "es-US-Chirp3-HD-Aoede": {
+    voiceName: "Aoede",
+    languageCode: "es-US",
+    ssmlGender: "FEMALE",
+    isChirp3: true,
+  },
+  "es-US-Chirp3-HD-Charon": {
+    voiceName: "Charon",
+    languageCode: "es-US",
+    ssmlGender: "MALE",
+    isChirp3: true,
+  },
+  "es-US-Chirp3-HD-Puck": {
+    voiceName: "Puck",
+    languageCode: "es-US",
+    ssmlGender: "MALE",
+    isChirp3: true,
+  },
+  
+  // === CHIRP 3: HD - VOCES PREMIUM (es-ES) ===
+  "es-ES-Chirp3-HD-Kore": {
+    voiceName: "Kore",
+    languageCode: "es-ES",
+    ssmlGender: "FEMALE",
+    isChirp3: true,
+  },
+  "es-ES-Chirp3-HD-Aoede": {
+    voiceName: "Aoede",
+    languageCode: "es-ES",
+    ssmlGender: "FEMALE",
+    isChirp3: true,
+  },
+  "es-ES-Chirp3-HD-Charon": {
+    voiceName: "Charon",
+    languageCode: "es-ES",
+    ssmlGender: "MALE",
+    isChirp3: true,
+  },
+  "es-ES-Chirp3-HD-Puck": {
+    voiceName: "Puck",
+    languageCode: "es-ES",
+    ssmlGender: "MALE",
+    isChirp3: true,
+  },
 };
 
-// Fallback para voces legacy (mapear a LATINA_COQUETA)
-const DEFAULT_VOICE: VoiceConfig = VOICE_CONFIG.LATINA_COQUETA;
+// Mapeo de voces legacy a las nuevas
+const LEGACY_VOICE_MAP: Record<string, string> = {
+  "LATINA_CALIDA": "es-US-Neural2-A",
+  "LATINA_COQUETA": "es-US-Neural2-A",
+  "MEXICANA_DULCE": "es-MX-Neural2-A",
+  "LATINO_PROFUNDO": "es-US-Neural2-B",
+  "LATINO_SUAVE": "es-US-Neural2-C",
+  "VENEZOLANA": "es-US-Neural2-A",
+  "COLOMBIANA": "es-US-Neural2-A",
+  "ARGENTINA": "es-US-Neural2-A",
+};
+
+// Voz por defecto
+const DEFAULT_VOICE = "es-US-Neural2-A";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -75,31 +174,59 @@ serve(async (req) => {
       );
     }
 
-    // Obtener configuración de voz - usar default si no existe
-    const voiceConfig = VOICE_CONFIG[voiceType] || DEFAULT_VOICE;
+    // Resolver tipo de voz (soportar legacy y nuevos IDs)
+    let resolvedVoiceType = voiceType || DEFAULT_VOICE;
     
-    // Limpiar texto - preservar puntuación natural para pausas correctas
+    // Si es una voz legacy, mapear a la nueva
+    if (LEGACY_VOICE_MAP[resolvedVoiceType]) {
+      resolvedVoiceType = LEGACY_VOICE_MAP[resolvedVoiceType];
+    }
+    
+    // Obtener configuración de voz
+    const voiceConfig = VOICE_CONFIG[resolvedVoiceType] || VOICE_CONFIG[DEFAULT_VOICE];
+    
+    // Limpiar texto
     const cleanText = text.slice(0, 2000);
 
     console.log(
-      `TTS Request: ${cleanText.length} chars, voice=${voiceConfig.voiceName}, lang=${voiceConfig.languageCode}`
+      `TTS Request: ${cleanText.length} chars | Voice: ${voiceConfig.voiceName} | Lang: ${voiceConfig.languageCode} | Chirp3: ${voiceConfig.isChirp3 || false}`
     );
 
-    // Request simple con texto plano - SIN SSML, SIN modificaciones de pitch/rate
-    // Dejamos que Neural2 maneje TODO naturalmente
-    const requestBody = {
-      input: { text: cleanText },
-      voice: {
-        languageCode: voiceConfig.languageCode,
-        name: voiceConfig.voiceName,
-        ssmlGender: voiceConfig.ssmlGender,
-      },
-      audioConfig: {
-        audioEncoding: "MP3",
-        // Sin pitch, sin speakingRate - valores por defecto de Google
-        effectsProfileId: ["headphone-class-device"],
-      },
-    };
+    // Construir request según el tipo de voz
+    let requestBody: any;
+    
+    if (voiceConfig.isChirp3) {
+      // Para Chirp 3: HD usamos el endpoint de Generative Language API
+      // pero solo para síntesis de voz, no para generación de contenido
+      requestBody = {
+        input: { text: cleanText },
+        voice: {
+          languageCode: voiceConfig.languageCode,
+          name: `${voiceConfig.languageCode}-Studio-${voiceConfig.voiceName}`,
+          ssmlGender: voiceConfig.ssmlGender,
+        },
+        audioConfig: {
+          audioEncoding: "MP3",
+          effectsProfileId: ["headphone-class-device"],
+          speakingRate: 1.0,
+          pitch: 0,
+        },
+      };
+    } else {
+      // Para Neural2 usamos el endpoint estándar de Cloud TTS
+      requestBody = {
+        input: { text: cleanText },
+        voice: {
+          languageCode: voiceConfig.languageCode,
+          name: voiceConfig.voiceName,
+          ssmlGender: voiceConfig.ssmlGender,
+        },
+        audioConfig: {
+          audioEncoding: "MP3",
+          effectsProfileId: ["headphone-class-device"],
+        },
+      };
+    }
 
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
@@ -113,6 +240,53 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Google Cloud TTS error:", response.status, errorText);
+      
+      // Si falla con Chirp3, intentar fallback a Neural2
+      if (voiceConfig.isChirp3) {
+        console.log("Chirp3 failed, trying Neural2 fallback...");
+        
+        const fallbackVoice = voiceConfig.ssmlGender === "FEMALE" 
+          ? VOICE_CONFIG["es-US-Neural2-A"] 
+          : VOICE_CONFIG["es-US-Neural2-B"];
+        
+        const fallbackBody = {
+          input: { text: cleanText },
+          voice: {
+            languageCode: fallbackVoice.languageCode,
+            name: fallbackVoice.voiceName,
+            ssmlGender: fallbackVoice.ssmlGender,
+          },
+          audioConfig: {
+            audioEncoding: "MP3",
+            effectsProfileId: ["headphone-class-device"],
+          },
+        };
+        
+        const fallbackResponse = await fetch(
+          `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fallbackBody),
+          }
+        );
+        
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          if (fallbackData.audioContent) {
+            console.log("Neural2 fallback successful");
+            const binaryString = atob(fallbackData.audioContent);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            return new Response(bytes.buffer, {
+              headers: { ...corsHeaders, "Content-Type": "audio/mpeg" },
+            });
+          }
+        }
+      }
+      
       return new Response(
         JSON.stringify({ error: `TTS failed: ${response.status}`, details: errorText }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Character, VoiceType } from '@/types';
+import { Character, VoiceType, DEFAULT_VOICE, VOICE_CATALOG } from '@/types';
 import { mockCharacters } from '@/data/characters';
 import { useNsfw } from '@/contexts/NsfwContext';
 
@@ -20,24 +20,36 @@ interface DbCharacter {
   updated_at: string;
 }
 
-// Voces válidas del nuevo catálogo Neural2
-const ALLOWED_VOICES = new Set<string>([
-  'LATINA_CALIDA',
-  'LATINA_COQUETA',
-  'MEXICANA_DULCE',
-  'LATINO_PROFUNDO',
-  'LATINO_SUAVE',
-]);
+// Set de voces válidas del nuevo catálogo Google Cloud TTS
+const VALID_VOICES = new Set(VOICE_CATALOG.map(v => v.id));
 
-// Por defecto, todos los personajes usan LATINA_COQUETA (como eligió el usuario)
-const DEFAULT_VOICE: VoiceType = 'LATINA_COQUETA';
+// Mapeo de voces legacy a las nuevas
+const LEGACY_VOICE_MAP: Record<string, VoiceType> = {
+  'LATINA_CALIDA': 'es-US-Neural2-A',
+  'LATINA_COQUETA': 'es-US-Neural2-A',
+  'MEXICANA_DULCE': 'es-MX-Neural2-A',
+  'LATINO_PROFUNDO': 'es-US-Neural2-B',
+  'LATINO_SUAVE': 'es-US-Neural2-C',
+  'VENEZOLANA': 'es-US-Neural2-A',
+  'COLOMBIANA': 'es-US-Neural2-A',
+  'ARGENTINA': 'es-US-Neural2-A',
+};
 
 // Normalizar voces legacy a las nuevas
 const normalizeVoiceType = (voice: string | null | undefined): VoiceType => {
-  if (voice && ALLOWED_VOICES.has(voice)) {
+  if (!voice) return DEFAULT_VOICE;
+  
+  // Si ya es una voz válida del nuevo catálogo
+  if (VALID_VOICES.has(voice as VoiceType)) {
     return voice as VoiceType;
   }
-  // Mapear voces legacy - todas van a LATINA_COQUETA
+  
+  // Si es una voz legacy, mapear
+  if (LEGACY_VOICE_MAP[voice]) {
+    return LEGACY_VOICE_MAP[voice];
+  }
+  
+  // Default
   return DEFAULT_VOICE;
 };
 

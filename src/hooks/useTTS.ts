@@ -1,13 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
-import { VoiceType, AccentType, ToneType } from '@/types';
+import { VoiceType, DEFAULT_VOICE } from '@/types';
 
 interface UseTTSOptions {
-  voiceType: VoiceType;
-  accent?: AccentType;
-  tone?: ToneType;
+  voiceType?: VoiceType;
 }
 
-export const useTTS = ({ voiceType, accent, tone }: UseTTSOptions) => {
+export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,10 +55,10 @@ export const useTTS = ({ voiceType, accent, tone }: UseTTSOptions) => {
     setIsPlaying(false);
   }, []);
 
-  // Llamar al endpoint TTS con accent y tone
+  // Llamar al endpoint TTS de Google Cloud
   const callTTSEndpoint = async (text: string): Promise<Response> => {
     return fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-cloud-tts`,
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
       {
         method: "POST",
         headers: {
@@ -71,8 +69,6 @@ export const useTTS = ({ voiceType, accent, tone }: UseTTSOptions) => {
         body: JSON.stringify({ 
           text, 
           voiceType,
-          accent: accent || undefined,
-          tone: tone || undefined,
         }),
       }
     );
@@ -96,16 +92,15 @@ export const useTTS = ({ voiceType, accent, tone }: UseTTSOptions) => {
         throw new Error('No hay texto para reproducir.');
       }
 
-      console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}, accent: ${accent}, tone: ${tone}`);
+      console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}`);
 
-      // Gemini-TTS con acentos y tonos expresivos
+      // Google Cloud TTS
       const response = await callTTSEndpoint(ttsText);
 
       if (!response.ok) {
         const errorData = await response.text();
         console.error("TTS error:", response.status, errorData);
         
-        // Error 503 = servicio temporalmente no disponible (mostrar mensaje amigable)
         if (response.status === 503) {
           throw new Error('Voz no disponible temporalmente');
         }
@@ -149,7 +144,7 @@ export const useTTS = ({ voiceType, accent, tone }: UseTTSOptions) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType, accent, tone]);
+  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType]);
 
   return {
     playAudio,
