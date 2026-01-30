@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      character_customizations: {
+        Row: {
+          character_id: string
+          created_at: string
+          history: string | null
+          id: string
+          nsfw: boolean | null
+          updated_at: string
+          user_id: string
+          voice: string | null
+          welcome_message: string | null
+        }
+        Insert: {
+          character_id: string
+          created_at?: string
+          history?: string | null
+          id?: string
+          nsfw?: boolean | null
+          updated_at?: string
+          user_id: string
+          voice?: string | null
+          welcome_message?: string | null
+        }
+        Update: {
+          character_id?: string
+          created_at?: string
+          history?: string | null
+          id?: string
+          nsfw?: boolean | null
+          updated_at?: string
+          user_id?: string
+          voice?: string | null
+          welcome_message?: string | null
+        }
+        Relationships: []
+      }
       characters: {
         Row: {
           age: number

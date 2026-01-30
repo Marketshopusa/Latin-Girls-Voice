@@ -12,8 +12,10 @@ import { useConversation } from '@/hooks/useConversation';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useChatAI } from '@/hooks/useChatAI';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
+import { useCharacterCustomization } from '@/hooks/useCharacterCustomization';
 import { useIsMobileOrTablet } from '@/hooks/use-mobile';
 import { useNsfw } from '@/contexts/NsfwContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { mockCharacters } from '@/data/characters';
 import { Character, VoiceType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,8 +24,9 @@ const ChatPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isMobileOrTablet = useIsMobileOrTablet();
+  const { user } = useAuth();
   
-  const [character, setCharacter] = useState<Character | null>(null);
+  const [baseCharacter, setBaseCharacter] = useState<Character | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [characterLoading, setCharacterLoading] = useState(true);
@@ -32,6 +35,17 @@ const ChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { characters } = useCharacters();
   const { messages, isLoading, addMessage, setInitialMessage, resetConversationWithNewWelcome } = useConversation(id);
+  
+  // Hook para personalizaciones del usuario
+  const { 
+    customization, 
+    loading: customizationLoading, 
+    saveCustomization, 
+    applyCustomization 
+  } = useCharacterCustomization(id);
+
+  // Personaje con customizaciones aplicadas
+  const character = baseCharacter ? applyCustomization(baseCharacter) : null;
   
   const { sendMessage: sendAIMessage, isLoading: isAILoading, error: aiError } = useChatAI({
     character: character!,
@@ -62,7 +76,7 @@ const ChatPage = () => {
       // First check mock characters
       const mockFound = mockCharacters.find((c) => c.id === id);
       if (mockFound) {
-        setCharacter(mockFound);
+        setBaseCharacter(mockFound);
         setCharacterLoading(false);
         return;
       }
@@ -95,7 +109,7 @@ const ChatPage = () => {
             nsfw: data.nsfw,
             style: 'Realistic',
           };
-          setCharacter(dbChar);
+          setBaseCharacter(dbChar);
         }
       } catch (err) {
         console.error('Error loading character:', err);
@@ -151,21 +165,25 @@ const ChatPage = () => {
   };
 
   const handleSaveConfig = async (updates: Partial<Character>) => {
-    if (character) {
-      const updatedCharacter = { ...character, ...updates };
-      setCharacter(updatedCharacter);
-      
-      // Si se cambió el welcomeMessage, reiniciar la conversación
-      if (updates.welcomeMessage && updates.welcomeMessage !== character.welcomeMessage) {
-        // Limpiar mensajes existentes y establecer el nuevo mensaje de bienvenida
-        await resetConversationWithNewWelcome(updates.welcomeMessage);
-        toast.success('Personaje actualizado. La conversación se reinició con el nuevo mensaje.');
-      } else if (updates.history && updates.history !== character.history) {
-        // Si solo cambió la historia, notificar que afectará futuras respuestas
-        toast.success('Historia actualizada. El personaje usará la nueva personalidad.');
-      } else {
-        toast.success('Configuración guardada');
+    if (!character) return;
+    
+    // Guardar en la base de datos si el usuario está autenticado
+    if (user) {
+      const saved = await saveCustomization(updates);
+      if (!saved) {
+        toast.error('Error al guardar los cambios');
+        return;
       }
+    }
+    
+    // Si se cambió el welcomeMessage, reiniciar la conversación
+    if (updates.welcomeMessage && updates.welcomeMessage !== character.welcomeMessage) {
+      await resetConversationWithNewWelcome(updates.welcomeMessage);
+      toast.success('Personaje actualizado. La conversación se reinició con el nuevo mensaje.');
+    } else if (updates.history && updates.history !== character.history) {
+      toast.success('Historia actualizada. El personaje usará la nueva personalidad.');
+    } else {
+      toast.success('Configuración guardada');
     }
   };
 
@@ -178,7 +196,7 @@ const ChatPage = () => {
     await generateImage(messages);
   };
 
-  if (characterLoading || !character || isLoading) {
+  if (characterLoading || customizationLoading || !character || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Cargando...</p>
