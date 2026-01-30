@@ -19,15 +19,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ImageGenerationButton } from './ImageGenerationButton';
+
+interface GeneratedImage {
+  url: string;
+  prompt: string;
+  timestamp: Date;
+}
 
 interface ChatInputProps {
   characterName: string;
   onSend: (message: string) => void;
   onRestart?: () => void;
   disabled?: boolean;
+  // Props para generación de imágenes
+  onGenerateImage?: () => void;
+  isGeneratingImage?: boolean;
+  lastGeneratedImage?: GeneratedImage | null;
+  onClearImage?: () => void;
 }
 
-export const ChatInput = ({ characterName, onSend, onRestart, disabled }: ChatInputProps) => {
+export const ChatInput = ({ 
+  characterName, 
+  onSend, 
+  onRestart, 
+  disabled,
+  onGenerateImage,
+  isGeneratingImage,
+  lastGeneratedImage,
+  onClearImage,
+}: ChatInputProps) => {
   const [message, setMessage] = useState('');
   const [mode, setMode] = useState<'tranquilo' | 'intenso'>('tranquilo');
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
@@ -125,6 +146,18 @@ export const ChatInput = ({ characterName, onSend, onRestart, disabled }: ChatIn
               )}
             />
           </div>
+
+          {/* Image generation button */}
+          {onGenerateImage && (
+            <ImageGenerationButton
+              onGenerate={onGenerateImage}
+              isGenerating={isGeneratingImage || false}
+              lastGeneratedImage={lastGeneratedImage || null}
+              onClearImage={onClearImage || (() => {})}
+              disabled={disabled}
+              isMobile={isMobileOrTablet}
+            />
+          )}
 
           {/* Send button */}
           <button

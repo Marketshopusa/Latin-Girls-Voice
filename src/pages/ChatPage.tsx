@@ -11,7 +11,9 @@ import { MobileChatOverlay } from '@/components/chat/MobileChatOverlay';
 import { useConversation } from '@/hooks/useConversation';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useChatAI } from '@/hooks/useChatAI';
+import { useImageGeneration } from '@/hooks/useImageGeneration';
 import { useIsMobileOrTablet } from '@/hooks/use-mobile';
+import { useNsfw } from '@/contexts/NsfwContext';
 import { mockCharacters } from '@/data/characters';
 import { Character, VoiceType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +35,23 @@ const ChatPage = () => {
   
   const { sendMessage: sendAIMessage, isLoading: isAILoading, error: aiError } = useChatAI({
     character: character!,
+  });
+
+  const { nsfwEnabled } = useNsfw();
+  
+  // Hook para generación de imágenes
+  const {
+    generateImage,
+    clearImage,
+    isGenerating: isGeneratingImage,
+    lastGeneratedImage,
+  } = useImageGeneration({
+    character: {
+      name: character?.name || '',
+      appearance: character?.tagline,
+      style: character?.style,
+    },
+    nsfw: nsfwEnabled && (character?.nsfw || false),
   });
 
   // Load character data - first check mocks, then DB
@@ -154,6 +173,11 @@ const ChatPage = () => {
     navigate(`/chat/${char.id}`);
   };
 
+  const handleGenerateImage = async () => {
+    if (!character) return;
+    await generateImage(messages);
+  };
+
   if (characterLoading || !character || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -243,6 +267,10 @@ const ChatPage = () => {
           onSend={handleSendMessage}
           onRestart={() => character && resetConversationWithNewWelcome(character.welcomeMessage)}
           disabled={isTyping}
+          onGenerateImage={handleGenerateImage}
+          isGeneratingImage={isGeneratingImage}
+          lastGeneratedImage={lastGeneratedImage}
+          onClearImage={clearImage}
         />
       </div>
     </>
@@ -345,6 +373,10 @@ const ChatPage = () => {
           onSend={handleSendMessage}
           onRestart={() => character && resetConversationWithNewWelcome(character.welcomeMessage)}
           disabled={isTyping}
+          onGenerateImage={handleGenerateImage}
+          isGeneratingImage={isGeneratingImage}
+          lastGeneratedImage={lastGeneratedImage}
+          onClearImage={clearImage}
         />
       </div>
 
