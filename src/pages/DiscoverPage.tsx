@@ -1,4 +1,5 @@
 import { CharacterCard } from '@/components/characters/CharacterCard';
+import { PromoBanner } from '@/components/home/PromoBanner';
 import { useCharacters } from '@/hooks/useCharacters';
 import { Character } from '@/types';
 import { useNavigate } from 'react-router-dom';
@@ -15,9 +16,17 @@ const DiscoverPage = () => {
     navigate(`/chat/${character.id}`);
   };
 
+  const handleBannerCta = () => {
+    // Could navigate to pricing or show upgrade modal
+    console.log('CTA clicked - implement upgrade flow');
+  };
+
   return (
     <div className="min-h-screen">
-      {/* Header - Simplified for mobile */}
+      {/* Promo Banner */}
+      <PromoBanner onCtaClick={handleBannerCta} />
+
+      {/* Header */}
       <header className={cn(
         "sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border",
         isMobile ? "px-4 py-3" : "px-6 py-4"
