@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Play, Pause, Loader2, Volume2 } from 'lucide-react';
-import { Message, VoiceType } from '@/types';
+import { Message, VoiceType, DEFAULT_VOICE } from '@/types';
 import { cn } from '@/lib/utils';
 import { useTTS } from '@/hooks/useTTS';
 import { ChatMessageContent } from '@/components/chat/ChatMessageContent';
@@ -15,7 +15,7 @@ interface ChatBubbleProps {
 export const ChatBubble = ({ 
   message, 
   characterName, 
-  voiceType = 'LATINA_COQUETA',
+  voiceType = DEFAULT_VOICE,
   autoPlay = false 
 }: ChatBubbleProps) => {
   const isUser = message.role === 'user';
