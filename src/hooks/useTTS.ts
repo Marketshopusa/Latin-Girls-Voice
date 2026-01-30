@@ -103,7 +103,12 @@ export const useTTS = ({ voiceType, accent, tone }: UseTTSOptions) => {
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error("Google Cloud TTS error:", response.status, errorData);
+        console.error("TTS error:", response.status, errorData);
+        
+        // Error 503 = servicio temporalmente no disponible (mostrar mensaje amigable)
+        if (response.status === 503) {
+          throw new Error('Voz no disponible temporalmente');
+        }
         throw new Error(`Error de voz: ${response.status}`);
       }
 

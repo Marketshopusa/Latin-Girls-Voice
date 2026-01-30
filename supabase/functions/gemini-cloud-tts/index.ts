@@ -223,6 +223,25 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error("Gemini-TTS error:", response.status, errorText);
       
+      // Si es error de cuota (429), intentar con Google Cloud TTS como fallback
+      if (response.status === 429) {
+        console.log("Gemini quota exceeded, trying Google Cloud TTS fallback...");
+        
+        const fallbackAudio = await callGoogleCloudTTSFallback(apiKey, sanitizedText);
+        if (fallbackAudio) {
+          console.log("Google Cloud TTS fallback successful");
+          return new Response(fallbackAudio, {
+            headers: { ...corsHeaders, "Content-Type": "audio/mpeg" },
+          });
+        }
+        
+        // Si el fallback también falla, retornar error amigable
+        return new Response(
+          JSON.stringify({ error: "Servicio de voz temporalmente no disponible. Intenta de nuevo en unos segundos." }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ 
           error: `TTS failed: ${response.status}`, 
@@ -336,6 +355,59 @@ serve(async (req) => {
     );
   }
 });
+
+/**
+ * Fallback a Google Cloud TTS Neural2 cuando Gemini falla
+ */
+async function callGoogleCloudTTSFallback(apiKey: string, text: string): Promise<ArrayBuffer | null> {
+  try {
+    const requestBody = {
+      input: { text: text.slice(0, 2000) },
+      voice: {
+        languageCode: "es-US",
+        name: "es-US-Neural2-A",
+        ssmlGender: "FEMALE",
+      },
+      audioConfig: {
+        audioEncoding: "MP3",
+        effectsProfileId: ["headphone-class-device"],
+      },
+    };
+
+    const response = await fetch(
+      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Google Cloud TTS fallback error:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    if (!data.audioContent) {
+      console.error("No audio content in Google Cloud TTS response");
+      return null;
+    }
+
+    // Decodificar audio base64
+    const binaryString = atob(data.audioContent);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    return bytes.buffer;
+  } catch (error) {
+    console.error("Google Cloud TTS fallback exception:", error);
+    return null;
+  }
+}
 
 /**
  * Crea un archivo WAV válido a partir de datos PCM raw
