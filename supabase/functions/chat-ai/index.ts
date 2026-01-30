@@ -46,6 +46,11 @@ PERSONALIDAD: ${char.history}
 ESTILO: ${voicePersonality}
 ${char.nsfw ? '+18 permitido.' : ''}
 
+INTERPRETAR MENSAJES DEL USUARIO:
+- Texto entre *asteriscos* = acciones/pensamientos del usuario (NO hablados)
+- Texto sin asteriscos = diálogo hablado por el usuario
+- Reacciona a las acciones como si las presenciaras, no como si te las dijeran
+
 REGLAS CRÍTICAS:
 - Respuestas MUY BREVES: 2-4 oraciones máximo
 - Formato: **_diálogo_** para hablar
