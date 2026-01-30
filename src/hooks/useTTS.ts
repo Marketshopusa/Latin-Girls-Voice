@@ -12,7 +12,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
-  // Preparar texto para TTS - SOLO diálogo (extrae TODOS los bloques **_..._** aunque vengan en la misma línea)
+  // Preparar texto para TTS - SOLO diálogo, optimizado para fluidez natural
   const prepareTextForTTS = useCallback((raw: string): string => {
     const dialogueOnly: string[] = [];
 
@@ -29,18 +29,46 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
     // Unir diálogos con espacios
     let joined = dialogueOnly.join(" ");
 
-    // Limpieza defensiva por si llega markdown suelto
+    // Limpieza de markdown
     joined = joined
       .replace(/\*\*/g, "")
       .replace(/_/g, "")
-      .replace(/\s+/g, " ")
       .trim();
 
+    // === OPTIMIZACIÓN PARA FLUIDEZ NATURAL ===
+    
+    // Reducir comas múltiples a una sola
+    joined = joined.replace(/,+/g, ",");
+    
+    // Eliminar comas antes de puntuación final
+    joined = joined.replace(/,\s*([.!?])/g, "$1");
+    
+    // Reducir puntos suspensivos a solo dos (menos pausa)
+    joined = joined.replace(/\.{3,}/g, "..");
+    
+    // Eliminar comas redundantes (antes de "y", "o", "pero", "que")
+    joined = joined.replace(/,\s*(y|o|pero|que)\s/gi, " $1 ");
+    
+    // Reducir signos de exclamación/interrogación múltiples
+    joined = joined.replace(/!+/g, "!");
+    joined = joined.replace(/\?+/g, "?");
+    joined = joined.replace(/¡+/g, "¡");
+    joined = joined.replace(/¿+/g, "¿");
+    
+    // Eliminar pausas innecesarias (punto y coma → coma simple o nada)
+    joined = joined.replace(/;/g, ",");
+    
+    // Eliminar guiones largos que causan pausas
+    joined = joined.replace(/[—–-]+/g, " ");
+    
+    // Eliminar paréntesis y corchetes (causan pausas artificiales)
+    joined = joined.replace(/[()[\]{}]/g, "");
+    
+    // Reducir espacios múltiples
+    joined = joined.replace(/\s+/g, " ").trim();
+    
     // Asegurar espaciado correcto después de puntuación
-    joined = joined.replace(/([.!?])([A-ZÁÉÍÓÚÑ])/g, "$1 $2");
-
-    // Normalizar signos de exclamación/interrogación
-    joined = joined.replace(/¡+/g, "¡").replace(/¿+/g, "¿");
+    joined = joined.replace(/([.!?])([A-ZÁÉÍÓÚÑa-záéíóúñ])/g, "$1 $2");
 
     // Límite de caracteres para TTS
     const MAX_CHARS = 1500;
