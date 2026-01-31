@@ -157,6 +157,39 @@ export type Database = {
           },
         ]
       }
+      user_usage: {
+        Row: {
+          characters_created: number
+          conversations_started: number
+          created_at: string
+          id: string
+          images_generated: number
+          month_year: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          characters_created?: number
+          conversations_started?: number
+          created_at?: string
+          id?: string
+          images_generated?: number
+          month_year: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          characters_created?: number
+          conversations_started?: number
+          created_at?: string
+          id?: string
+          images_generated?: number
+          month_year?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       characters_public: {
