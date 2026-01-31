@@ -445,8 +445,8 @@ export const VOICE_OPTIONS_BY_QUALITY = {
   CHIRP3_HD: VOICE_CATALOG.filter(v => v.quality === 'CHIRP3_HD'),
 };
 
-// Voz por defecto - Colombiana Paisa (ElevenLabs)
-export const DEFAULT_VOICE: VoiceType = 'COLOMBIANA_PAISA';
+// Voz por defecto - Latina Neural (Google Cloud TTS)
+export const DEFAULT_VOICE: VoiceType = 'es-US-Neural2-A';
 
 // Helper para obtener configuración de voz
 export const getVoiceConfig = (voiceType: VoiceType): VoiceConfig | undefined => {
