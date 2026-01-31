@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, MessageCircle, Plus, CreditCard, Settings, Globe, Shield, LogIn, LogOut, Loader2 } from 'lucide-react';
+import { Home, MessageCircle, Plus, Crown, Settings, Globe, Shield, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useNsfw } from '@/contexts/NsfwContext';
@@ -13,7 +13,7 @@ const navigation = [
   { name: 'Descubrir', href: '/', icon: Home },
   { name: 'Mensajes', href: '/messages', icon: MessageCircle },
   { name: 'Crear Personaje', href: '/create', icon: Plus },
-  { name: 'Recargar', href: '/credits', icon: CreditCard },
+  { name: 'Suscripción', href: '/subscription', icon: Crown },
 ];
 
 export const Sidebar = () => {
