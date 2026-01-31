@@ -1,5 +1,6 @@
 // === Sistema de Voces Google Cloud TTS ===
 // Solo voces Neural2 y Chirp 3: HD de alta calidad
+// Incluye voces regionales: Venezuela, Colombia, México, España, Argentina
 
 // Catálogo completo de voces Google Cloud TTS
 export type VoiceType = 
@@ -17,6 +18,13 @@ export type VoiceType =
   // Neural2 - Español México (es-MX)
   | 'es-MX-Neural2-A'    // Femenina - Mexicana
   | 'es-MX-Neural2-B'    // Masculina - Mexicano
+  // Voces Regionales Latinoamericanas (basadas en es-US con configuración regional)
+  | 'es-VE-Neural2-A'    // Femenina - Venezolana Caribeña
+  | 'es-VE-Neural2-B'    // Masculina - Venezolano Caribeño
+  | 'es-CO-Neural2-A'    // Femenina - Colombiana Paisa
+  | 'es-CO-Neural2-B'    // Masculina - Colombiano Paisa
+  | 'es-AR-Neural2-A'    // Femenina - Argentina Porteña
+  | 'es-AR-Neural2-B'    // Masculina - Argentino Porteño
   // Chirp 3: HD - Voces Premium (es-US)
   | 'es-US-Chirp3-HD-Kore'    // Femenina Premium - Expresiva
   | 'es-US-Chirp3-HD-Aoede'   // Femenina Premium - Cálida
@@ -31,8 +39,8 @@ export type VoiceType =
 // Género de voz
 export type VoiceGender = 'FEMALE' | 'MALE';
 
-// Región de voz
-export type VoiceRegion = 'LATINO' | 'ESPAÑA' | 'MEXICO';
+// Región de voz (expandida con regiones latinoamericanas)
+export type VoiceRegion = 'LATINO' | 'ESPAÑA' | 'MEXICO' | 'VENEZUELA' | 'COLOMBIA' | 'ARGENTINA';
 
 // Calidad de voz
 export type VoiceQuality = 'NEURAL2' | 'CHIRP3_HD';
@@ -48,6 +56,9 @@ export interface VoiceConfig {
   quality: VoiceQuality;
   languageCode: string;
   voiceName: string;
+  // Configuración regional para modificar pitch/rate
+  speakingRate?: number;
+  pitch?: number;
 }
 
 // Catálogo completo de voces para la UI
@@ -85,6 +96,90 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     quality: 'NEURAL2',
     languageCode: 'es-US',
     voiceName: 'es-US-Neural2-C',
+  },
+  
+  // === VOCES REGIONALES - VENEZUELA (Caribeña) ===
+  {
+    id: 'es-VE-Neural2-A',
+    label: 'Venezolana Caribeña',
+    icon: '🇻🇪',
+    description: 'Voz femenina venezolana caribeña, cálida y melodiosa',
+    gender: 'FEMALE',
+    region: 'VENEZUELA',
+    quality: 'NEURAL2',
+    languageCode: 'es-US',
+    voiceName: 'es-US-Neural2-A',
+    speakingRate: 1.08,
+    pitch: 1.5,
+  },
+  {
+    id: 'es-VE-Neural2-B',
+    label: 'Venezolano Caribeño',
+    icon: '🌴',
+    description: 'Voz masculina venezolana caribeña, alegre y expresiva',
+    gender: 'MALE',
+    region: 'VENEZUELA',
+    quality: 'NEURAL2',
+    languageCode: 'es-US',
+    voiceName: 'es-US-Neural2-C',
+    speakingRate: 1.06,
+    pitch: 0.5,
+  },
+  
+  // === VOCES REGIONALES - COLOMBIA (Paisa) ===
+  {
+    id: 'es-CO-Neural2-A',
+    label: 'Colombiana Paisa',
+    icon: '🇨🇴',
+    description: 'Voz femenina colombiana paisa, dulce y cantarina',
+    gender: 'FEMALE',
+    region: 'COLOMBIA',
+    quality: 'NEURAL2',
+    languageCode: 'es-US',
+    voiceName: 'es-US-Neural2-A',
+    speakingRate: 1.05,
+    pitch: 2.0,
+  },
+  {
+    id: 'es-CO-Neural2-B',
+    label: 'Colombiano Paisa',
+    icon: '☕',
+    description: 'Voz masculina colombiana paisa, amable y melódica',
+    gender: 'MALE',
+    region: 'COLOMBIA',
+    quality: 'NEURAL2',
+    languageCode: 'es-US',
+    voiceName: 'es-US-Neural2-C',
+    speakingRate: 1.04,
+    pitch: 1.0,
+  },
+  
+  // === VOCES REGIONALES - ARGENTINA (Porteña) ===
+  {
+    id: 'es-AR-Neural2-A',
+    label: 'Argentina Porteña',
+    icon: '🇦🇷',
+    description: 'Voz femenina argentina porteña, intensa y expresiva',
+    gender: 'FEMALE',
+    region: 'ARGENTINA',
+    quality: 'NEURAL2',
+    languageCode: 'es-US',
+    voiceName: 'es-US-Neural2-A',
+    speakingRate: 1.02,
+    pitch: -1.0,
+  },
+  {
+    id: 'es-AR-Neural2-B',
+    label: 'Argentino Porteño',
+    icon: '🥩',
+    description: 'Voz masculina argentina porteña, profunda y característica',
+    gender: 'MALE',
+    region: 'ARGENTINA',
+    quality: 'NEURAL2',
+    languageCode: 'es-US',
+    voiceName: 'es-US-Neural2-B',
+    speakingRate: 1.0,
+    pitch: -1.5,
   },
   
   // === NEURAL2 - ESPAÑOL ESPAÑA (es-ES) ===
@@ -275,6 +370,9 @@ export const VOICE_CATALOG: VoiceConfig[] = [
 // Opciones de voz agrupadas por categoría para UI
 export const VOICE_OPTIONS_BY_REGION = {
   LATINO: VOICE_CATALOG.filter(v => v.region === 'LATINO'),
+  VENEZUELA: VOICE_CATALOG.filter(v => v.region === 'VENEZUELA'),
+  COLOMBIA: VOICE_CATALOG.filter(v => v.region === 'COLOMBIA'),
+  ARGENTINA: VOICE_CATALOG.filter(v => v.region === 'ARGENTINA'),
   ESPAÑA: VOICE_CATALOG.filter(v => v.region === 'ESPAÑA'),
   MEXICO: VOICE_CATALOG.filter(v => v.region === 'MEXICO'),
 };

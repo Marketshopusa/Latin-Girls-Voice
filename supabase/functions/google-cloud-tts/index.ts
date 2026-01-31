@@ -17,9 +17,12 @@ interface VoiceConfig {
   languageCode: string;
   ssmlGender: "FEMALE" | "MALE";
   isChirp3?: boolean;
+  // Configuración regional para acentos (pitch y rate)
+  speakingRate?: number;
+  pitch?: number;
 }
 
-// Catálogo completo de voces Neural2 y Chirp 3: HD
+// Catálogo completo de voces Neural2, Chirp 3: HD y Regionales
 const VOICE_CONFIG: Record<string, VoiceConfig> = {
   // === NEURAL2 - ESPAÑOL LATINO (es-US) ===
   "es-US-Neural2-A": {
@@ -36,6 +39,54 @@ const VOICE_CONFIG: Record<string, VoiceConfig> = {
     voiceName: "es-US-Neural2-C",
     languageCode: "es-US",
     ssmlGender: "MALE",
+  },
+  
+  // === VOCES REGIONALES - VENEZUELA (Caribeña) ===
+  "es-VE-Neural2-A": {
+    voiceName: "es-US-Neural2-A",
+    languageCode: "es-US",
+    ssmlGender: "FEMALE",
+    speakingRate: 1.08,
+    pitch: 1.5,
+  },
+  "es-VE-Neural2-B": {
+    voiceName: "es-US-Neural2-C",
+    languageCode: "es-US",
+    ssmlGender: "MALE",
+    speakingRate: 1.06,
+    pitch: 0.5,
+  },
+  
+  // === VOCES REGIONALES - COLOMBIA (Paisa) ===
+  "es-CO-Neural2-A": {
+    voiceName: "es-US-Neural2-A",
+    languageCode: "es-US",
+    ssmlGender: "FEMALE",
+    speakingRate: 1.05,
+    pitch: 2.0,
+  },
+  "es-CO-Neural2-B": {
+    voiceName: "es-US-Neural2-C",
+    languageCode: "es-US",
+    ssmlGender: "MALE",
+    speakingRate: 1.04,
+    pitch: 1.0,
+  },
+  
+  // === VOCES REGIONALES - ARGENTINA (Porteña) ===
+  "es-AR-Neural2-A": {
+    voiceName: "es-US-Neural2-A",
+    languageCode: "es-US",
+    ssmlGender: "FEMALE",
+    speakingRate: 1.02,
+    pitch: -1.0,
+  },
+  "es-AR-Neural2-B": {
+    voiceName: "es-US-Neural2-B",
+    languageCode: "es-US",
+    ssmlGender: "MALE",
+    speakingRate: 1.0,
+    pitch: -1.5,
   },
   
   // === NEURAL2 - ESPAÑOL ESPAÑA (es-ES) ===
@@ -142,9 +193,9 @@ const LEGACY_VOICE_MAP: Record<string, string> = {
   "MEXICANA_DULCE": "es-MX-Neural2-A",
   "LATINO_PROFUNDO": "es-US-Neural2-B",
   "LATINO_SUAVE": "es-US-Neural2-C",
-  "VENEZOLANA": "es-US-Neural2-A",
-  "COLOMBIANA": "es-US-Neural2-A",
-  "ARGENTINA": "es-US-Neural2-A",
+  "VENEZOLANA": "es-VE-Neural2-A",
+  "COLOMBIANA": "es-CO-Neural2-A",
+  "ARGENTINA": "es-AR-Neural2-A",
 };
 
 // Voz por defecto
@@ -214,6 +265,7 @@ serve(async (req) => {
       };
     } else {
       // Para Neural2 usamos el endpoint estándar de Cloud TTS
+      // Incluir configuración regional si está definida
       requestBody = {
         input: { text: cleanText },
         voice: {
@@ -224,6 +276,8 @@ serve(async (req) => {
         audioConfig: {
           audioEncoding: "MP3",
           effectsProfileId: ["headphone-class-device"],
+          speakingRate: voiceConfig.speakingRate || 1.0,
+          pitch: voiceConfig.pitch || 0,
         },
       };
     }
