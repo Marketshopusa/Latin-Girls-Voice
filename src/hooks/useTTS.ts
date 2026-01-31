@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { VoiceType, DEFAULT_VOICE } from '@/types';
+import { VoiceType, DEFAULT_VOICE, getVoiceProvider } from '@/types';
 
 interface UseTTSOptions {
   voiceType?: VoiceType;
@@ -83,23 +83,34 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
     setIsPlaying(false);
   }, []);
 
-  // Llamar al endpoint TTS de Google Cloud
-  const callTTSEndpoint = async (text: string): Promise<Response> => {
-    return fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ 
-          text, 
-          voiceType,
-        }),
-      }
-    );
+  // Determinar el endpoint TTS según el proveedor
+  const getTTSEndpoint = useCallback((voice: VoiceType): string => {
+    const provider = getVoiceProvider(voice);
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+    
+    if (provider === 'elevenlabs') {
+      return `${baseUrl}/functions/v1/elevenlabs-tts`;
+    }
+    return `${baseUrl}/functions/v1/google-cloud-tts`;
+  }, []);
+
+  // Llamar al endpoint TTS
+  const callTTSEndpoint = async (text: string, voice: VoiceType): Promise<Response> => {
+    const endpoint = getTTSEndpoint(voice);
+    const provider = getVoiceProvider(voice);
+    
+    return fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ 
+        text, 
+        voiceType: voice,
+      }),
+    });
   };
 
   const playAudio = useCallback(async (text: string) => {
@@ -120,14 +131,27 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
         throw new Error('No hay texto para reproducir.');
       }
 
-      console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}`);
+      const provider = getVoiceProvider(voiceType);
+      console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}, provider: ${provider}`);
 
-      // Google Cloud TTS
-      const response = await callTTSEndpoint(ttsText);
+      const response = await callTTSEndpoint(ttsText, voiceType);
 
       if (!response.ok) {
         const errorData = await response.text();
         console.error("TTS error:", response.status, errorData);
+        
+        // Intentar parsear como JSON para obtener código de error
+        try {
+          const errorJson = JSON.parse(errorData);
+          if (errorJson.code === 'ELEVENLABS_NOT_CONFIGURED') {
+            throw new Error('ElevenLabs no está configurado. Usando voz alternativa.');
+          }
+          if (errorJson.code === 'ELEVENLABS_QUOTA') {
+            throw new Error('Límite de cuota de ElevenLabs alcanzado.');
+          }
+        } catch {
+          // No es JSON, continuar con error genérico
+        }
         
         if (response.status === 503) {
           throw new Error('Voz no disponible temporalmente');
@@ -164,7 +188,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
 
       await audio.play();
       setIsPlaying(true);
-      console.log("TTS playing successfully");
+      console.log(`TTS playing successfully (${provider})`);
 
     } catch (err) {
       console.error("TTS error:", err);
@@ -172,7 +196,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType]);
+  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType, getTTSEndpoint]);
 
   return {
     playAudio,
