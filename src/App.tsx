@@ -10,6 +10,9 @@ import DiscoverPage from "./pages/DiscoverPage";
 import ChatPage from "./pages/ChatPage";
 import CreateCharacterPage from "./pages/CreateCharacterPage";
 import MessagesPage from "./pages/MessagesPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
+import AgePolicyPage from "./pages/AgePolicyPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +33,9 @@ const App = () => (
                 <Route path="/credits" element={<DiscoverPage />} />
               </Route>
               <Route path="/chat/:id" element={<ChatPage />} />
+              <Route path="/privacy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms" element={<TermsOfServicePage />} />
+              <Route path="/age-policy" element={<AgePolicyPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
