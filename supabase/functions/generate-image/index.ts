@@ -6,19 +6,17 @@ const corsHeaders = {
 };
 
 interface ImageRequest {
-  // Contexto de la conversación para generar el prompt
   conversationContext: string;
-  // Descripción del personaje para mantener consistencia
   characterDescription: {
     name: string;
     appearance?: string;
     style?: string;
   };
-  // Acción específica a visualizar
   action?: string;
-  // Si es contenido NSFW (requiere usuario autenticado y mayor de edad)
   nsfw: boolean;
 }
+
+const FAL_API_URL = "https://queue.fal.run/fal-ai/flux/dev";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -28,34 +26,15 @@ serve(async (req) => {
   try {
     const { conversationContext, characterDescription, action, nsfw } = await req.json() as ImageRequest;
 
-    // ============================================================
-    // CONFIGURACIÓN DE API EXTERNA
-    // ============================================================
-    // Para habilitar generación de imágenes, configura tu propia API:
-    // 
-    // 1. Agrega tu API key como secret en Lovable Cloud:
-    //    - IMAGE_API_KEY: Tu clave de API
-    //    - IMAGE_API_URL: URL base de tu servicio (opcional)
-    //
-    // 2. Servicios compatibles sugeridos:
-    //    - Stability AI (stable-diffusion)
-    //    - Replicate
-    //    - Cualquier servicio que acepte prompts de texto
-    //
-    // 3. Descomenta y adapta el código de abajo según tu servicio
-    // ============================================================
+    const FAL_API_KEY = Deno.env.get("FAL_API_KEY");
 
-    const IMAGE_API_KEY = Deno.env.get("IMAGE_API_KEY");
-    const IMAGE_API_URL = Deno.env.get("IMAGE_API_URL") || "https://api.your-service.com/generate";
-
-    if (!IMAGE_API_KEY) {
+    if (!FAL_API_KEY) {
       // Respuesta informativa cuando no hay API configurada
       return new Response(
         JSON.stringify({
           success: false,
           error: "IMAGE_API_NOT_CONFIGURED",
-          message: "La generación de imágenes requiere configurar una API externa. Contacta al administrador.",
-          // Devolver el prompt generado para uso futuro
+          message: "La generación de imágenes requiere configurar la API de fal.ai. Contacta al administrador.",
           generatedPrompt: buildImagePrompt(characterDescription, conversationContext, action, nsfw),
         }),
         {
@@ -68,38 +47,34 @@ serve(async (req) => {
     // Construir el prompt para la imagen
     const imagePrompt = buildImagePrompt(characterDescription, conversationContext, action, nsfw);
 
-    console.log("Generating image with prompt:", imagePrompt.substring(0, 100) + "...");
+    console.log("Generating image with fal.ai, prompt:", imagePrompt.substring(0, 100) + "...");
 
-    // ============================================================
-    // EJEMPLO: Llamada a API externa (adaptar según el servicio)
-    // ============================================================
-    
-    const response = await fetch(IMAGE_API_URL, {
+    // Enviar request a fal.ai queue API
+    const queueResponse = await fetch(FAL_API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${IMAGE_API_KEY}`,
+        "Authorization": `Key ${FAL_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         prompt: imagePrompt,
-        // Parámetros comunes - adaptar según el servicio
-        width: 768,
-        height: 1024,
-        steps: 30,
-        cfg_scale: 7,
-        // Agregar más parámetros según necesidad
+        image_size: "portrait_4_3",
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
+        num_images: 1,
+        enable_safety_checker: !nsfw,
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Image API error:", response.status, errorText);
+    if (!queueResponse.ok) {
+      const errorText = await queueResponse.text();
+      console.error("fal.ai queue error:", queueResponse.status, errorText);
       
       return new Response(
         JSON.stringify({
           success: false,
-          error: "IMAGE_GENERATION_FAILED",
-          message: "Error al generar la imagen. Intenta de nuevo.",
+          error: "IMAGE_QUEUE_FAILED",
+          message: "Error al enviar solicitud de imagen.",
         }),
         {
           status: 500,
@@ -108,18 +83,16 @@ serve(async (req) => {
       );
     }
 
-    const data = await response.json();
+    const queueData = await queueResponse.json();
+    const requestId = queueData.request_id;
 
-    // Adaptar según la estructura de respuesta del servicio
-    // Ejemplo genérico:
-    const imageUrl = data.output?.[0] || data.image_url || data.url || data.data?.[0]?.url;
-
-    if (!imageUrl) {
+    if (!requestId) {
+      console.error("No request_id in fal.ai response:", queueData);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "NO_IMAGE_RETURNED",
-          message: "El servicio no devolvió una imagen.",
+          error: "NO_REQUEST_ID",
+          message: "No se recibió ID de solicitud.",
         }),
         {
           status: 500,
@@ -128,13 +101,116 @@ serve(async (req) => {
       );
     }
 
+    console.log("fal.ai request queued:", requestId);
+
+    // Polling para obtener resultado (máximo 60 segundos)
+    const statusUrl = `https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}/status`;
+    const resultUrl = `https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}`;
+    
+    let attempts = 0;
+    const maxAttempts = 30; // 30 intentos x 2 segundos = 60 segundos máximo
+    
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const statusResponse = await fetch(statusUrl, {
+        headers: {
+          "Authorization": `Key ${FAL_API_KEY}`,
+        },
+      });
+      
+      if (!statusResponse.ok) {
+        console.error("Status check failed:", statusResponse.status);
+        attempts++;
+        continue;
+      }
+      
+      const statusData = await statusResponse.json();
+      console.log("Status:", statusData.status);
+      
+      if (statusData.status === "COMPLETED") {
+        // Obtener resultado final
+        const resultResponse = await fetch(resultUrl, {
+          headers: {
+            "Authorization": `Key ${FAL_API_KEY}`,
+          },
+        });
+        
+        if (!resultResponse.ok) {
+          const errorText = await resultResponse.text();
+          console.error("Result fetch error:", resultResponse.status, errorText);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "RESULT_FETCH_FAILED",
+              message: "Error al obtener imagen generada.",
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        
+        const resultData = await resultResponse.json();
+        const imageUrl = resultData.images?.[0]?.url;
+        
+        if (!imageUrl) {
+          console.error("No image URL in result:", resultData);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "NO_IMAGE_URL",
+              message: "No se encontró URL de imagen en la respuesta.",
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        
+        console.log("Image generated successfully:", imageUrl);
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            imageUrl,
+            prompt: imagePrompt,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      if (statusData.status === "FAILED") {
+        console.error("Image generation failed:", statusData);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "GENERATION_FAILED",
+            message: "La generación de imagen falló.",
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      attempts++;
+    }
+    
+    // Timeout
     return new Response(
       JSON.stringify({
-        success: true,
-        imageUrl,
-        prompt: imagePrompt,
+        success: false,
+        error: "TIMEOUT",
+        message: "La generación de imagen tardó demasiado. Intenta de nuevo.",
       }),
       {
+        status: 504,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
@@ -156,7 +232,6 @@ serve(async (req) => {
 
 /**
  * Construye un prompt optimizado para generación de imágenes
- * basado en el contexto de la conversación y el personaje
  */
 function buildImagePrompt(
   character: { name: string; appearance?: string; style?: string },
@@ -166,14 +241,14 @@ function buildImagePrompt(
 ): string {
   const parts: string[] = [];
 
-  // Estilo base
-  parts.push("high quality, detailed, professional photography style");
+  // Estilo base de alta calidad
+  parts.push("masterpiece, best quality, highly detailed, photorealistic");
 
   // Descripción del personaje
   if (character.appearance) {
     parts.push(character.appearance);
   } else {
-    parts.push(`portrait of ${character.name}`);
+    parts.push(`beautiful portrait of ${character.name}, attractive woman`);
   }
 
   // Estilo visual
@@ -186,17 +261,16 @@ function buildImagePrompt(
     parts.push(action);
   }
 
-  // Contexto de la conversación (simplificado)
+  // Contexto de la conversación
   if (context) {
-    // Extraer elementos visuales del contexto
     const visualContext = extractVisualElements(context);
     if (visualContext) {
       parts.push(visualContext);
     }
   }
 
-  // Calidad y detalles
-  parts.push("cinematic lighting, sharp focus, 8k uhd");
+  // Calidad y detalles finales
+  parts.push("soft lighting, beautiful eyes, detailed face, cinematic");
 
   return parts.join(", ");
 }
@@ -209,7 +283,6 @@ function extractVisualElements(context: string): string {
   const actionMatches = context.match(/\*([^*]+)\*/g);
   
   if (actionMatches && actionMatches.length > 0) {
-    // Tomar las últimas 2 acciones
     const recentActions = actionMatches.slice(-2).map(a => a.replace(/\*/g, ''));
     return recentActions.join(", ");
   }
