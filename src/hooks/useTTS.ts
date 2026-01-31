@@ -15,65 +15,64 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
-  // Preparar texto para TTS - SOLO diálogo, optimizado para fluidez natural
+  // Preparar texto para TTS - Extrae diálogo en MÚLTIPLES formatos
   const prepareTextForTTS = useCallback((raw: string): string => {
     const dialogueOnly: string[] = [];
 
-    // Match no-greedy across lines
-    const re = /\*\*_(.+?)_\*\*/gs;
-    for (const match of raw.matchAll(re)) {
+    // Formato 1: **_texto_** (negrita + cursiva)
+    const re1 = /\*\*_(.+?)_\*\*/gs;
+    for (const match of raw.matchAll(re1)) {
       const content = (match[1] || "").trim();
       if (content) dialogueOnly.push(content);
     }
 
-    // Si no hay diálogo formateado, no reproducir nada
-    if (dialogueOnly.length === 0) return "";
+    // Formato 2: **texto** (solo negrita - común en el chat)
+    const re2 = /\*\*([^*_]+?)\*\*/gs;
+    for (const match of raw.matchAll(re2)) {
+      const content = (match[1] || "").trim();
+      // Evitar duplicados si ya se capturó con el primer regex
+      if (content && !dialogueOnly.includes(content)) {
+        dialogueOnly.push(content);
+      }
+    }
 
-    // Unir diálogos con espacios
-    let joined = dialogueOnly.join(" ");
+    // Si no hay diálogo formateado, usar todo el texto (fallback)
+    let joined: string;
+    if (dialogueOnly.length === 0) {
+      // Eliminar acciones en cursiva simple *acción* y usar el resto
+      joined = raw
+        .replace(/\*[^*]+\*/g, '') // Eliminar *acciones*
+        .replace(/\*\*/g, '')
+        .replace(/_/g, '')
+        .trim();
+      
+      // Si aún no hay texto, retornar vacío
+      if (!joined) return "";
+    } else {
+      joined = dialogueOnly.join(" ");
+    }
 
-    // Limpieza de markdown
+    // Limpieza de markdown residual
     joined = joined
       .replace(/\*\*/g, "")
       .replace(/_/g, "")
       .trim();
 
     // === OPTIMIZACIÓN PARA FLUIDEZ NATURAL ===
-    
-    // Reducir comas múltiples a una sola
     joined = joined.replace(/,+/g, ",");
-    
-    // Eliminar comas antes de puntuación final
     joined = joined.replace(/,\s*([.!?])/g, "$1");
-    
-    // Reducir puntos suspensivos a solo dos (menos pausa)
     joined = joined.replace(/\.{3,}/g, "..");
-    
-    // Eliminar comas redundantes (antes de "y", "o", "pero", "que")
     joined = joined.replace(/,\s*(y|o|pero|que)\s/gi, " $1 ");
-    
-    // Reducir signos de exclamación/interrogación múltiples
     joined = joined.replace(/!+/g, "!");
     joined = joined.replace(/\?+/g, "?");
     joined = joined.replace(/¡+/g, "¡");
     joined = joined.replace(/¿+/g, "¿");
-    
-    // Eliminar pausas innecesarias (punto y coma → coma simple o nada)
     joined = joined.replace(/;/g, ",");
-    
-    // Eliminar guiones largos que causan pausas
     joined = joined.replace(/[—–-]+/g, " ");
-    
-    // Eliminar paréntesis y corchetes (causan pausas artificiales)
     joined = joined.replace(/[()[\]{}]/g, "");
-    
-    // Reducir espacios múltiples
     joined = joined.replace(/\s+/g, " ").trim();
-    
-    // Asegurar espaciado correcto después de puntuación
     joined = joined.replace(/([.!?])([A-ZÁÉÍÓÚÑa-záéíóúñ])/g, "$1 $2");
 
-    // Límite de caracteres para TTS
     const MAX_CHARS = 1500;
     return joined.length > MAX_CHARS ? joined.slice(0, MAX_CHARS) : joined;
   }, []);
@@ -132,27 +131,27 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
         throw new Error('No hay texto para reproducir.');
       }
 
-      // Determinar proveedor primario
-      let provider = getVoiceProvider(voiceType);
-      let currentVoice = voiceType;
+      // PRIORIDAD: Google Cloud TTS SIEMPRE es el primario
+      // ElevenLabs solo se usa si está configurado explícitamente Y Google falla
+      const configuredProvider = getVoiceProvider(voiceType);
       
-      // Si el proveedor es ElevenLabs, intentar primero, pero tener fallback listo
-      const isElevenLabs = provider === 'elevenlabs';
+      // Siempre empezar con Google Cloud TTS
+      let provider: 'google' | 'elevenlabs' = 'google';
+      let currentVoice: VoiceType = configuredProvider === 'google' ? voiceType : GOOGLE_FALLBACK_VOICE;
       
-      console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${currentVoice}, provider: ${provider}`);
+      console.log(`Requesting TTS (Google Primary): ${ttsText.length} chars, voice: ${currentVoice}`);
 
       let response = await callTTSEndpoint(ttsText, currentVoice, provider);
 
-      // Si ElevenLabs falla, usar fallback a Google Cloud TTS
-      if (!response.ok && isElevenLabs) {
+      // Si Google falla Y la voz configurada es ElevenLabs, intentar ElevenLabs como fallback
+      if (!response.ok && configuredProvider === 'elevenlabs') {
         const errorData = await response.text();
-        console.warn(`ElevenLabs failed (${response.status}), falling back to Google Cloud TTS:`, errorData);
+        console.warn(`Google Cloud TTS failed (${response.status}), trying ElevenLabs:`, errorData);
         
-        // Cambiar a Google Cloud TTS
-        provider = 'google';
-        currentVoice = GOOGLE_FALLBACK_VOICE;
+        provider = 'elevenlabs';
+        currentVoice = voiceType;
         
-        console.log(`Fallback TTS: ${ttsText.length} chars, voice: ${currentVoice}, provider: ${provider}`);
+        console.log(`Fallback to ElevenLabs: ${ttsText.length} chars, voice: ${currentVoice}`);
         response = await callTTSEndpoint(ttsText, currentVoice, provider);
       }
 
