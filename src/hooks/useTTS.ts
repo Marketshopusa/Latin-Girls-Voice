@@ -1,9 +1,12 @@
 import { useState, useRef, useCallback } from 'react';
-import { VoiceType, DEFAULT_VOICE, getVoiceProvider } from '@/types';
+import { VoiceType, DEFAULT_VOICE, getVoiceProvider, getVoiceConfig } from '@/types';
 
 interface UseTTSOptions {
   voiceType?: VoiceType;
 }
+
+// Voz de fallback de Google Cloud TTS
+const GOOGLE_FALLBACK_VOICE: VoiceType = 'es-US-Neural2-A';
 
 export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -84,8 +87,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   }, []);
 
   // Determinar el endpoint TTS según el proveedor
-  const getTTSEndpoint = useCallback((voice: VoiceType): string => {
-    const provider = getVoiceProvider(voice);
+  const getTTSEndpoint = useCallback((provider: 'google' | 'elevenlabs'): string => {
     const baseUrl = import.meta.env.VITE_SUPABASE_URL;
     
     if (provider === 'elevenlabs') {
@@ -95,9 +97,8 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   }, []);
 
   // Llamar al endpoint TTS
-  const callTTSEndpoint = async (text: string, voice: VoiceType): Promise<Response> => {
-    const endpoint = getTTSEndpoint(voice);
-    const provider = getVoiceProvider(voice);
+  const callTTSEndpoint = async (text: string, voice: VoiceType, provider: 'google' | 'elevenlabs'): Promise<Response> => {
+    const endpoint = getTTSEndpoint(provider);
     
     return fetch(endpoint, {
       method: "POST",
@@ -131,27 +132,33 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
         throw new Error('No hay texto para reproducir.');
       }
 
-      const provider = getVoiceProvider(voiceType);
-      console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${voiceType}, provider: ${provider}`);
+      // Determinar proveedor primario
+      let provider = getVoiceProvider(voiceType);
+      let currentVoice = voiceType;
+      
+      // Si el proveedor es ElevenLabs, intentar primero, pero tener fallback listo
+      const isElevenLabs = provider === 'elevenlabs';
+      
+      console.log(`Requesting TTS: ${ttsText.length} chars, voice: ${currentVoice}, provider: ${provider}`);
 
-      const response = await callTTSEndpoint(ttsText, voiceType);
+      let response = await callTTSEndpoint(ttsText, currentVoice, provider);
+
+      // Si ElevenLabs falla, usar fallback a Google Cloud TTS
+      if (!response.ok && isElevenLabs) {
+        const errorData = await response.text();
+        console.warn(`ElevenLabs failed (${response.status}), falling back to Google Cloud TTS:`, errorData);
+        
+        // Cambiar a Google Cloud TTS
+        provider = 'google';
+        currentVoice = GOOGLE_FALLBACK_VOICE;
+        
+        console.log(`Fallback TTS: ${ttsText.length} chars, voice: ${currentVoice}, provider: ${provider}`);
+        response = await callTTSEndpoint(ttsText, currentVoice, provider);
+      }
 
       if (!response.ok) {
         const errorData = await response.text();
         console.error("TTS error:", response.status, errorData);
-        
-        // Intentar parsear como JSON para obtener código de error
-        try {
-          const errorJson = JSON.parse(errorData);
-          if (errorJson.code === 'ELEVENLABS_NOT_CONFIGURED') {
-            throw new Error('ElevenLabs no está configurado. Usando voz alternativa.');
-          }
-          if (errorJson.code === 'ELEVENLABS_QUOTA') {
-            throw new Error('Límite de cuota de ElevenLabs alcanzado.');
-          }
-        } catch {
-          // No es JSON, continuar con error genérico
-        }
         
         if (response.status === 503) {
           throw new Error('Voz no disponible temporalmente');
