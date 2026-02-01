@@ -1,45 +1,55 @@
-// === Sistema de Voces Dual: ElevenLabs + Google Cloud TTS ===
-// ElevenLabs: Voces regionales auténticas (Colombia, Venezuela, Argentina, México)
-// Google Cloud TTS: Voces Neural2 y Chirp 3: HD de alta calidad
+// === Sistema de Voces: Google Cloud TTS ===
+// (Se eliminó ElevenLabs de este proyecto.)
 
-// Proveedor de TTS
-export type TTSProvider = 'elevenlabs' | 'google';
+// Proveedor de TTS (solo Google)
+export type TTSProvider = 'google';
 
-// Catálogo de voces - combinando ambos proveedores
-export type VoiceType = 
-  // === ELEVENLABS - Voces Regionales Auténticas ===
-  | 'COLOMBIANA_PAISA'      // Yinet - Colombiana auténtica
-  | 'COLOMBIANA_SUAVE'      // Matilda - Latina cálida
-  | 'VENEZOLANA_CARAQUEÑA'  // Sarah - Expresiva directa
-  | 'VENEZOLANA_GOCHA'      // Jessica - Suave tímida
-  | 'LATINA_EXPRESIVA'      // Lily - Seductora
-  | 'LATINA_FUERTE'         // Laura - Fuerte clara
-  | 'MEXICANA_NATURAL'      // Gilfoy - Casual mexicana
-  | 'ARGENTINA_PORTEÑA'     // Fer - Acento porteño
-  | 'MASCULINA_PROFUNDA'    // George - Profunda
-  | 'MASCULINA_SUAVE'       // River - Suave
-  | 'MASCULINA_LATINA'      // Eleguar - Latina profunda
+// Catálogo de voces disponibles (Google Cloud TTS)
+export type VoiceType =
   // === GOOGLE CLOUD TTS - Voces Neural2 ===
-  | 'es-US-Neural2-A'    // Femenina - Latina (RECOMENDADA)
-  | 'es-US-Neural2-B'    // Masculina - Latino grave
-  | 'es-US-Neural2-C'    // Masculina - Latino suave
-  | 'es-ES-Neural2-A'    // Femenina - Española
-  | 'es-ES-Neural2-B'    // Masculina - Español
-  | 'es-ES-Neural2-C'    // Femenina - Española alternativa
-  | 'es-ES-Neural2-D'    // Femenina - Española joven
-  | 'es-ES-Neural2-E'    // Femenina - Española madura
-  | 'es-ES-Neural2-F'    // Masculina - Español alternativo
-  | 'es-MX-Neural2-A'    // Femenina - Mexicana
-  | 'es-MX-Neural2-B'    // Masculina - Mexicano
+  | 'es-US-Neural2-A' // Femenina - Latino (recomendada)
+  | 'es-US-Neural2-B' // Masculina - Latino grave
+  | 'es-US-Neural2-C' // Masculina - Latino suave
+  | 'es-ES-Neural2-A' // Femenina - España
+  | 'es-ES-Neural2-B' // Masculina - España
+  | 'es-ES-Neural2-C' // Femenina - España alternativa
+  | 'es-ES-Neural2-D' // Femenina - España joven
+  | 'es-ES-Neural2-E' // Femenina - España madura
+  | 'es-ES-Neural2-F' // Masculina - España alternativo
+  | 'es-MX-Neural2-A' // Femenina - México
+  | 'es-MX-Neural2-B' // Masculina - México
   // === GOOGLE CLOUD TTS - Chirp 3: HD Premium ===
-  | 'es-US-Chirp3-HD-Kore'    // Femenina Premium - Expresiva
-  | 'es-US-Chirp3-HD-Aoede'   // Femenina Premium - Cálida
-  | 'es-US-Chirp3-HD-Charon'  // Masculina Premium - Profunda
-  | 'es-US-Chirp3-HD-Puck'    // Masculina Premium - Versátil
-  | 'es-ES-Chirp3-HD-Kore'    // Femenina Premium España
-  | 'es-ES-Chirp3-HD-Aoede'   // Femenina Premium España
-  | 'es-ES-Chirp3-HD-Charon'  // Masculina Premium España
-  | 'es-ES-Chirp3-HD-Puck';   // Masculina Premium España
+  | 'es-US-Chirp3-HD-Kore'
+  | 'es-US-Chirp3-HD-Aoede'
+  | 'es-US-Chirp3-HD-Charon'
+  | 'es-US-Chirp3-HD-Puck'
+  | 'es-ES-Chirp3-HD-Kore'
+  | 'es-ES-Chirp3-HD-Aoede'
+  | 'es-ES-Chirp3-HD-Charon'
+  | 'es-ES-Chirp3-HD-Puck';
+
+// IDs legacy (guardados en BD / versiones previas) que normalizamos a Google
+export type LegacyVoiceId =
+  | 'LATINA_CALIDA'
+  | 'LATINA_COQUETA'
+  | 'MEXICANA_DULCE'
+  | 'LATINO_PROFUNDO'
+  | 'LATINO_SUAVE'
+  | 'VENEZOLANA'
+  | 'COLOMBIANA'
+  | 'ARGENTINA'
+  // Legacy de ElevenLabs (histórico)
+  | 'COLOMBIANA_PAISA'
+  | 'COLOMBIANA_SUAVE'
+  | 'VENEZOLANA_CARAQUEÑA'
+  | 'VENEZOLANA_GOCHA'
+  | 'LATINA_EXPRESIVA'
+  | 'LATINA_FUERTE'
+  | 'MEXICANA_NATURAL'
+  | 'ARGENTINA_PORTEÑA'
+  | 'MASCULINA_PROFUNDA'
+  | 'MASCULINA_SUAVE'
+  | 'MASCULINA_LATINA';
 
 // Género de voz
 export type VoiceGender = 'FEMALE' | 'MALE';
@@ -48,7 +58,7 @@ export type VoiceGender = 'FEMALE' | 'MALE';
 export type VoiceRegion = 'COLOMBIA' | 'VENEZUELA' | 'ARGENTINA' | 'MEXICO' | 'LATINO' | 'ESPAÑA';
 
 // Calidad de voz
-export type VoiceQuality = 'ELEVENLABS' | 'NEURAL2' | 'CHIRP3_HD';
+export type VoiceQuality = 'NEURAL2' | 'CHIRP3_HD';
 
 // Configuración de voz
 export interface VoiceConfig {
@@ -69,118 +79,6 @@ export interface VoiceConfig {
 
 // Catálogo completo de voces para la UI
 export const VOICE_CATALOG: VoiceConfig[] = [
-  // === ELEVENLABS - VOCES REGIONALES AUTÉNTICAS ===
-  {
-    id: 'COLOMBIANA_PAISA',
-    label: 'Colombiana Paisa',
-    icon: '🇨🇴',
-    description: 'Voz colombiana femenina auténtica - Yinet (ElevenLabs)',
-    gender: 'FEMALE',
-    region: 'COLOMBIA',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'COLOMBIANA_SUAVE',
-    label: 'Colombiana Suave',
-    icon: '☕',
-    description: 'Voz femenina latina cálida - Matilda (ElevenLabs)',
-    gender: 'FEMALE',
-    region: 'COLOMBIA',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'VENEZOLANA_CARAQUEÑA',
-    label: 'Venezolana Caraqueña',
-    icon: '🇻🇪',
-    description: 'Voz femenina expresiva y directa - Sarah (ElevenLabs)',
-    gender: 'FEMALE',
-    region: 'VENEZUELA',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'VENEZOLANA_GOCHA',
-    label: 'Venezolana Gocha',
-    icon: '🌴',
-    description: 'Voz femenina suave y tímida - Jessica (ElevenLabs)',
-    gender: 'FEMALE',
-    region: 'VENEZUELA',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'LATINA_EXPRESIVA',
-    label: 'Latina Expresiva',
-    icon: '💋',
-    description: 'Voz femenina seductora - Lily (ElevenLabs)',
-    gender: 'FEMALE',
-    region: 'LATINO',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'LATINA_FUERTE',
-    label: 'Latina Fuerte',
-    icon: '💪',
-    description: 'Voz femenina fuerte y clara - Laura (ElevenLabs)',
-    gender: 'FEMALE',
-    region: 'LATINO',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'MEXICANA_NATURAL',
-    label: 'Mexicana Natural',
-    icon: '🇲🇽',
-    description: 'Voz mexicana casual y calmada - Gilfoy (ElevenLabs)',
-    gender: 'FEMALE',
-    region: 'MEXICO',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'ARGENTINA_PORTEÑA',
-    label: 'Argentina Porteña',
-    icon: '🇦🇷',
-    description: 'Voz con acento porteño auténtico - Fer (ElevenLabs)',
-    gender: 'MALE',
-    region: 'ARGENTINA',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'MASCULINA_PROFUNDA',
-    label: 'Masculina Profunda',
-    icon: '🔥',
-    description: 'Voz masculina profunda - George (ElevenLabs)',
-    gender: 'MALE',
-    region: 'LATINO',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'MASCULINA_SUAVE',
-    label: 'Masculina Suave',
-    icon: '💫',
-    description: 'Voz masculina suave - River (ElevenLabs)',
-    gender: 'MALE',
-    region: 'LATINO',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  {
-    id: 'MASCULINA_LATINA',
-    label: 'Masculina Latina',
-    icon: '🌟',
-    description: 'Voz masculina latina profunda - Eleguar (ElevenLabs)',
-    gender: 'MALE',
-    region: 'LATINO',
-    quality: 'ELEVENLABS',
-    provider: 'elevenlabs',
-  },
-  
   // === GOOGLE CLOUD TTS - NEURAL2 ESPAÑOL LATINO (es-US) ===
   {
     id: 'es-US-Neural2-A',
@@ -420,8 +318,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
 
 // Opciones de voz agrupadas por proveedor
 export const VOICE_OPTIONS_BY_PROVIDER = {
-  ELEVENLABS: VOICE_CATALOG.filter(v => v.provider === 'elevenlabs'),
-  GOOGLE: VOICE_CATALOG.filter(v => v.provider === 'google'),
+  GOOGLE: VOICE_CATALOG,
 };
 
 // Opciones de voz agrupadas por región
@@ -440,7 +337,6 @@ export const VOICE_OPTIONS_BY_GENDER = {
 };
 
 export const VOICE_OPTIONS_BY_QUALITY = {
-  ELEVENLABS: VOICE_CATALOG.filter(v => v.quality === 'ELEVENLABS'),
   NEURAL2: VOICE_CATALOG.filter(v => v.quality === 'NEURAL2'),
   CHIRP3_HD: VOICE_CATALOG.filter(v => v.quality === 'CHIRP3_HD'),
 };
@@ -448,16 +344,47 @@ export const VOICE_OPTIONS_BY_QUALITY = {
 // Voz por defecto - Latina Neural (Google Cloud TTS)
 export const DEFAULT_VOICE: VoiceType = 'es-US-Neural2-A';
 
+// Normalización de voces legacy -> voces Google reales (para no perder compatibilidad)
+const VALID_VOICES = new Set(VOICE_CATALOG.map(v => v.id));
+
+export const LEGACY_VOICE_MAP: Record<string, VoiceType> = {
+  // Legacy antiguos
+  LATINA_CALIDA: 'es-US-Neural2-A',
+  LATINA_COQUETA: 'es-ES-Neural2-D',
+  MEXICANA_DULCE: 'es-MX-Neural2-A',
+  LATINO_PROFUNDO: 'es-US-Neural2-B',
+  LATINO_SUAVE: 'es-US-Neural2-C',
+  VENEZOLANA: 'es-ES-Neural2-C',
+  COLOMBIANA: 'es-US-Neural2-A',
+  ARGENTINA: 'es-ES-Neural2-B',
+
+  // IDs históricos de ElevenLabs (ahora se mapean a Google con variedad real)
+  COLOMBIANA_PAISA: 'es-US-Neural2-A',
+  COLOMBIANA_SUAVE: 'es-US-Chirp3-HD-Aoede',
+  VENEZOLANA_CARAQUEÑA: 'es-ES-Neural2-D',
+  VENEZOLANA_GOCHA: 'es-ES-Neural2-C',
+  LATINA_EXPRESIVA: 'es-US-Chirp3-HD-Kore',
+  LATINA_FUERTE: 'es-ES-Neural2-A',
+  MEXICANA_NATURAL: 'es-MX-Neural2-A',
+  ARGENTINA_PORTEÑA: 'es-ES-Neural2-B',
+  MASCULINA_PROFUNDA: 'es-US-Neural2-B',
+  MASCULINA_SUAVE: 'es-US-Neural2-C',
+  MASCULINA_LATINA: 'es-US-Chirp3-HD-Charon',
+};
+
+export const normalizeVoiceType = (voice: string | null | undefined): VoiceType => {
+  if (!voice) return DEFAULT_VOICE;
+  if (VALID_VOICES.has(voice as VoiceType)) return voice as VoiceType;
+  return LEGACY_VOICE_MAP[voice] || DEFAULT_VOICE;
+};
+
 // Helper para obtener configuración de voz
 export const getVoiceConfig = (voiceType: VoiceType): VoiceConfig | undefined => {
   return VOICE_CATALOG.find(v => v.id === voiceType);
 };
 
 // Helper para determinar el proveedor de una voz
-export const getVoiceProvider = (voiceType: VoiceType): TTSProvider => {
-  const config = getVoiceConfig(voiceType);
-  return config?.provider || 'google';
-};
+// getVoiceProvider eliminado: solo usamos Google en este proyecto
 
 // === TIPOS LEGACY (para compatibilidad) ===
 export type AccentType = 'NEUTRAL';
