@@ -26,13 +26,14 @@ const VALID_VOICES = new Set(VOICE_CATALOG.map(v => v.id));
 // Mapeo de voces legacy a las nuevas
 const LEGACY_VOICE_MAP: Record<string, VoiceType> = {
   'LATINA_CALIDA': 'es-US-Neural2-A',
-  'LATINA_COQUETA': 'es-US-Neural2-A',
+  // Más variedad real (cambia de voz, no solo pitch)
+  'LATINA_COQUETA': 'es-ES-Neural2-D',
   'MEXICANA_DULCE': 'es-MX-Neural2-A',
   'LATINO_PROFUNDO': 'es-US-Neural2-B',
   'LATINO_SUAVE': 'es-US-Neural2-C',
-  'VENEZOLANA': 'es-US-Neural2-A',
+  'VENEZOLANA': 'es-ES-Neural2-C',
   'COLOMBIANA': 'es-US-Neural2-A',
-  'ARGENTINA': 'es-US-Neural2-A',
+  'ARGENTINA': 'es-ES-Neural2-E',
 };
 
 // Normalizar voces legacy a las nuevas

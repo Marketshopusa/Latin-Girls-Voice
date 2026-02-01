@@ -73,12 +73,6 @@ export const ChatBubble = ({
                   {isLoading ? 'Generando...' : isPlaying ? 'Pausar' : error ? 'Reintentar' : 'Escuchar'}
                 </span>
               </button>
-
-              {error && (
-                <p className="mt-2 text-xs opacity-80">
-                  {error}
-                </p>
-              )}
             </div>
         )}
       </div>

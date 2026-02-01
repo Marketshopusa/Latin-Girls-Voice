@@ -14,6 +14,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+  const elevenlabsDisabledRef = useRef(false);
 
   // Preparar texto para TTS - Extrae diálogo en MÚLTIPLES formatos
   const prepareTextForTTS = useCallback((raw: string): string => {
@@ -131,27 +132,65 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
         throw new Error('No hay texto para reproducir.');
       }
 
-      // PRIORIDAD: ElevenLabs es primario (eleven_flash_v2_5 = 50% menos créditos)
-      // Google Cloud TTS es respaldo si ElevenLabs falla
-      const configuredProvider = getVoiceProvider(voiceType);
-      
-      // Empezar con ElevenLabs como primario
-      let provider: 'google' | 'elevenlabs' = 'elevenlabs';
-      let currentVoice: VoiceType = configuredProvider === 'elevenlabs' ? voiceType : 'LATINA_EXPRESIVA';
-      
-      console.log(`Requesting TTS (ElevenLabs Primary - Flash v2.5): ${ttsText.length} chars, voice: ${currentVoice}`);
+      // Elegir proveedor según la voz seleccionada.
+      // Regla: si el usuario selecciona una voz Google, NO intentamos ElevenLabs.
+      // Si selecciona ElevenLabs, intentamos ElevenLabs y si falla hacemos fallback a Google.
+      const selectedProvider = getVoiceProvider(voiceType);
+
+      const getGoogleFallbackVoice = (selected: VoiceType): VoiceType => {
+        const cfg = getVoiceConfig(selected);
+        if (!cfg) return GOOGLE_FALLBACK_VOICE;
+        if (cfg.provider === 'google') return selected;
+
+        // Fallback por región + género para que NO suene siempre igual.
+        if (cfg.region === 'MEXICO') {
+          return cfg.gender === 'MALE' ? 'es-MX-Neural2-B' : 'es-MX-Neural2-A';
+        }
+        if (cfg.region === 'ESPAÑA') {
+          return cfg.gender === 'MALE' ? 'es-ES-Neural2-B' : 'es-ES-Neural2-D';
+        }
+        if (cfg.region === 'ARGENTINA') {
+          return cfg.gender === 'MALE' ? 'es-US-Neural2-B' : 'es-ES-Neural2-E';
+        }
+        if (cfg.region === 'VENEZUELA') {
+          return cfg.gender === 'MALE' ? 'es-US-Neural2-C' : 'es-ES-Neural2-C';
+        }
+        if (cfg.region === 'COLOMBIA') {
+          return cfg.gender === 'MALE' ? 'es-US-Neural2-B' : 'es-US-Neural2-A';
+        }
+
+        // LATINO y resto
+        return cfg.gender === 'MALE' ? 'es-US-Neural2-B' : 'es-US-Neural2-A';
+      };
+
+      const googleVoiceForFallback = getGoogleFallbackVoice(voiceType);
+
+      let provider: 'google' | 'elevenlabs' =
+        selectedProvider === 'elevenlabs' && !elevenlabsDisabledRef.current
+          ? 'elevenlabs'
+          : 'google';
+
+      let currentVoice: VoiceType = provider === 'google' ? googleVoiceForFallback : voiceType;
+
+      console.log(`Requesting TTS: provider=${provider}, chars=${ttsText.length}, voice=${currentVoice}`);
 
       let response = await callTTSEndpoint(ttsText, currentVoice, provider);
 
       // Si ElevenLabs falla, usar Google Cloud TTS como respaldo
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.warn(`ElevenLabs failed (${response.status}), trying Google Cloud:`, errorData);
-        
+      if (provider === 'elevenlabs' && !response.ok) {
+        const errorText = await response.text();
+        const isInvalidKey = response.status === 401 && /ELEVENLABS_INVALID_KEY|invalid_api_key|Invalid API key/i.test(errorText);
+
+        if (isInvalidKey) {
+          elevenlabsDisabledRef.current = true;
+        }
+
+        console.warn(`ElevenLabs failed (${response.status}), falling back to Google Cloud`);
+
         provider = 'google';
-        currentVoice = GOOGLE_FALLBACK_VOICE;
-        
-        console.log(`Fallback to Google Cloud: ${ttsText.length} chars, voice: ${currentVoice}`);
+        currentVoice = googleVoiceForFallback;
+
+        console.log(`Fallback to Google Cloud: chars=${ttsText.length}, voice=${currentVoice}`);
         response = await callTTSEndpoint(ttsText, currentVoice, provider);
       }
 
@@ -196,7 +235,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
       };
 
       audio.onerror = () => {
-        setError("Error al reproducir audio");
+        // Silencioso: evitamos el "letrero" molesto; el usuario puede reintentar.
         setIsPlaying(false);
       };
 
