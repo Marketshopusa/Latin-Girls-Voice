@@ -167,17 +167,25 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
 
       const contentType = response.headers.get('content-type') || '';
       if (!contentType.includes('audio')) {
-        throw new Error('Respuesta inválida del servidor de voz');
+        // Algunos proxies/plataformas pueden devolver headers incorrectos.
+        // Si realmente es un error JSON, lo mostramos; si no, asumimos que es audio binario.
+        const maybeJson = await response.clone().json().catch(() => null) as any;
+        if (maybeJson?.error) {
+          throw new Error(typeof maybeJson.error === 'string' ? maybeJson.error : 'Respuesta inválida del servidor de voz');
+        }
       }
 
       const audioBlob = await response.blob();
+      const playableBlob = audioBlob.type.includes('audio')
+        ? audioBlob
+        : new Blob([audioBlob], { type: 'audio/mpeg' });
 
       // Limpiar URL anterior
       if (audioUrlRef.current) {
         URL.revokeObjectURL(audioUrlRef.current);
       }
 
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const audioUrl = URL.createObjectURL(playableBlob);
       audioUrlRef.current = audioUrl;
 
       const audio = new Audio(audioUrl);
@@ -198,7 +206,21 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
 
     } catch (err) {
       console.error("TTS error:", err);
-      setError(err instanceof Error ? err.message : "Error de síntesis de voz");
+      const errName = (err as any)?.name as string | undefined;
+      const errMessage = err instanceof Error ? err.message : String(err);
+
+      // Si el navegador bloquea autoplay (muy común en móvil/desktop sin interacción),
+      // no mostramos error para no ensuciar el chat: el usuario puede tocar "Escuchar".
+      if (
+        errName === 'NotAllowedError' ||
+        /NotAllowedError/i.test(errMessage) ||
+        (/play\(\)/i.test(errMessage) && /not allowed|user gesture|interrupted/i.test(errMessage))
+      ) {
+        setIsPlaying(false);
+        return;
+      }
+
+      setError(errMessage || "Error de síntesis de voz");
     } finally {
       setIsLoading(false);
     }

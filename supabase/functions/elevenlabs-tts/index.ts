@@ -95,7 +95,8 @@ serve(async (req) => {
       );
     }
 
-    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+    // Permite sobre-escribir la key (por si el conector no deja actualizarla)
+    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY_OVERRIDE") ?? Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
       return new Response(
         JSON.stringify({ 
