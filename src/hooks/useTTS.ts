@@ -131,27 +131,27 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
         throw new Error('No hay texto para reproducir.');
       }
 
-      // PRIORIDAD: Google Cloud TTS SIEMPRE es el primario
-      // ElevenLabs solo se usa si está configurado explícitamente Y Google falla
+      // PRIORIDAD: ElevenLabs es primario (eleven_flash_v2_5 = 50% menos créditos)
+      // Google Cloud TTS es respaldo si ElevenLabs falla
       const configuredProvider = getVoiceProvider(voiceType);
       
-      // Siempre empezar con Google Cloud TTS
-      let provider: 'google' | 'elevenlabs' = 'google';
-      let currentVoice: VoiceType = configuredProvider === 'google' ? voiceType : GOOGLE_FALLBACK_VOICE;
+      // Empezar con ElevenLabs como primario
+      let provider: 'google' | 'elevenlabs' = 'elevenlabs';
+      let currentVoice: VoiceType = configuredProvider === 'elevenlabs' ? voiceType : 'LATINA_EXPRESIVA';
       
-      console.log(`Requesting TTS (Google Primary): ${ttsText.length} chars, voice: ${currentVoice}`);
+      console.log(`Requesting TTS (ElevenLabs Primary - Flash v2.5): ${ttsText.length} chars, voice: ${currentVoice}`);
 
       let response = await callTTSEndpoint(ttsText, currentVoice, provider);
 
-      // Si Google falla Y la voz configurada es ElevenLabs, intentar ElevenLabs como fallback
-      if (!response.ok && configuredProvider === 'elevenlabs') {
+      // Si ElevenLabs falla, usar Google Cloud TTS como respaldo
+      if (!response.ok) {
         const errorData = await response.text();
-        console.warn(`Google Cloud TTS failed (${response.status}), trying ElevenLabs:`, errorData);
+        console.warn(`ElevenLabs failed (${response.status}), trying Google Cloud:`, errorData);
         
-        provider = 'elevenlabs';
-        currentVoice = voiceType;
+        provider = 'google';
+        currentVoice = GOOGLE_FALLBACK_VOICE;
         
-        console.log(`Fallback to ElevenLabs: ${ttsText.length} chars, voice: ${currentVoice}`);
+        console.log(`Fallback to Google Cloud: ${ttsText.length} chars, voice: ${currentVoice}`);
         response = await callTTSEndpoint(ttsText, currentVoice, provider);
       }
 
