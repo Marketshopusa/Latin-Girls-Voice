@@ -186,6 +186,12 @@ export const useConversation = (characterId: string | undefined) => {
           audioDuration: msg.audio_duration ?? undefined,
         };
 
+        // IMPORTANT: Update UI immediately (do not rely on realtime INSERT event timing)
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === formatted.id)) return prev;
+          return [...prev, formatted];
+        });
+
         // Update conversation timestamp
         await supabase
           .from('conversations')
