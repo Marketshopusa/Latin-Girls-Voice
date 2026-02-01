@@ -96,8 +96,13 @@ serve(async (req) => {
     }
 
     // Permite sobre-escribir la key (por si el conector no deja actualizarla)
-    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY_OVERRIDE") ?? Deno.env.get("ELEVENLABS_API_KEY");
+    const overrideKey = Deno.env.get("ELEVENLABS_API_KEY_OVERRIDE");
+    const connectorKey = Deno.env.get("ELEVENLABS_API_KEY");
+    const ELEVENLABS_API_KEY = overrideKey ?? connectorKey;
+    const keySource = overrideKey ? "override" : connectorKey ? "connector" : "missing";
+
     if (!ELEVENLABS_API_KEY) {
+      console.error("[ElevenLabs TTS] No API key found (checked override and connector)");
       return new Response(
         JSON.stringify({ 
           error: "ElevenLabs API key not configured",
@@ -111,7 +116,7 @@ serve(async (req) => {
     const voiceConfig = VOICE_MAP[voiceType];
     const voiceId = voiceConfig?.id || DEFAULT_VOICE_ID;
     
-    console.log(`ElevenLabs TTS: voice=${voiceType} (${voiceConfig?.name || 'default'}), text=${text.substring(0, 50)}...`);
+    console.log(`[ElevenLabs TTS] voice=${voiceType} (${voiceConfig?.name || 'default'}), keySource=${keySource}, text=${text.substring(0, 50)}...`);
 
     // Usar eleven_flash_v2_5 - consume 50% menos créditos
     const response = await fetch(
@@ -140,6 +145,10 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", response.status, errorText);
 
+      const isInvalidKey =
+        response.status === 401 &&
+        /invalid_api_key|Invalid API key/i.test(errorText);
+
       // Detectar bloqueo por actividad inusual
       const isBlocked = response.status === 401 && 
         (errorText.includes("detected_unusual_activity") || 
@@ -156,8 +165,17 @@ serve(async (req) => {
             ? "Cuenta ElevenLabs bloqueada por actividad inusual"
             : isQuotaExceeded
             ? "Límite de cuota ElevenLabs alcanzado"
+            : isInvalidKey
+            ? "API key de ElevenLabs inválida"
             : "Error en generación de voz",
-          code: isBlocked ? "ELEVENLABS_BLOCKED" : isQuotaExceeded ? "ELEVENLABS_QUOTA" : "ELEVENLABS_ERROR",
+          code: isBlocked
+            ? "ELEVENLABS_BLOCKED"
+            : isQuotaExceeded
+            ? "ELEVENLABS_QUOTA"
+            : isInvalidKey
+            ? "ELEVENLABS_INVALID_KEY"
+            : "ELEVENLABS_ERROR",
+          keySource,
           details: errorText,
         }),
         {

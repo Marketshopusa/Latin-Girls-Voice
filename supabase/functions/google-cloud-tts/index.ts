@@ -41,54 +41,6 @@ const VOICE_CONFIG: Record<string, VoiceConfig> = {
     ssmlGender: "MALE",
   },
   
-  // === VOCES REGIONALES - VENEZUELA (Caribeña) ===
-  "es-VE-Neural2-A": {
-    voiceName: "es-US-Neural2-A",
-    languageCode: "es-US",
-    ssmlGender: "FEMALE",
-    speakingRate: 1.08,
-    pitch: 1.5,
-  },
-  "es-VE-Neural2-B": {
-    voiceName: "es-US-Neural2-C",
-    languageCode: "es-US",
-    ssmlGender: "MALE",
-    speakingRate: 1.06,
-    pitch: 0.5,
-  },
-  
-  // === VOCES REGIONALES - COLOMBIA (Paisa) ===
-  "es-CO-Neural2-A": {
-    voiceName: "es-US-Neural2-A",
-    languageCode: "es-US",
-    ssmlGender: "FEMALE",
-    speakingRate: 1.05,
-    pitch: 2.0,
-  },
-  "es-CO-Neural2-B": {
-    voiceName: "es-US-Neural2-C",
-    languageCode: "es-US",
-    ssmlGender: "MALE",
-    speakingRate: 1.04,
-    pitch: 1.0,
-  },
-  
-  // === VOCES REGIONALES - ARGENTINA (Porteña) ===
-  "es-AR-Neural2-A": {
-    voiceName: "es-US-Neural2-A",
-    languageCode: "es-US",
-    ssmlGender: "FEMALE",
-    speakingRate: 1.02,
-    pitch: -1.0,
-  },
-  "es-AR-Neural2-B": {
-    voiceName: "es-US-Neural2-B",
-    languageCode: "es-US",
-    ssmlGender: "MALE",
-    speakingRate: 1.0,
-    pitch: -1.5,
-  },
-  
   // === NEURAL2 - ESPAÑOL ESPAÑA (es-ES) ===
   "es-ES-Neural2-A": {
     voiceName: "es-ES-Neural2-A",
@@ -188,14 +140,16 @@ const VOICE_CONFIG: Record<string, VoiceConfig> = {
 
 // Mapeo de voces legacy a las nuevas
 const LEGACY_VOICE_MAP: Record<string, string> = {
+  // Legacy ElevenLabs
   "LATINA_CALIDA": "es-US-Neural2-A",
-  "LATINA_COQUETA": "es-US-Neural2-A",
+  // Más variedad real: voz distinta (no solo pitch)
+  "LATINA_COQUETA": "es-ES-Neural2-D",
   "MEXICANA_DULCE": "es-MX-Neural2-A",
   "LATINO_PROFUNDO": "es-US-Neural2-B",
   "LATINO_SUAVE": "es-US-Neural2-C",
-  "VENEZOLANA": "es-VE-Neural2-A",
-  "COLOMBIANA": "es-CO-Neural2-A",
-  "ARGENTINA": "es-AR-Neural2-A",
+  "VENEZOLANA": "es-ES-Neural2-C",
+  "COLOMBIANA": "es-US-Neural2-A",
+  "ARGENTINA": "es-ES-Neural2-E",
 };
 
 // Voz por defecto
