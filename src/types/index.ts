@@ -38,7 +38,7 @@ export type LegacyVoiceId =
   | 'VENEZOLANA'
   | 'COLOMBIANA'
   | 'ARGENTINA'
-  // Legacy de ElevenLabs (histórico)
+  // Legacy histórico (compatibilidad)
   | 'COLOMBIANA_PAISA'
   | 'COLOMBIANA_SUAVE'
   | 'VENEZOLANA_CARAQUEÑA'
@@ -358,7 +358,7 @@ export const LEGACY_VOICE_MAP: Record<string, VoiceType> = {
   COLOMBIANA: 'es-US-Neural2-A',
   ARGENTINA: 'es-ES-Neural2-B',
 
-  // IDs históricos de ElevenLabs (ahora se mapean a Google con variedad real)
+  // IDs históricos (mapeados a Google con variedad real)
   COLOMBIANA_PAISA: 'es-US-Neural2-A',
   COLOMBIANA_SUAVE: 'es-US-Chirp3-HD-Aoede',
   VENEZOLANA_CARAQUEÑA: 'es-ES-Neural2-D',

@@ -1,6 +1,6 @@
 import { X, Volume2, Shield } from 'lucide-react';
-import { Character, VOICE_OPTIONS, VoiceType } from '@/types';
-import { useState } from 'react';
+import { Character, VOICE_OPTIONS, VoiceType, normalizeVoiceType } from '@/types';
+import { useEffect, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
@@ -19,8 +19,18 @@ export const CharacterConfigModal = ({
 }: CharacterConfigModalProps) => {
   const [history, setHistory] = useState(character.history);
   const [welcomeMessage, setWelcomeMessage] = useState(character.welcomeMessage);
-  const [voice, setVoice] = useState<VoiceType>(character.voice);
+  // Normalizar siempre a una voz real de Google (evita valores legacy que terminan en fallback)
+  const [voice, setVoice] = useState<VoiceType>(normalizeVoiceType(character.voice));
   const [nsfw, setNsfw] = useState(character.nsfw);
+
+  // Cuando cambiamos de personaje o reabrimos, resetea estado al valor real del personaje
+  useEffect(() => {
+    if (!isOpen) return;
+    setHistory(character.history);
+    setWelcomeMessage(character.welcomeMessage);
+    setVoice(normalizeVoiceType(character.voice));
+    setNsfw(character.nsfw);
+  }, [character, isOpen]);
 
   if (!isOpen) return null;
 
