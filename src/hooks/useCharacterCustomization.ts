@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Character, VoiceType } from '@/types';
+import { Character, VoiceType, normalizeVoiceType } from '@/types';
 
 interface CharacterCustomization {
   history?: string;
@@ -49,7 +49,7 @@ export const useCharacterCustomization = (characterId: string | undefined) => {
           setCustomization({
             history: data.history || undefined,
             welcomeMessage: data.welcome_message || undefined,
-            voice: data.voice as VoiceType || undefined,
+            voice: data.voice ? (normalizeVoiceType(data.voice) as VoiceType) : undefined,
             nsfw: data.nsfw ?? undefined,
           });
         }
@@ -76,7 +76,8 @@ export const useCharacterCustomization = (characterId: string | undefined) => {
         character_id: characterId,
         history: updates.history || null,
         welcome_message: updates.welcomeMessage || null,
-        voice: updates.voice || null,
+        // Guardar siempre una voz REAL de Google (evita legacy -> fallback a la misma voz)
+        voice: updates.voice ? normalizeVoiceType(String(updates.voice)) : null,
         nsfw: updates.nsfw ?? null,
       };
 
@@ -96,7 +97,7 @@ export const useCharacterCustomization = (characterId: string | undefined) => {
       setCustomization({
         history: updates.history,
         welcomeMessage: updates.welcomeMessage,
-        voice: updates.voice,
+        voice: updates.voice ? (normalizeVoiceType(String(updates.voice)) as VoiceType) : undefined,
         nsfw: updates.nsfw,
       });
 

@@ -40,7 +40,7 @@ serve(async (req) => {
     const voicePersonality = getVoicePersonality(char.voice);
     
     // Build the system prompt - ultra conciso para respuestas rápidas
-    const systemPrompt = `Eres ${char.name}, ${char.age} años. ${char.tagline}
+     const systemPrompt = `Eres ${char.name}, ${char.age} años. ${char.tagline}
 
 PERSONALIDAD: ${char.history}
 ESTILO: ${voicePersonality}
@@ -58,14 +58,11 @@ REGLAS CRÍTICAS DE FORMATO:
 - Ejemplo: _Sonríe_ **_¡Hola! Me alegra verte ¿Cómo has estado? Te extrañé mucho._**
 
 REGLAS DE FLUIDEZ PARA VOZ (MUY IMPORTANTE):
-- EVITA comas innecesarias. No uses coma antes de "y" "o" "pero" "que"
-- EVITA puntos suspensivos (...) usa solo punto o coma
-- NO uses punto y coma (;) ni guiones (—)
-- Escribe oraciones fluidas y conectadas naturalmente
-- INCORRECTO: "Bueno, pues, yo creo que, sí..."
-- CORRECTO: "Bueno yo creo que sí"
-- INCORRECTO: "¡Hola!, ¿cómo estás?, ¡qué gusto!"
-- CORRECTO: "¡Hola! ¿Cómo estás? Qué gusto verte"
+ - Usa puntuación NATURAL para sonar humano: comas cuando haya pausa real, puntos para separar ideas
+ - Mantén tildes y signos (¿? ¡!) siempre correctos
+ - Puedes usar "..." SOLO si es emocional y máximo una vez por respuesta
+ - Evita el exceso de comas seguidas (no hagas texto robótico), pero NO escribas todo corrido
+ - No uses punto y coma (;)
 - Nunca digas que eres IA`;
 
     // Build messages - limitar historial para velocidad
@@ -146,26 +143,37 @@ REGLAS DE FLUIDEZ PARA VOZ (MUY IMPORTANTE):
 
 // Personalidades de voz actualizadas al nuevo catálogo Neural2
 function getVoicePersonality(voice: string): string {
+  // Primero: IDs actuales de Google Cloud (es-ES, es-MX, es-US)
+  const isSpain = /^es-ES-/.test(voice) || /^es-ES-Chirp3-/.test(voice);
+  const isMexico = /^es-MX-/.test(voice);
+  const isLatino = /^es-US-/.test(voice) || /^es-US-Chirp3-/.test(voice);
+  const isMale = /(Neural2-B|Neural2-C|Neural2-F|Neural2-B$|Neural2-C$|Neural2-F$|Charon|Puck)/.test(voice);
+
+  if (isSpain) {
+    return `${isMale ? 'Voz masculina' : 'Voz femenina'} con acento de España. Hablas con naturalidad española, con expresiones propias de España sin exagerar. Tono cercano, humano y conversacional.`;
+  }
+  if (isMexico) {
+    return `${isMale ? 'Voz masculina' : 'Voz femenina'} con acento mexicano. Usa expresiones mexicanas suaves ("oye", "ay", "qué lindo") solo cuando encaje. Conversación cálida y fluida.`;
+  }
+  if (isLatino) {
+    return `${isMale ? 'Voz masculina' : 'Voz femenina'} con acento latino neutro (LatAm). Tono natural, cercano y expresivo. Hablas como una persona real.`;
+  }
+
+  // Segundo: compatibilidad (IDs legacy guardados en BD)
   const personalities: Record<string, string> = {
-    // Nuevo catálogo Neural2
-    LATINA_CALIDA: `Hablas con calidez y ternura latina. Tu tono es suave, reconfortante y natural. Usas expresiones cariñosas y tu forma de hablar transmite cercanía y dulzura.`,
-    
-    LATINA_COQUETA: `Hablas con un tono seductor y coqueto. Eres juguetona, provocativa y segura. Tu voz transmite sensualidad y picardía. Usas expresiones sugerentes y tu forma de hablar es envolvente.`,
-    
-    MEXICANA_DULCE: `Hablas con acento mexicano suave y encantador. Usas expresiones como "ay", "qué lindo", "oye". Tu tono es dulce pero también puede ser travieso. Eres expresiva y cálida.`,
-    
-    LATINO_PROFUNDO: `Tienes una voz masculina grave y dominante. Hablas con autoridad y confianza. Tus palabras son directas e intensas. Transmites seguridad y poder.`,
-    
-    LATINO_SUAVE: `Tienes una voz masculina suave y romántica. Hablas con ternura y paciencia. Tu tono es reconfortante y gentil. Eres atento y protector.`,
-    
-    // Voces legacy (compatibilidad) - todas mapean a estilo coqueto/seductor
-    COLOMBIANA_PAISA: `Hablas con calidez y coquetería. Tu tono es alegre y seductor.`,
-    VENEZOLANA_GOCHA: `Hablas con dulzura y timidez encantadora. Tu voz es delicada.`,
-    VENEZOLANA_CARACAS: `Hablas con confianza y seguridad. Tu tono es directo y sensual.`,
-    ARGENTINA_SUAVE: `Hablas con seducción y seguridad. Tu tono es envolvente.`,
-    MEXICANA_NORTENA: `Hablas con carácter y dulzura. Tu tono es cálido pero intenso.`,
+    LATINA_CALIDA: `Hablas con calidez y ternura latina. Tono suave y natural.`,
+    LATINA_COQUETA: `Hablas con un tono coqueto y seguro. Eres juguetona y envolvente.`,
+    MEXICANA_DULCE: `Hablas con acento mexicano suave y encantador. Tono dulce y expresivo.`,
+    LATINO_PROFUNDO: `Voz masculina grave. Hablas con autoridad y seguridad.`,
+    LATINO_SUAVE: `Voz masculina suave y romántica. Hablas con ternura.`,
+    COLOMBIANA_PAISA: `Hablas con calidez y coquetería. Tono alegre y seductor.`,
+    VENEZOLANA_GOCHA: `Hablas con dulzura y timidez encantadora. Voz delicada.`,
+    VENEZOLANA_CARAQUEÑA: `Hablas con confianza y seguridad. Tono directo y sensual.`,
+    ARGENTINA_PORTEÑA: `Hablas con seguridad y un toque porteño suave, sin caricatura.`,
+    MEXICANA_NATURAL: `Hablas con naturalidad mexicana cálida.`,
     MASCULINA_PROFUNDA: `Voz grave y dominante. Hablas con autoridad.`,
     MASCULINA_SUAVE: `Voz suave y romántica. Hablas con ternura.`,
+    MASCULINA_LATINA: `Voz masculina latina profunda. Tono seguro y calmado.`,
   };
 
   return personalities[voice] || personalities.LATINA_COQUETA;
