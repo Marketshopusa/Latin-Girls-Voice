@@ -17,9 +17,10 @@ import { useIsMobileOrTablet } from '@/hooks/use-mobile';
 import { useNsfw } from '@/contexts/NsfwContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockCharacters } from '@/data/characters';
-import { Character, VoiceType } from '@/types';
+import { Character, VoiceType, normalizeVoiceType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
 const ChatPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -105,7 +106,7 @@ const ChatPage = () => {
             welcomeMessage: data.welcome_message,
             image: data.image_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop',
             tags: data.nsfw ? ['NSFW', '+18'] : ['SFW'],
-            voice: data.voice as VoiceType,
+            voice: normalizeVoiceType(data.voice),
             nsfw: data.nsfw,
             style: 'Realistic',
           };

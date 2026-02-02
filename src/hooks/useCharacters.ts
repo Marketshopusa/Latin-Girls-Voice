@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Character, VoiceType, DEFAULT_VOICE, VOICE_CATALOG } from '@/types';
+import { Character, VoiceType, normalizeVoiceType } from '@/types';
 import { mockCharacters } from '@/data/characters';
 import { useNsfw } from '@/contexts/NsfwContext';
 
@@ -19,40 +19,6 @@ interface DbCharacter {
   created_at: string;
   updated_at: string;
 }
-
-// Set de voces válidas del nuevo catálogo Google Cloud TTS
-const VALID_VOICES = new Set(VOICE_CATALOG.map(v => v.id));
-
-// Mapeo de voces legacy a las nuevas
-const LEGACY_VOICE_MAP: Record<string, VoiceType> = {
-  'LATINA_CALIDA': 'es-US-Neural2-A',
-  // Más variedad real (cambia de voz, no solo pitch)
-  'LATINA_COQUETA': 'es-ES-Neural2-D',
-  'MEXICANA_DULCE': 'es-MX-Neural2-A',
-  'LATINO_PROFUNDO': 'es-US-Neural2-B',
-  'LATINO_SUAVE': 'es-US-Neural2-C',
-  'VENEZOLANA': 'es-ES-Neural2-C',
-  'COLOMBIANA': 'es-US-Neural2-A',
-  'ARGENTINA': 'es-ES-Neural2-E',
-};
-
-// Normalizar voces legacy a las nuevas
-const normalizeVoiceType = (voice: string | null | undefined): VoiceType => {
-  if (!voice) return DEFAULT_VOICE;
-  
-  // Si ya es una voz válida del nuevo catálogo
-  if (VALID_VOICES.has(voice as VoiceType)) {
-    return voice as VoiceType;
-  }
-  
-  // Si es una voz legacy, mapear
-  if (LEGACY_VOICE_MAP[voice]) {
-    return LEGACY_VOICE_MAP[voice];
-  }
-  
-  // Default
-  return DEFAULT_VOICE;
-};
 
 const mapDbToCharacter = (db: DbCharacter): Character => ({
   id: db.id,
