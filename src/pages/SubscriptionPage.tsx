@@ -21,13 +21,13 @@ const PLAN_FEATURES: PlanFeature[] = [
   { name: 'Personajes SFW', free: true, basic: true, premium: true, ultra: true },
   { name: 'Personajes NSFW', free: false, basic: true, premium: true, ultra: true },
   { name: 'Límite de conversaciones', free: '2', basic: 'Ilimitado', premium: 'Ilimitado', ultra: 'Ilimitado' },
-  { name: 'Creación de personajes', free: false, basic: '20/mes', premium: '50/mes', ultra: 'Ilimitado' },
+  { name: 'Creación de personajes', free: '2', basic: '20/mes', premium: '50/mes', ultra: 'Ilimitado' },
   { name: 'Texto a voz (TTS)', free: false, basic: true, premium: true, ultra: true },
   { name: 'Voces Premium', free: false, basic: false, premium: false, ultra: true },
   { name: 'Generación de imágenes', free: false, basic: '40/mes', premium: '100/mes', ultra: 'Ilimitado' },
   { name: 'Memoria persistente', free: false, basic: true, premium: true, ultra: true },
   { name: 'Memoria Ultra', free: false, basic: false, premium: false, ultra: true },
-  { name: 'Sin publicidad', free: false, basic: true, premium: true, ultra: true },
+  { name: 'Con publicidad', free: true, basic: false, premium: false, ultra: false },
   { name: 'Prioridad de respuesta', free: false, basic: false, premium: true, ultra: true },
 ];
 
@@ -132,6 +132,7 @@ const FeatureRow = ({ feature }: { feature: PlanFeature }) => {
       <td className="py-3 px-2 text-center">{renderValue(feature.ultra)}</td>
       <td className="py-3 px-2 text-center">{renderValue(feature.premium)}</td>
       <td className="py-3 px-2 text-center">{renderValue(feature.basic)}</td>
+      <td className="py-3 px-2 text-center">{renderValue(feature.free)}</td>
     </tr>
   );
 };
@@ -283,6 +284,12 @@ export default function SubscriptionPage() {
                     <div className="flex flex-col items-center">
                       <Zap className="h-5 w-5 text-blue-500 mb-1" />
                       <span className="font-bold">Básico</span>
+                    </div>
+                  </th>
+                  <th className="py-4 px-2 text-center">
+                    <div className="flex flex-col items-center">
+                      <Users className="h-5 w-5 text-gray-500 mb-1" />
+                      <span className="font-bold">Gratis</span>
                     </div>
                   </th>
                 </tr>
