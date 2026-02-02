@@ -138,18 +138,30 @@ const VOICE_CONFIG: Record<string, VoiceConfig> = {
   },
 };
 
-// Mapeo de voces legacy a las nuevas
+// Mapeo de voces legacy a las nuevas (incluyendo las de ElevenLabs históricos)
 const LEGACY_VOICE_MAP: Record<string, string> = {
-  // Legacy ElevenLabs
+  // Legacy antiguos
   "LATINA_CALIDA": "es-US-Neural2-A",
-  // Más variedad real: voz distinta (no solo pitch)
   "LATINA_COQUETA": "es-ES-Neural2-D",
   "MEXICANA_DULCE": "es-MX-Neural2-A",
   "LATINO_PROFUNDO": "es-US-Neural2-B",
   "LATINO_SUAVE": "es-US-Neural2-C",
   "VENEZOLANA": "es-ES-Neural2-C",
   "COLOMBIANA": "es-US-Neural2-A",
-  "ARGENTINA": "es-ES-Neural2-E",
+  "ARGENTINA": "es-ES-Neural2-B",
+  
+  // IDs históricos de ElevenLabs (ahora mapeados a Google con variedad real)
+  "COLOMBIANA_PAISA": "es-US-Neural2-A",
+  "COLOMBIANA_SUAVE": "es-US-Chirp3-HD-Aoede",
+  "VENEZOLANA_CARAQUEÑA": "es-ES-Neural2-D",
+  "VENEZOLANA_GOCHA": "es-ES-Neural2-C",
+  "LATINA_EXPRESIVA": "es-US-Chirp3-HD-Kore",
+  "LATINA_FUERTE": "es-ES-Neural2-A",
+  "MEXICANA_NATURAL": "es-MX-Neural2-A",
+  "ARGENTINA_PORTEÑA": "es-ES-Neural2-B",
+  "MASCULINA_PROFUNDA": "es-US-Neural2-B",
+  "MASCULINA_SUAVE": "es-US-Neural2-C",
+  "MASCULINA_LATINA": "es-US-Chirp3-HD-Charon",
 };
 
 // Voz por defecto
