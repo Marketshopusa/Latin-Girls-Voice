@@ -1,65 +1,117 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useConversation } from '@elevenlabs/react';
-import { Phone, PhoneOff, Volume2, RotateCcw, Mic, MicOff } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Phone, PhoneOff, Volume2, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Character } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface VoiceCallOverlayProps {
   character: Character;
   isOpen: boolean;
   onClose: () => void;
-  agentId: string;
+  conversationHistory: Array<{ role: string; content: string }>;
 }
 
 export const VoiceCallOverlay = ({ 
   character, 
   isOpen, 
   onClose,
-  agentId 
+  conversationHistory
 }: VoiceCallOverlayProps) => {
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const [agentResponse, setAgentResponse] = useState('');
   const [callDuration, setCallDuration] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const callHistoryRef = useRef<Array<{ role: string; content: string }>>([]);
 
-  const conversation = useConversation({
-    onConnect: () => {
-      console.log('Connected to voice agent');
-      setIsConnecting(false);
-    },
-    onDisconnect: () => {
-      console.log('Disconnected from voice agent');
-    },
-    onMessage: (message: unknown) => {
-      console.log('Message:', message);
-      const msg = message as { type?: string; agent_response_event?: { agent_response?: string } };
-      if (msg.type === 'agent_response') {
-        setCurrentTranscript(msg.agent_response_event?.agent_response || '');
-      }
-    },
-    onError: (error) => {
-      console.error('Voice agent error:', error);
-      setIsConnecting(false);
-    },
-  });
-
-  // Start call when overlay opens
+  // Initialize speech recognition
   useEffect(() => {
-    if (isOpen && conversation.status === 'disconnected') {
-      startCall();
+    if (!isOpen) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Tu navegador no soporta reconocimiento de voz');
+      return;
     }
-    return () => {
-      if (conversation.status === 'connected') {
-        conversation.endSession();
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'es-ES';
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setIsConnected(true);
+    };
+
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      let interimTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
       }
+
+      setCurrentTranscript(interimTranscript || finalTranscript);
+
+      if (finalTranscript && !isProcessing) {
+        handleUserMessage(finalTranscript);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error !== 'no-speech') {
+        toast.error('Error en el reconocimiento de voz');
+      }
+    };
+
+    recognition.onend = () => {
+      // Restart if still in call and not muted
+      if (isOpen && !isMuted && !isSpeaking) {
+        try {
+          recognition.start();
+        } catch (e) {
+          // Already started
+        }
+      }
+    };
+
+    recognitionRef.current = recognition;
+    
+    // Initialize call history with conversation context
+    callHistoryRef.current = conversationHistory.slice(-10); // Last 10 messages for context
+    
+    // Start listening
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error('Failed to start recognition:', e);
+    }
+
+    return () => {
+      recognition.stop();
+      setIsConnected(false);
     };
   }, [isOpen]);
 
   // Call duration timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (conversation.status === 'connected') {
+    if (isConnected) {
       interval = setInterval(() => {
         setCallDuration(prev => prev + 1);
       }, 1000);
@@ -67,38 +119,130 @@ export const VoiceCallOverlay = ({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [conversation.status]);
+  }, [isConnected]);
 
-  const startCall = useCallback(async () => {
-    setIsConnecting(true);
-    setCallDuration(0);
+  // Stop recognition while speaking
+  useEffect(() => {
+    if (isSpeaking && recognitionRef.current) {
+      recognitionRef.current.stop();
+    } else if (!isSpeaking && isConnected && !isMuted && recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        // Already started
+      }
+    }
+  }, [isSpeaking, isConnected, isMuted]);
+
+  const handleUserMessage = async (text: string) => {
+    if (isProcessing || isSpeaking) return;
+    
+    setIsProcessing(true);
+    setCurrentTranscript('');
+    
+    // Add to call history
+    callHistoryRef.current.push({ role: 'user', content: text });
+
+    try {
+      // Get AI response using existing chat-ai function
+      const response = await supabase.functions.invoke('chat-ai', {
+        body: {
+          message: text,
+          characterName: character.name,
+          characterHistory: character.history,
+          conversationHistory: callHistoryRef.current,
+          isVoiceCall: true, // Flag for shorter responses
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      const aiText = response.data?.response || 'Lo siento, no pude escucharte bien.';
+      setAgentResponse(aiText);
+      callHistoryRef.current.push({ role: 'assistant', content: aiText });
+
+      // Play TTS response
+      await playTTS(aiText);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      toast.error('Error al obtener respuesta');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const playTTS = async (text: string) => {
+    setIsSpeaking(true);
     
     try {
-      // Request microphone permission
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            text,
+            voiceType: character.voice || 'seductora',
+          }),
+        }
+      );
 
-      // Start conversation with public agent (WebSocket connection)
-      await conversation.startSession({
-        agentId: agentId,
-        connectionType: 'websocket',
-      } as Parameters<typeof conversation.startSession>[0]);
+      if (!response.ok) throw new Error('TTS request failed');
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
     } catch (error) {
-      console.error('Failed to start call:', error);
-      setIsConnecting(false);
+      console.error('TTS error:', error);
+      setIsSpeaking(false);
     }
-  }, [conversation, agentId]);
+  };
 
-  const endCall = useCallback(async () => {
-    await conversation.endSession();
+  const endCall = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setIsConnected(false);
     setCallDuration(0);
     setCurrentTranscript('');
+    setAgentResponse('');
     onClose();
-  }, [conversation, onClose]);
+  }, [onClose]);
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
-    // Note: ElevenLabs SDK doesn't have a direct mute function,
-    // but we can control input volume
+    if (recognitionRef.current) {
+      if (!isMuted) {
+        recognitionRef.current.stop();
+      } else {
+        try {
+          recognitionRef.current.start();
+        } catch (e) {
+          // Already started
+        }
+      }
+    }
   };
 
   const formatDuration = (seconds: number) => {
@@ -126,7 +270,7 @@ export const VoiceCallOverlay = ({
           <div 
             className={cn(
               "absolute inset-0 rounded-full border-4 border-primary transition-all duration-300",
-              conversation.isSpeaking && "animate-pulse scale-105 border-pink-500"
+              isSpeaking && "animate-pulse scale-105 border-pink-500"
             )}
             style={{
               width: '180px',
@@ -156,7 +300,7 @@ export const VoiceCallOverlay = ({
           </div>
 
           {/* Speaker indicator */}
-          {conversation.isSpeaking && (
+          {isSpeaking && (
             <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center">
               <Volume2 className="w-5 h-5 text-white animate-pulse" />
             </div>
@@ -170,24 +314,25 @@ export const VoiceCallOverlay = ({
 
         {/* Status */}
         <p className="text-muted-foreground">
-          {isConnecting ? 'Conectando...' : 
-           conversation.isSpeaking ? 'Hablando...' : 
-           conversation.status === 'connected' ? 'Escuchando...' : 
-           'Desconectado'}
+          {isProcessing ? 'Pensando...' : 
+           isSpeaking ? 'Hablando...' : 
+           isListening && !isMuted ? 'Escuchando...' : 
+           isMuted ? 'En silencio' :
+           'Conectando...'}
         </p>
 
         {/* Audio visualization bars */}
-        {conversation.status === 'connected' && (
+        {isConnected && (
           <div className="flex items-center justify-center gap-1 h-16 my-4">
-        {[...Array(5)].map((_, i) => (
+            {[...Array(5)].map((_, i) => (
               <div
                 key={i}
                 className={cn(
                   "w-2 bg-primary rounded-full transition-all duration-150",
-                  conversation.isSpeaking ? "animate-pulse" : ""
+                  (isSpeaking || (isListening && !isMuted)) ? "animate-pulse" : ""
                 )}
                 style={{
-                  height: conversation.isSpeaking 
+                  height: (isSpeaking || (isListening && !isMuted))
                     ? `${Math.random() * 40 + 20}px` 
                     : '8px',
                   animationDelay: `${i * 100}ms`,
@@ -197,17 +342,26 @@ export const VoiceCallOverlay = ({
           </div>
         )}
 
-        {/* Current transcript */}
+        {/* Current transcript (what user is saying) */}
         {currentTranscript && (
-          <div className="max-w-sm text-center px-4 py-3 bg-card/50 rounded-lg border border-border/50">
+          <div className="max-w-sm text-center px-4 py-3 bg-secondary/50 rounded-lg border border-border/50">
+            <p className="text-sm text-muted-foreground italic">
+              "{currentTranscript}"
+            </p>
+          </div>
+        )}
+
+        {/* Agent response */}
+        {agentResponse && !currentTranscript && (
+          <div className="max-w-sm text-center px-4 py-3 bg-primary/10 rounded-lg border border-primary/30">
             <p className="text-sm text-foreground">
-              {currentTranscript}
+              {agentResponse}
             </p>
           </div>
         )}
 
         {/* Call duration */}
-        {conversation.status === 'connected' && (
+        {isConnected && (
           <p className="text-sm text-muted-foreground mt-2">
             {formatDuration(callDuration)}
           </p>
@@ -225,38 +379,35 @@ export const VoiceCallOverlay = ({
             onClick={toggleMute}
           >
             {isMuted ? (
-              <MicOff className="w-6 h-6" />
+              <MicOff className="w-6 h-6 text-destructive" />
             ) : (
-              <Volume2 className="w-6 h-6" />
+              <Mic className="w-6 h-6" />
             )}
           </Button>
 
-          {/* Main mic button */}
-          <Button
-            size="icon"
+          {/* Main status indicator */}
+          <div
             className={cn(
-              "w-16 h-16 rounded-full transition-all",
-              conversation.status === 'connected' 
-                ? "bg-primary hover:bg-primary/90" 
-                : "bg-muted"
+              "w-16 h-16 rounded-full flex items-center justify-center transition-all",
+              isSpeaking ? "bg-pink-500" :
+              isListening && !isMuted ? "bg-primary animate-pulse" :
+              "bg-muted"
             )}
-            disabled={conversation.status !== 'connected'}
           >
-            {isMuted ? (
-              <MicOff className="w-7 h-7" />
+            {isSpeaking ? (
+              <Volume2 className="w-7 h-7 text-white" />
             ) : (
-              <Mic className="w-7 h-7" />
+              <Mic className="w-7 h-7 text-primary-foreground" />
             )}
-          </Button>
+          </div>
 
           <Button
             variant="outline"
             size="icon"
             className="w-14 h-14 rounded-full bg-card/80"
-            onClick={startCall}
-            disabled={conversation.status === 'connected' || isConnecting}
+            disabled
           >
-            <RotateCcw className="w-6 h-6" />
+            <Volume2 className="w-6 h-6" />
           </Button>
         </div>
 
@@ -272,3 +423,11 @@ export const VoiceCallOverlay = ({
     </div>
   );
 };
+
+// Add Web Speech API types
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}

@@ -76,23 +76,10 @@ const ChatPage = () => {
   });
 
   // Hook for voice calls
-  const { 
-    isCallActive, 
-    canUseVoiceCalls, 
-    agentId,
-    startCall, 
-    endCall 
-  } = useVoiceCall({ characterName: character?.name });
+  const { canUseVoiceCalls, checkVoiceCallAccess } = useVoiceCall({ characterName: character?.name });
 
   const handleStartVoiceCall = () => {
-    if (!canUseVoiceCalls) {
-      toast.error('Las llamadas de voz son exclusivas del plan Ultra', {
-        description: 'Actualiza tu plan para desbloquear esta función.',
-        action: {
-          label: 'Ver planes',
-          onClick: () => navigate('/subscription'),
-        },
-      });
+    if (!checkVoiceCallAccess()) {
       return;
     }
     setIsVoiceCallOpen(true);
@@ -354,14 +341,12 @@ const ChatPage = () => {
         />
 
         {/* Voice Call Overlay */}
-        {agentId && (
-          <VoiceCallOverlay
-            character={character}
-            isOpen={isVoiceCallOpen}
-            onClose={() => setIsVoiceCallOpen(false)}
-            agentId={agentId}
-          />
-        )}
+        <VoiceCallOverlay
+          character={character}
+          isOpen={isVoiceCallOpen}
+          onClose={() => setIsVoiceCallOpen(false)}
+          conversationHistory={messages.map(m => ({ role: m.role, content: m.text }))}
+        />
       </>
     );
   }
@@ -477,14 +462,12 @@ const ChatPage = () => {
       />
 
       {/* Voice Call Overlay */}
-      {agentId && (
-        <VoiceCallOverlay
-          character={character}
-          isOpen={isVoiceCallOpen}
-          onClose={() => setIsVoiceCallOpen(false)}
-          agentId={agentId}
-        />
-      )}
+      <VoiceCallOverlay
+        character={character}
+        isOpen={isVoiceCallOpen}
+        onClose={() => setIsVoiceCallOpen(false)}
+        conversationHistory={messages.map(m => ({ role: m.role, content: m.text }))}
+      />
     </div>
   );
 };
