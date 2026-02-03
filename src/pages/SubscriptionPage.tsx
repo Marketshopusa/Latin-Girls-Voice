@@ -24,6 +24,7 @@ const PLAN_FEATURES: PlanFeature[] = [
   { name: 'Creación de personajes', free: '2', basic: '20/mes', premium: '50/mes', ultra: 'Ilimitado' },
   { name: 'Texto a voz (TTS)', free: false, basic: true, premium: true, ultra: true },
   { name: 'Voces Premium', free: false, basic: false, premium: false, ultra: true },
+  { name: 'Llamadas de voz', free: false, basic: false, premium: false, ultra: true },
   { name: 'Generación de imágenes', free: false, basic: '40/mes', premium: '100/mes', ultra: 'Ilimitado' },
   { name: 'Memoria persistente', free: false, basic: true, premium: true, ultra: true },
   { name: 'Memoria Ultra', free: false, basic: false, premium: false, ultra: true },
