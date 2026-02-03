@@ -240,8 +240,8 @@ serve(async (req) => {
     // Obtener configuración de voz
     const voiceConfig = VOICE_CONFIG[resolvedVoiceType] || VOICE_CONFIG[DEFAULT_VOICE];
     
-    // Limpiar texto (el cliente ya lo prepara, pero acá forzamos seguridad)
-    const cleanText = String(text).slice(0, 1800);
+    // Limpiar texto - límite ampliado para mensajes largos (Google TTS soporta hasta 5000 chars)
+    const cleanText = String(text).slice(0, 3000);
     const ssml = textToSsml(cleanText);
 
     console.log(

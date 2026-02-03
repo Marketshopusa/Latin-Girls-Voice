@@ -79,8 +79,27 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
     // Asegurar espacio después de puntuación
     joined = joined.replace(/([.!?,:])([A-ZÁÉÍÓÚÑa-záéíóúñ])/g, "$1 $2");
 
-    const MAX_CHARS = 1500;
-    return joined.length > MAX_CHARS ? joined.slice(0, MAX_CHARS) : joined;
+    // Límite ampliado para evitar cortar mensajes a la mitad
+    const MAX_CHARS = 2500;
+    
+    if (joined.length <= MAX_CHARS) {
+      return joined;
+    }
+    
+    // Si excede el límite, cortar en un punto natural (punto, signo de exclamación/interrogación)
+    const truncated = joined.slice(0, MAX_CHARS);
+    const lastSentenceEnd = Math.max(
+      truncated.lastIndexOf('.'),
+      truncated.lastIndexOf('!'),
+      truncated.lastIndexOf('?')
+    );
+    
+    // Si encontramos un punto de corte natural, usarlo
+    if (lastSentenceEnd > MAX_CHARS * 0.6) {
+      return truncated.slice(0, lastSentenceEnd + 1);
+    }
+    
+    return truncated;
   }, []);
 
   const stopAudio = useCallback(() => {
