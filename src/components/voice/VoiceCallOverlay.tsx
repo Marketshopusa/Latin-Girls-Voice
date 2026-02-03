@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Phone, PhoneOff, Volume2, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Character } from '@/types';
+import { Character, Message } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -11,13 +11,16 @@ interface VoiceCallOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   conversationHistory: Array<{ role: string; content: string }>;
+  // Function to add messages to the chat history (syncs with DB)
+  addMessageToChat: (role: 'user' | 'assistant', text: string, audioDuration?: number) => Promise<Message | null>;
 }
 
 export const VoiceCallOverlay = ({ 
   character, 
   isOpen, 
   onClose,
-  conversationHistory
+  conversationHistory,
+  addMessageToChat
 }: VoiceCallOverlayProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -161,8 +164,11 @@ export const VoiceCallOverlay = ({
     setIsProcessing(true);
     setCurrentTranscript('');
     
-    // Add to call history with correct role
+    // Add user message to call history
     callHistoryRef.current.push({ role: 'user', content: text });
+    
+    // Save user message to chat database (sync with chat)
+    await addMessageToChat('user', text);
 
     try {
       // Get AI response using existing chat-ai function
@@ -189,6 +195,10 @@ export const VoiceCallOverlay = ({
       const aiText = response.data?.response || 'Lo siento, no pude escucharte bien.';
       setAgentResponse(aiText);
       callHistoryRef.current.push({ role: 'assistant', content: aiText });
+      
+      // Save assistant message to chat database (sync with chat)
+      const audioDuration = Math.floor(aiText.length / 15);
+      await addMessageToChat('assistant', aiText, audioDuration);
 
       // Play TTS response - clean text first
       if (isCallActiveRef.current) {

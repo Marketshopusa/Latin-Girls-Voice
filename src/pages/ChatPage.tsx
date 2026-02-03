@@ -346,6 +346,7 @@ const ChatPage = () => {
           isOpen={isVoiceCallOpen}
           onClose={() => setIsVoiceCallOpen(false)}
           conversationHistory={messages.map(m => ({ role: m.role, content: m.text }))}
+          addMessageToChat={addMessage}
         />
       </>
     );
@@ -467,6 +468,7 @@ const ChatPage = () => {
         isOpen={isVoiceCallOpen}
         onClose={() => setIsVoiceCallOpen(false)}
         conversationHistory={messages.map(m => ({ role: m.role, content: m.text }))}
+        addMessageToChat={addMessage}
       />
     </div>
   );
