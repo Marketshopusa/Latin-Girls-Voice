@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +8,7 @@ import { MainLayout } from "./components/layout/MainLayout";
 import { NsfwProvider } from "./contexts/NsfwContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
+import { IntroVideoScreen } from "./components/intro/IntroVideoScreen";
 import DiscoverPage from "./pages/DiscoverPage";
 import ChatPage from "./pages/ChatPage";
 import CreateCharacterPage from "./pages/CreateCharacterPage";
@@ -19,34 +21,54 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <SubscriptionProvider>
-          <NsfwProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route element={<MainLayout />}>
-                  <Route path="/" element={<DiscoverPage />} />
-                  <Route path="/messages" element={<MessagesPage />} />
-                  <Route path="/create" element={<CreateCharacterPage />} />
-                  <Route path="/subscription" element={<SubscriptionPage />} />
-                </Route>
-                <Route path="/chat/:id" element={<ChatPage />} />
-                <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                <Route path="/terms" element={<TermsOfServicePage />} />
-                <Route path="/age-policy" element={<AgePolicyPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </NsfwProvider>
-        </SubscriptionProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [showIntro, setShowIntro] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check if user has seen intro before
+    const hasSeenIntro = localStorage.getItem('intro_video_seen') === 'true';
+    setShowIntro(!hasSeenIntro);
+  }, []);
+
+  // Show nothing while checking localStorage
+  if (showIntro === null) {
+    return null;
+  }
+
+  // Show intro video if first visit
+  if (showIntro) {
+    return <IntroVideoScreen onComplete={() => setShowIntro(false)} />;
+  }
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <SubscriptionProvider>
+            <NsfwProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route element={<MainLayout />}>
+                    <Route path="/" element={<DiscoverPage />} />
+                    <Route path="/messages" element={<MessagesPage />} />
+                    <Route path="/create" element={<CreateCharacterPage />} />
+                    <Route path="/subscription" element={<SubscriptionPage />} />
+                  </Route>
+                  <Route path="/chat/:id" element={<ChatPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/terms" element={<TermsOfServicePage />} />
+                  <Route path="/age-policy" element={<AgePolicyPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </NsfwProvider>
+          </SubscriptionProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
