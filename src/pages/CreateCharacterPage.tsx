@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Volume2, Shield, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, Volume2, Shield, Sparkles, Loader2, Wand2 } from 'lucide-react';
 import { VOICE_OPTIONS, VoiceType, DEFAULT_VOICE } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,58 @@ const CreateCharacterPage = () => {
   const [nsfw, setNsfw] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const [generatingStory, setGeneratingStory] = useState(false);
+
+  const generateStoryWithAI = async () => {
+    if (!mediaUrl) {
+      toast.error('Primero sube una imagen para que la IA pueda analizarla');
+      return;
+    }
+
+    if (mediaType === 'video') {
+      toast.error('La generación con IA solo funciona con imágenes, no con videos');
+      return;
+    }
+
+    setGeneratingStory(true);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-character-story`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            imageBase64: mediaUrl,
+            name: name || undefined,
+            age: age ? parseInt(age) : undefined,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.tagline) setTagline(data.tagline);
+      if (data.history) setHistory(data.history);
+      if (data.welcomeMessage) setWelcomeMessage(data.welcomeMessage);
+      
+      toast.success('¡Historia generada con IA! Puedes editarla si lo deseas.');
+    } catch (err) {
+      console.error('AI generation error:', err);
+      toast.error(err instanceof Error ? err.message : 'Error al generar la historia');
+    } finally {
+      setGeneratingStory(false);
+    }
+  };
 
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -162,16 +214,43 @@ const CreateCharacterPage = () => {
               />
             </div>
 
+            {/* AI Generate Button - Prominent */}
+            {mediaUrl && mediaType === 'image' && (
+              <button
+                onClick={generateStoryWithAI}
+                disabled={generatingStory}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg flex items-center justify-center gap-3"
+              >
+                {generatingStory ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Analizando imagen...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-5 w-5" />
+                    ✨ Generar Historia con IA
+                  </>
+                )}
+              </button>
+            )}
+
             {/* History/Prompt */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm text-muted-foreground">
                   Descripción & Personalidad (PROMPT)
                 </label>
-                <button className="flex items-center gap-1 px-2 py-1 rounded-md bg-primary/20 text-primary text-xs">
-                  <Sparkles className="h-3 w-3" />
-                  Generar con IA
-                </button>
+                {mediaUrl && mediaType === 'image' && (
+                  <button 
+                    onClick={generateStoryWithAI}
+                    disabled={generatingStory}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-primary/20 text-primary text-xs hover:bg-primary/30 disabled:opacity-50"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {generatingStory ? 'Generando...' : 'Generar con IA'}
+                  </button>
+                )}
               </div>
               <textarea
                 value={history}
