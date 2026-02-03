@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye } from 'lucide-react';
+import { ArrowLeft, Eye, Phone } from 'lucide-react';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { CharacterPanel } from '@/components/chat/CharacterPanel';
@@ -8,30 +8,36 @@ import { CharacterConfigModal } from '@/components/characters/CharacterConfigMod
 import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { MobileChatOverlay } from '@/components/chat/MobileChatOverlay';
+import { VoiceCallOverlay } from '@/components/voice/VoiceCallOverlay';
 import { useConversation } from '@/hooks/useConversation';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useChatAI } from '@/hooks/useChatAI';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
 import { useCharacterCustomization } from '@/hooks/useCharacterCustomization';
+import { useVoiceCall } from '@/hooks/useVoiceCall';
 import { useIsMobileOrTablet } from '@/hooks/use-mobile';
 import { useNsfw } from '@/contexts/NsfwContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { mockCharacters } from '@/data/characters';
 import { Character, VoiceType, normalizeVoiceType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 const ChatPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isMobileOrTablet = useIsMobileOrTablet();
   const { user } = useAuth();
+  const { plan } = useSubscription();
   
   const [baseCharacter, setBaseCharacter] = useState<Character | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [characterLoading, setCharacterLoading] = useState(true);
   const [lastAIMessageId, setLastAIMessageId] = useState<string | null>(null);
+  const [isVoiceCallOpen, setIsVoiceCallOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { characters } = useCharacters();
@@ -68,6 +74,29 @@ const ChatPage = () => {
     },
     nsfw: nsfwEnabled && (character?.nsfw || false),
   });
+
+  // Hook for voice calls
+  const { 
+    isCallActive, 
+    canUseVoiceCalls, 
+    agentId,
+    startCall, 
+    endCall 
+  } = useVoiceCall({ characterName: character?.name });
+
+  const handleStartVoiceCall = () => {
+    if (!canUseVoiceCalls) {
+      toast.error('Las llamadas de voz son exclusivas del plan Ultra', {
+        description: 'Actualiza tu plan para desbloquear esta función.',
+        action: {
+          label: 'Ver planes',
+          onClick: () => navigate('/subscription'),
+        },
+      });
+      return;
+    }
+    setIsVoiceCallOpen(true);
+  };
 
   // Load character data - first check mocks, then DB
   useEffect(() => {
@@ -251,6 +280,17 @@ const ChatPage = () => {
         <div className="flex-1 min-w-0">
           <h2 className="font-display font-semibold text-outline">{character.name}</h2>
         </div>
+
+        {/* Voice Call Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleStartVoiceCall}
+          className={canUseVoiceCalls ? "text-primary" : "text-muted-foreground"}
+          title={canUseVoiceCalls ? "Iniciar llamada de voz" : "Exclusivo para plan Ultra"}
+        >
+          <Phone className="h-5 w-5" />
+        </Button>
       </header>
 
       {/* Messages */}
@@ -312,6 +352,16 @@ const ChatPage = () => {
           onClose={() => setIsConfigOpen(false)}
           onSave={handleSaveConfig}
         />
+
+        {/* Voice Call Overlay */}
+        {agentId && (
+          <VoiceCallOverlay
+            character={character}
+            isOpen={isVoiceCallOpen}
+            onClose={() => setIsVoiceCallOpen(false)}
+            agentId={agentId}
+          />
+        )}
       </>
     );
   }
@@ -347,6 +397,17 @@ const ChatPage = () => {
           <div className="flex-1 min-w-0">
             <h2 className="font-display font-semibold truncate">{character.name}</h2>
           </div>
+
+          {/* Voice Call Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleStartVoiceCall}
+            className={canUseVoiceCalls ? "text-primary" : "text-muted-foreground"}
+            title={canUseVoiceCalls ? "Iniciar llamada de voz" : "Exclusivo para plan Ultra"}
+          >
+            <Phone className="h-5 w-5" />
+          </Button>
 
           {/* Thought bubble hint */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 text-primary text-sm">
@@ -414,6 +475,16 @@ const ChatPage = () => {
         onClose={() => setIsConfigOpen(false)}
         onSave={handleSaveConfig}
       />
+
+      {/* Voice Call Overlay */}
+      {agentId && (
+        <VoiceCallOverlay
+          character={character}
+          isOpen={isVoiceCallOpen}
+          onClose={() => setIsVoiceCallOpen(false)}
+          agentId={agentId}
+        />
+      )}
     </div>
   );
 };

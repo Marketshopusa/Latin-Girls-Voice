@@ -13,6 +13,7 @@ interface PlanLimits {
   hasPersistentMemory: boolean;
   hasUltraMemory: boolean;
   hasPremiumVoices: boolean;
+  hasVoiceCalls: boolean;
 }
 
 export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
@@ -25,6 +26,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     hasPersistentMemory: false,
     hasUltraMemory: false,
     hasPremiumVoices: false,
+    hasVoiceCalls: false,
   },
   basic: {
     maxCharacters: Infinity,
@@ -35,6 +37,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     hasPersistentMemory: true,
     hasUltraMemory: false,
     hasPremiumVoices: false,
+    hasVoiceCalls: false,
   },
   premium: {
     maxCharacters: Infinity,
@@ -45,6 +48,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     hasPersistentMemory: true,
     hasUltraMemory: false,
     hasPremiumVoices: false,
+    hasVoiceCalls: false,
   },
   ultra: {
     maxCharacters: Infinity,
@@ -55,6 +59,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     hasPersistentMemory: true,
     hasUltraMemory: true,
     hasPremiumVoices: true,
+    hasVoiceCalls: true,
   },
 };
 
