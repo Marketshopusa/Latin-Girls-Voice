@@ -31,6 +31,18 @@ export const VoiceCallOverlay = ({
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const callHistoryRef = useRef<Array<{ role: string; content: string }>>([]);
+  const isCallActiveRef = useRef(false);
+
+  // Clean text for TTS - remove markdown formatting
+  const cleanTextForTTS = (text: string): string => {
+    return text
+      .replace(/\*\*_|_\*\*/g, '') // Remove **_ and _**
+      .replace(/\*\*|__/g, '')     // Remove ** and __
+      .replace(/\*|_/g, '')        // Remove single * and _
+      .replace(/^[-–—]\s*/gm, '')  // Remove leading dashes
+      .replace(/\n+/g, ' ')        // Replace newlines with spaces
+      .trim();
+  };
 
   // Initialize speech recognition
   useEffect(() => {
@@ -91,9 +103,13 @@ export const VoiceCallOverlay = ({
     };
 
     recognitionRef.current = recognition;
+    isCallActiveRef.current = true;
     
-    // Initialize call history with conversation context
-    callHistoryRef.current = conversationHistory.slice(-10); // Last 10 messages for context
+    // Initialize call history with conversation context - convert to proper format
+    callHistoryRef.current = conversationHistory.slice(-10).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    }));
     
     // Start listening
     try {
@@ -103,7 +119,12 @@ export const VoiceCallOverlay = ({
     }
 
     return () => {
+      isCallActiveRef.current = false;
       recognition.stop();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
       setIsConnected(false);
     };
   }, [isOpen]);
@@ -135,12 +156,12 @@ export const VoiceCallOverlay = ({
   }, [isSpeaking, isConnected, isMuted]);
 
   const handleUserMessage = async (text: string) => {
-    if (isProcessing || isSpeaking) return;
+    if (isProcessing || isSpeaking || !isCallActiveRef.current) return;
     
     setIsProcessing(true);
     setCurrentTranscript('');
     
-    // Add to call history
+    // Add to call history with correct role
     callHistoryRef.current.push({ role: 'user', content: text });
 
     try {
@@ -156,7 +177,10 @@ export const VoiceCallOverlay = ({
             voice: character.voice || 'LATINA_COQUETA',
             nsfw: character.nsfw || false,
           },
-          conversationHistory: callHistoryRef.current,
+          conversationHistory: callHistoryRef.current.map(msg => ({
+            role: msg.role,
+            text: msg.content
+          })),
         },
       });
 
@@ -166,8 +190,10 @@ export const VoiceCallOverlay = ({
       setAgentResponse(aiText);
       callHistoryRef.current.push({ role: 'assistant', content: aiText });
 
-      // Play TTS response
-      await playTTS(aiText);
+      // Play TTS response - clean text first
+      if (isCallActiveRef.current) {
+        await playTTS(cleanTextForTTS(aiText));
+      }
     } catch (error) {
       console.error('Error getting AI response:', error);
       toast.error('Error al obtener respuesta');
@@ -222,16 +248,38 @@ export const VoiceCallOverlay = ({
   };
 
   const endCall = useCallback(() => {
+    // Mark call as inactive first to prevent any new processing
+    isCallActiveRef.current = false;
+    
+    // Stop speech recognition
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+        recognitionRef.current.abort?.();
+      } catch (e) {
+        // Ignore errors when stopping
+      }
+      recognitionRef.current = null;
     }
+    
+    // Stop any playing audio
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current = null;
     }
+    
+    // Reset all state
     setIsConnected(false);
+    setIsListening(false);
+    setIsSpeaking(false);
+    setIsProcessing(false);
     setCallDuration(0);
     setCurrentTranscript('');
     setAgentResponse('');
+    callHistoryRef.current = [];
+    
+    // Close the overlay
     onClose();
   }, [onClose]);
 
