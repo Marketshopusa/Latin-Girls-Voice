@@ -74,6 +74,7 @@ interface SubscriptionContextType {
   limits: PlanLimits;
   subscriptionEnd: string | null;
   isLoading: boolean;
+  isAdmin: boolean;
   refreshSubscription: () => Promise<void>;
   checkout: (priceId: string) => Promise<void>;
   openCustomerPortal: () => Promise<void>;
@@ -94,16 +95,54 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   const [plan, setPlan] = useState<PlanType>('free');
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const checkAdminStatus = useCallback(async () => {
+    if (!user) {
+      setIsAdmin(false);
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      const adminStatus = !!data;
+      setIsAdmin(adminStatus);
+      return adminStatus;
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setIsAdmin(false);
+      return false;
+    }
+  }, [user]);
 
   const refreshSubscription = useCallback(async () => {
     if (!user || !session) {
       setPlan('free');
       setSubscriptionEnd(null);
+      setIsAdmin(false);
       return;
     }
 
     setIsLoading(true);
     try {
+      // Check admin status first
+      const adminStatus = await checkAdminStatus();
+      
+      // If admin, give Ultra access without checking Stripe
+      if (adminStatus) {
+        setPlan('ultra');
+        setSubscriptionEnd(null);
+        setIsLoading(false);
+        return;
+      }
+
+      // Otherwise check Stripe subscription
       const { data, error } = await supabase.functions.invoke('check-subscription');
       if (error) throw error;
       
@@ -115,7 +154,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, session]);
+  }, [user, session, checkAdminStatus]);
 
   useEffect(() => {
     refreshSubscription();
@@ -164,6 +203,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         limits,
         subscriptionEnd,
         isLoading,
+        isAdmin,
         refreshSubscription,
         checkout,
         openCustomerPortal,
