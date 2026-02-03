@@ -148,10 +148,15 @@ export const VoiceCallOverlay = ({
       const response = await supabase.functions.invoke('chat-ai', {
         body: {
           message: text,
-          characterName: character.name,
-          characterHistory: character.history,
+          character: {
+            name: character.name,
+            age: character.age || 25,
+            history: character.history,
+            tagline: character.tagline || '',
+            voice: character.voice || 'LATINA_COQUETA',
+            nsfw: character.nsfw || false,
+          },
           conversationHistory: callHistoryRef.current,
-          isVoiceCall: true, // Flag for shorter responses
         },
       });
 
