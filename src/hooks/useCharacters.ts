@@ -133,6 +133,9 @@ export const useCreateCharacter = () => {
     setError(null);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
       let imageUrl: string | null = null;
       
       if (characterData.image && characterData.image.startsWith('data:')) {
@@ -153,6 +156,7 @@ export const useCreateCharacter = () => {
           nsfw: characterData.nsfw,
           image_url: imageUrl,
           is_public: true,
+          creator_id: user?.id || null,
         })
         .select()
         .single() as { data: DbCharacter | null, error: any };
