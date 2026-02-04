@@ -76,11 +76,26 @@ const CreateCharacterPage = () => {
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const isVideo = file.type.startsWith('video/');
-      setMediaType(isVideo ? 'video' : 'image');
+      // More robust type detection
+      const isVideo = file.type.startsWith('video/') || 
+                      file.name.toLowerCase().endsWith('.mp4') || 
+                      file.name.toLowerCase().endsWith('.webm');
+      const type = isVideo ? 'video' : 'image';
+      
+      console.log('File uploaded:', file.name, 'Type:', file.type, 'Detected as:', type);
+      
+      setMediaType(type);
       
       const reader = new FileReader();
-      reader.onload = () => setMediaUrl(reader.result as string);
+      reader.onload = () => {
+        const result = reader.result as string;
+        console.log('File loaded, mediaUrl set, length:', result.length);
+        setMediaUrl(result);
+      };
+      reader.onerror = () => {
+        console.error('Error reading file');
+        toast.error('Error al leer el archivo');
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -214,26 +229,34 @@ const CreateCharacterPage = () => {
               />
             </div>
 
-            {/* AI Generate Button - Prominent */}
-            {mediaUrl && mediaType === 'image' && (
-              <button
-                onClick={generateStoryWithAI}
-                disabled={generatingStory}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg flex items-center justify-center gap-3"
-              >
-                {generatingStory ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Analizando imagen...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="h-5 w-5" />
-                    ✨ Generar Historia con IA
-                  </>
-                )}
-              </button>
-            )}
+            {/* AI Generate Button - Always visible, enabled only with image */}
+            <button
+              onClick={generateStoryWithAI}
+              disabled={generatingStory || !mediaUrl || mediaType !== 'image'}
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg flex items-center justify-center gap-3"
+            >
+              {generatingStory ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Analizando imagen...
+                </>
+              ) : !mediaUrl ? (
+                <>
+                  <Wand2 className="h-5 w-5" />
+                  Sube una imagen para generar con IA
+                </>
+              ) : mediaType === 'video' ? (
+                <>
+                  <Wand2 className="h-5 w-5" />
+                  La IA solo funciona con imágenes
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-5 w-5" />
+                  ✨ Generar Historia con IA
+                </>
+              )}
+            </button>
 
             {/* History/Prompt */}
             <div className="space-y-2">
