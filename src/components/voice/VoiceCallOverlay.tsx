@@ -57,78 +57,116 @@ export const VoiceCallOverlay = ({
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'es-ES';
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setIsConnected(true);
-    };
-
-    recognition.onresult = (event) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      setCurrentTranscript(interimTranscript || finalTranscript);
-
-      if (finalTranscript && !isProcessing) {
-        handleUserMessage(finalTranscript);
-      }
-    };
-
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      if (event.error !== 'no-speech') {
-        toast.error('Error en el reconocimiento de voz');
-      }
-    };
-
-    recognition.onend = () => {
-      // Restart if still in call and not muted
-      if (isOpen && !isMuted && !isSpeaking) {
-        try {
-          recognition.start();
-        } catch (e) {
-          // Already started
-        }
-      }
-    };
-
-    recognitionRef.current = recognition;
-    isCallActiveRef.current = true;
+    let recognition: any = null;
     
-    // Initialize call history with conversation context - convert to proper format
-    callHistoryRef.current = conversationHistory.slice(-10).map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.content
-    }));
-    
-    // Start listening
     try {
-      recognition.start();
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'es-ES';
+
+      recognition.onstart = () => {
+        if (isCallActiveRef.current) {
+          setIsListening(true);
+          setIsConnected(true);
+        }
+      };
+
+      recognition.onresult = (event: any) => {
+        if (!isCallActiveRef.current) return;
+        
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        setCurrentTranscript(interimTranscript || finalTranscript);
+
+        if (finalTranscript && !isProcessing && isCallActiveRef.current) {
+          handleUserMessage(finalTranscript);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        // Only log non-trivial errors
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          console.warn('Speech recognition error:', event.error);
+        }
+        // Don't show toast for common non-critical errors
+        if (event.error === 'network' || event.error === 'service-not-allowed') {
+          toast.error('Error en el reconocimiento de voz');
+        }
+      };
+
+      recognition.onend = () => {
+        // Only restart if call is still active and not muted and not speaking
+        if (isCallActiveRef.current && !isMuted && !isSpeaking) {
+          try {
+            recognition?.start();
+          } catch (e) {
+            // Silently ignore - recognition may already be started
+          }
+        }
+      };
+
+      recognitionRef.current = recognition;
+      isCallActiveRef.current = true;
+      
+      // Initialize call history with conversation context
+      callHistoryRef.current = conversationHistory.slice(-10).map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+      
+      // Start listening with error handling
+      try {
+        recognition.start();
+      } catch (e) {
+        console.error('Failed to start recognition:', e);
+        toast.error('No se pudo iniciar el reconocimiento de voz');
+      }
     } catch (e) {
-      console.error('Failed to start recognition:', e);
+      console.error('Error initializing speech recognition:', e);
+      toast.error('Error al inicializar el reconocimiento de voz');
     }
 
     return () => {
+      // Mark as inactive first
       isCallActiveRef.current = false;
-      recognition.stop();
+      
+      // Safely stop recognition
+      if (recognition) {
+        try {
+          recognition.onend = null; // Prevent restart on cleanup
+          recognition.onerror = null;
+          recognition.onresult = null;
+          recognition.abort();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+      recognitionRef.current = null;
+      
+      // Stop any playing audio
       if (audioRef.current) {
-        audioRef.current.pause();
+        try {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+        } catch (e) {
+          // Ignore audio cleanup errors
+        }
         audioRef.current = null;
       }
+      
       setIsConnected(false);
+      setIsListening(false);
     };
   }, [isOpen]);
 
@@ -258,28 +296,38 @@ export const VoiceCallOverlay = ({
   };
 
   const endCall = useCallback(() => {
-    // Mark call as inactive first to prevent any new processing
+    // Mark call as inactive FIRST to prevent any new processing
     isCallActiveRef.current = false;
     
-    // Stop speech recognition
+    // Safely stop speech recognition
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.stop();
-        recognitionRef.current.abort?.();
+        // Remove event handlers to prevent callbacks during cleanup
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.abort();
       } catch (e) {
         // Ignore errors when stopping
       }
       recognitionRef.current = null;
     }
     
-    // Stop any playing audio
+    // Safely stop any playing audio
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
+      try {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+      } catch (e) {
+        // Ignore audio cleanup errors
+      }
       audioRef.current = null;
     }
     
-    // Reset all state
+    // Reset all state synchronously
     setIsConnected(false);
     setIsListening(false);
     setIsSpeaking(false);
@@ -289,7 +337,7 @@ export const VoiceCallOverlay = ({
     setAgentResponse('');
     callHistoryRef.current = [];
     
-    // Close the overlay
+    // Close the overlay after state reset
     onClose();
   }, [onClose]);
 

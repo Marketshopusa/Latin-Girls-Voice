@@ -26,25 +26,19 @@ const DiscoverPage = () => {
       {/* Promo Banner */}
       <PromoBanner onCtaClick={handleBannerCta} />
 
-      {/* Header */}
-      <header className={cn(
-        "sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border",
-        isMobile ? "px-4 py-3" : "px-6 py-4"
-      )}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className={cn(
-              "font-display font-bold",
-              isMobile ? "text-lg" : "text-xl"
-            )}>
-              Descubrir
-            </h1>
-            {!isMobile && (
+      {/* Header - Only show on desktop since mobile has MobileTopNav */}
+      {!isMobile && (
+        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-display font-bold">
+                Descubrir
+              </h1>
               <p className="text-sm text-muted-foreground">Encuentra tu compañero perfecto</p>
-            )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Character Grid */}
       <main className={cn(
