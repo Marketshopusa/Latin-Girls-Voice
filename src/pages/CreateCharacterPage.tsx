@@ -55,6 +55,15 @@ const CreateCharacterPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        
+        // Check for content policy errors
+        if (response.status === 400 || errorData.error?.includes('safety') || errorData.error?.includes('blocked')) {
+          toast.error('La imagen contiene contenido que la IA no puede procesar. Por favor, escribe la historia manualmente.', {
+            duration: 5000
+          });
+          return;
+        }
+        
         throw new Error(errorData.error || `Error: ${response.status}`);
       }
 
@@ -67,7 +76,18 @@ const CreateCharacterPage = () => {
       toast.success('¡Historia generada con IA! Puedes editarla si lo deseas.');
     } catch (err) {
       console.error('AI generation error:', err);
-      toast.error(err instanceof Error ? err.message : 'Error al generar la historia');
+      const errorMessage = err instanceof Error ? err.message : 'Error al generar la historia';
+      
+      // Check if it's a content policy issue
+      if (errorMessage.toLowerCase().includes('safety') || 
+          errorMessage.toLowerCase().includes('blocked') ||
+          errorMessage.toLowerCase().includes('policy')) {
+        toast.error('La imagen es muy explícita para la IA. Escribe la historia manualmente.', {
+          duration: 5000
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setGeneratingStory(false);
     }
