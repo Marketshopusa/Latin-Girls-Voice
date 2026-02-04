@@ -12,89 +12,56 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
-  // Preparar texto para TTS - Mantener puntuación natural para pausas
+  // Preparar texto para TTS - SOLO diálogo directo, SIN narraciones entre paréntesis
   const prepareTextForTTS = useCallback((raw: string): string => {
-    const dialogueOnly: string[] = [];
-
-    // Formato 1: **_texto_** (negrita + cursiva)
-    const re1 = /\*\*_(.+?)_\*\*/gs;
-    for (const match of raw.matchAll(re1)) {
-      const content = (match[1] || "").trim();
-      if (content) dialogueOnly.push(content);
-    }
-
-    // Formato 2: **texto** (solo negrita - común en el chat)
-    const re2 = /\*\*([^*_]+?)\*\*/gs;
-    for (const match of raw.matchAll(re2)) {
-      const content = (match[1] || "").trim();
-      if (content && !dialogueOnly.includes(content)) {
-        dialogueOnly.push(content);
-      }
-    }
-
-    let joined: string;
-    if (dialogueOnly.length === 0) {
-      // Eliminar acciones en cursiva simple *acción* y usar el resto
-      joined = raw
-        .replace(/\*[^*]+\*/g, '')
-        .replace(/\*\*/g, '')
-        .replace(/_/g, '')
-        .trim();
-      
-      if (!joined) return "";
-    } else {
-      joined = dialogueOnly.join(" ");
-    }
-
-    // Limpieza de markdown residual
-    joined = joined
-      .replace(/\*\*/g, "")
-      .replace(/_/g, "")
+    // PASO 1: Eliminar TODAS las narraciones entre paréntesis
+    // Esto incluye: (suspira), (Tu voz se quiebra...), etc.
+    let text = raw.replace(/\([^)]*\)/g, '');
+    
+    // PASO 2: Eliminar formatos markdown
+    // **_texto_** -> texto
+    text = text.replace(/\*\*_(.+?)_\*\*/gs, '$1');
+    // **texto** -> texto
+    text = text.replace(/\*\*([^*]+?)\*\*/g, '$1');
+    // *texto* -> texto (acciones en cursiva)
+    text = text.replace(/\*[^*]+\*/g, '');
+    // _texto_ -> texto
+    text = text.replace(/_([^_]+)_/g, '$1');
+    
+    // PASO 3: Limpiar residuos
+    text = text
+      .replace(/\*\*/g, '')
+      .replace(/_/g, '')
+      .replace(/\s+/g, ' ')
       .trim();
+    
+    if (!text) return "";
 
-    // === OPTIMIZACIÓN PARA FLUIDEZ NATURAL CON PAUSAS ===
-    // Mantener puntuación para pausas naturales (comas, puntos, signos)
-    
-    // Normalizar múltiples comas pero mantenerlas
-    joined = joined.replace(/,{2,}/g, ",");
-    
-    // Normalizar múltiples puntos (pero permitir "...")
-    joined = joined.replace(/\.{4,}/g, "...");
-    
-    // Mantener signos de exclamación e interrogación
-    joined = joined.replace(/!{2,}/g, "!");
-    joined = joined.replace(/\?{2,}/g, "?");
-    joined = joined.replace(/¡{2,}/g, "¡");
-    joined = joined.replace(/¿{2,}/g, "¿");
-    
-    // Convertir guiones largos a comas (para pausas)
-    joined = joined.replace(/[—–]+/g, ", ");
-    
-    // Eliminar paréntesis y corchetes pero mantener contenido
-    joined = joined.replace(/[()[\]{}]/g, "");
-    
-    // Normalizar espacios
-    joined = joined.replace(/\s+/g, " ").trim();
-    
-    // Asegurar espacio después de puntuación
-    joined = joined.replace(/([.!?,:])([A-ZÁÉÍÓÚÑa-záéíóúñ])/g, "$1 $2");
+    // PASO 4: Optimización de puntuación para TTS natural
+    text = text.replace(/,{2,}/g, ',');
+    text = text.replace(/\.{4,}/g, '...');
+    text = text.replace(/!{2,}/g, '!');
+    text = text.replace(/\?{2,}/g, '?');
+    text = text.replace(/¡{2,}/g, '¡');
+    text = text.replace(/¿{2,}/g, '¿');
+    text = text.replace(/[—–]+/g, ', ');
+    text = text.replace(/\s+/g, ' ').trim();
+    text = text.replace(/([.!?,:])([A-ZÁÉÍÓÚÑa-záéíóúñ])/g, '$1 $2');
 
-    // Límite ampliado para evitar cortar mensajes a la mitad
+    // Límite para TTS
     const MAX_CHARS = 2500;
     
-    if (joined.length <= MAX_CHARS) {
-      return joined;
+    if (text.length <= MAX_CHARS) {
+      return text;
     }
     
-    // Si excede el límite, cortar en un punto natural (punto, signo de exclamación/interrogación)
-    const truncated = joined.slice(0, MAX_CHARS);
+    const truncated = text.slice(0, MAX_CHARS);
     const lastSentenceEnd = Math.max(
       truncated.lastIndexOf('.'),
       truncated.lastIndexOf('!'),
       truncated.lastIndexOf('?')
     );
     
-    // Si encontramos un punto de corte natural, usarlo
     if (lastSentenceEnd > MAX_CHARS * 0.6) {
       return truncated.slice(0, lastSentenceEnd + 1);
     }
