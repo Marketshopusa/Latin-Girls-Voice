@@ -80,6 +80,21 @@ export const ChatInput = ({
         isMobileOrTablet ? "p-3 pb-6" : "p-4"
       )}>
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          {/* Restart button - visible and prominent */}
+          {onRestart && (
+            <button
+              type="button"
+              onClick={handleRestart}
+              className={cn(
+                "flex items-center justify-center rounded-full bg-secondary/80 text-muted-foreground hover:text-destructive hover:bg-destructive/20 transition-all",
+                isMobileOrTablet ? "w-10 h-10" : "w-10 h-10"
+              )}
+              title="Reiniciar conversación"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+          )}
+
           {/* Mode dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -117,18 +132,6 @@ export const ChatInput = ({
                 <Flame className="h-4 w-4 mr-2" />
                 Modo Intenso
               </DropdownMenuItem>
-              {onRestart && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleRestart}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Reiniciar Chat
-                  </DropdownMenuItem>
-                </>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
