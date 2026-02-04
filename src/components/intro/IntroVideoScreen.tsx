@@ -52,10 +52,10 @@ export const IntroVideoScreen = ({ onComplete }: IntroVideoScreenProps) => {
         "transition-opacity duration-500"
       )}
     >
-      {/* Video container */}
+      {/* Video container - object-contain para móvil, object-cover para desktop */}
       <video
         ref={videoRef}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain md:object-cover"
         autoPlay
         muted
         playsInline
