@@ -19,90 +19,92 @@
   * Estos voice_id están confirmados en la biblioteca accesible
   */
  const ELEVENLABS_VOICES: Record<string, { voiceId: string; name: string; description: string }> = {
-   // ========== VOCES LATINAS VERIFICADAS ==========
-   
-   // Ale - Happy & Lovely (Latina joven, alegre, cálida)
-   "el-latina-alegre": {
-     voiceId: "n4x17EKVqyxfey8QMqvy",
-     name: "Ale",
-     description: "Latina joven, alegre, cálida y vibrante",
-   },
-   
-   // Valeria - Venezuelan Spanish (Venezolana, dulce, dinámica)
-   "el-venezolana": {
-     voiceId: "iyvXhCAqzDxKnq3FDjZl",
-     name: "Valeria",
-     description: "Venezolana dulce, dinámica y familiar",
-   },
-   
-   // Yessica Rabit - Soft-Spoken (Latina seductora, susurrante, íntima)
-   "el-seductora": {
-     voiceId: "wbbP5EPoL4EwxUGRl2PE",
-     name: "Yessica Soft",
-     description: "Latina seductora, susurrante e íntima",
-   },
-   
-   // Yessica Rabit - Alluring (Latina sensual, profunda, cautivadora)
-   "el-sensual": {
-     voiceId: "IrUuRgsybSxwyiJfDSJu",
-     name: "Yessica Allure",
-     description: "Latina sensual, profunda y cautivadora",
-   },
-   
-   // ========== VOCES PREMADE (Inglés con calidad premium) ==========
-   
-   // Sarah - Young professional woman
-   "el-sarah": {
-     voiceId: "EXAVITQu4vr4xnSDxMaL",
-     name: "Sarah",
-     description: "Madura, reconfortante y confiada",
-   },
-   
-   // Laura - Enthusiastic quirky 
-   "el-laura": {
-     voiceId: "FGY2WhTYpPnrIDTdsKH5",
-     name: "Laura",
-     description: "Entusiasta, peculiar y brillante",
-   },
-   
-   // Jessica - Playful bright
-   "el-jessica": {
-     voiceId: "cgSgspJ2msm6clMCkdW9",
-     name: "Jessica",
-     description: "Juguetona, brillante y cálida",
-   },
-   
-   // Lily - Velvety British
-   "el-lily": {
-     voiceId: "pFZP5JQG7iQjIQuC4Bku",
-     name: "Lily",
-     description: "Aterciopelada, británica elegante",
-   },
-   
-   // Alice - Clear educator
-   "el-alice": {
-     voiceId: "Xb7hH8MSUJpSbSDYk0k2",
-     name: "Alice",
-     description: "Clara, educadora británica",
-   },
-   
-   // Matilda - Professional alto
-   "el-matilda": {
-     voiceId: "XrExE9yKIg1WjnnlVkGX",
-     name: "Matilda",
-     description: "Profesional, conocedora",
-   },
-   
-   // Bella - Warm professional
-   "el-bella": {
-     voiceId: "hpp4J3VqNfWAUOO0d1Us",
-     name: "Bella",
-     description: "Profesional, brillante y cálida",
-   },
+  // ========== VOCES VENEZOLANAS ==========
+  
+  // diominicana venezolana - Gocha accent
+  "el-venezolana-gocha": {
+    voiceId: "nR7TRcRXD2dbZqmJivg9",
+    name: "Venezolana Gocha",
+    description: "Acento gocho venezolano, expresiva y juvenil",
+  },
+  
+  // caraqueña loca - Caracas accent
+  "el-caraqueña": {
+    voiceId: "rBlWm6DvQsfBSgHaVzI0",
+    name: "Caraqueña",
+    description: "Acento caraqueño, expresiva y femenina",
+  },
+  
+  // ========== VOCES COLOMBIANAS ==========
+  
+  // Vanessa - Paisa accent
+  "el-colombiana-paisa": {
+    voiceId: "wutgczPT1RZgTX0H3qRJ",
+    name: "Vanessa Paisa",
+    description: "Colombiana paisa, cálida y carismática",
+  },
+  
+  // Jessica - Natural Colombian
+  "el-colombiana-natural": {
+    voiceId: "MqSrMUk8EHh32HBKytrG",
+    name: "Jessica Natural",
+    description: "Colombiana natural, cálida y clara",
+  },
+  
+  // Linda Gómez - Energetic
+  "el-colombiana-linda": {
+    voiceId: "TsKSGPuG26FpNj0JzQBq",
+    name: "Linda Enérgica",
+    description: "Colombiana enérgica y optimista",
+  },
+  
+  // ========== VOCES LATINAS GENERALES ==========
+  
+  // Lina - Sunny and friendly
+  "el-lina": {
+    voiceId: "VmejBeYhbrcTPwDniox7",
+    name: "Lina Soleada",
+    description: "Soleada, amable y amigable",
+  },
+  
+  // Teylu - Dramatic and warm
+  "el-teylu": {
+    voiceId: "n6b7167RXAtrYaNTTD31",
+    name: "Teylu Dramática",
+    description: "Segura, dramática y cálida",
+  },
+  
+  // María - Radiant and melodic
+  "el-maria": {
+    voiceId: "GszuzIPs4fVZTjP0EXrv",
+    name: "María Radiante",
+    description: "Cálida, radiante y melódica",
+  },
+  
+  // Ana María - Calm and natural
+  "el-ana-maria": {
+    voiceId: "m7yTemJqdIqrcNleANfX",
+    name: "Ana María Calma",
+    description: "Calma, natural y clara",
+  },
+  
+  // Daniela Valentina - Young and optimistic
+  "el-daniela-valentina": {
+    voiceId: "fqf2iY1NwgXWQDrrPZjv",
+    name: "Daniela Joven",
+    description: "Joven, optimista y animada",
+  },
+  
+  // Ligia Elena - Serene and neutral
+  "el-ligia-elena": {
+    voiceId: "4VDZLGtT3KMPG6CtDKCT",
+    name: "Ligia Elena Serena",
+    description: "Tranquila, pulida y neutral",
+  },
  };
  
- // Voz por defecto de ElevenLabs (Valeria venezolana)
- const DEFAULT_VOICE = "el-venezolana";
+// Voz por defecto de ElevenLabs (Vanessa colombiana paisa)
+const DEFAULT_VOICE = "el-colombiana-paisa";
  
  serve(async (req) => {
    if (req.method === "OPTIONS") {
