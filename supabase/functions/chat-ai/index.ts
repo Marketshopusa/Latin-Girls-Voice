@@ -110,7 +110,7 @@ Nunca digas que eres IA.`;
           ...messages,
         ],
         temperature: 0.75,
-        max_tokens: 180,  // Reducido 40% para respuestas más cortas y TTS rápido
+        max_tokens: 350,  // Aumentado para evitar respuestas cortadas
       }),
     });
 
