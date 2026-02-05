@@ -1,8 +1,11 @@
-import { X, Volume2, Shield } from 'lucide-react';
-import { Character, VOICE_OPTIONS, VoiceType, normalizeVoiceType } from '@/types';
+ import { X, Volume2, Shield, Crown, Sparkles } from 'lucide-react';
+ import { Character, VoiceType, normalizeVoiceType, ELEVENLABS_VOICE_CATALOG, GOOGLE_VOICE_CATALOG, isPremiumVoice } from '@/types';
 import { useEffect, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+ import { useSubscription } from '@/contexts/SubscriptionContext';
+ import { toast } from 'sonner';
+ import { Badge } from '@/components/ui/badge';
 
 interface CharacterConfigModalProps {
   character: Character;
@@ -22,6 +25,22 @@ export const CharacterConfigModal = ({
   // Normalizar siempre a una voz real de Google (evita valores legacy que terminan en fallback)
   const [voice, setVoice] = useState<VoiceType>(normalizeVoiceType(character.voice));
   const [nsfw, setNsfw] = useState(character.nsfw);
+   const { limits, plan } = useSubscription();
+   const handleVoiceSelect = (voiceId: VoiceType) => {
+     // Verificar si es voz premium y el usuario no tiene acceso
+     if (isPremiumVoice(voiceId) && !limits.hasPremiumVoices) {
+       toast.error('🎙️ Voces Premium', {
+         description: 'Las voces de ElevenLabs solo están disponibles en planes Premium y Ultra.',
+         action: {
+           label: 'Ver planes',
+           onClick: () => window.location.href = '/subscription',
+         },
+       });
+       return;
+     }
+     setVoice(voiceId);
+   };
+ 
 
   // Cuando cambiamos de personaje o reabrimos, resetea estado al valor real del personaje
   useEffect(() => {
@@ -101,33 +120,88 @@ export const CharacterConfigModal = ({
               <Volume2 className="h-4 w-4" />
               <span>Voz y Acento</span>
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              {VOICE_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => setVoice(option.id)}
-                  className={cn(
-                    'voice-chip text-left p-3',
-                    voice === option.id && 'voice-chip-active'
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-base">
-                      {option.icon}
-                    </span>
-                    <span className={cn(
-                      'font-medium text-sm',
-                      voice === option.id ? 'text-primary' : 'text-foreground'
-                    )}>
-                      {option.label}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {option.description}
-                  </p>
-                </button>
-              ))}
-            </div>
+             
+             {/* ElevenLabs Premium Voices */}
+             <div className="space-y-2">
+               <div className="flex items-center gap-2 text-xs text-primary">
+                 <Crown className="h-3.5 w-3.5" />
+                 <span className="font-medium">Voces Premium (ElevenLabs)</span>
+                 <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-primary border-0">
+                   PREMIUM
+                 </Badge>
+               </div>
+               <div className="grid grid-cols-3 gap-1.5">
+                 {ELEVENLABS_VOICE_CATALOG.map((option) => {
+                   const isLocked = !limits.hasPremiumVoices;
+                   return (
+                     <button
+                       key={option.id}
+                       onClick={() => handleVoiceSelect(option.id)}
+                       className={cn(
+                         'voice-chip text-left p-2 relative group',
+                         voice === option.id && 'voice-chip-active',
+                         isLocked && 'opacity-60'
+                       )}
+                     >
+                       {isLocked && (
+                         <div className="absolute top-1 right-1">
+                         <Crown className="h-3 w-3 text-primary" />
+                         </div>
+                       )}
+                       <div className="flex items-center gap-1.5 mb-0.5">
+                         <span className="text-sm">
+                           {option.icon}
+                         </span>
+                         <span className={cn(
+                           'font-medium text-xs truncate',
+                           voice === option.id ? 'text-primary' : 'text-foreground'
+                         )}>
+                           {option.label}
+                         </span>
+                       </div>
+                       <p className="text-[10px] text-muted-foreground line-clamp-1">
+                         {option.description}
+                       </p>
+                     </button>
+                   );
+                 })}
+               </div>
+             </div>
+ 
+             {/* Google Cloud TTS Standard Voices */}
+             <div className="space-y-2 mt-4">
+               <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                 <Sparkles className="h-3.5 w-3.5" />
+                 <span className="font-medium">Voces Estándar (Google Cloud)</span>
+               </div>
+               <div className="grid grid-cols-3 gap-1.5">
+                 {GOOGLE_VOICE_CATALOG.map((option) => (
+                   <button
+                     key={option.id}
+                     onClick={() => handleVoiceSelect(option.id)}
+                     className={cn(
+                       'voice-chip text-left p-2',
+                       voice === option.id && 'voice-chip-active'
+                     )}
+                   >
+                     <div className="flex items-center gap-1.5 mb-0.5">
+                       <span className="text-sm">
+                         {option.icon}
+                       </span>
+                       <span className={cn(
+                         'font-medium text-xs truncate',
+                         voice === option.id ? 'text-primary' : 'text-foreground'
+                       )}>
+                         {option.label}
+                       </span>
+                     </div>
+                     <p className="text-[10px] text-muted-foreground line-clamp-1">
+                       {option.description}
+                     </p>
+                   </button>
+                 ))}
+               </div>
+             </div>
           </div>
 
           {/* NSFW Toggle */}

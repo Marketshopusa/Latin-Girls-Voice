@@ -1,11 +1,28 @@
-// === Sistema de Voces: Google Cloud TTS ===
-// (Se eliminó ElevenLabs de este proyecto.)
+ // === Sistema de Voces: ElevenLabs (principal) + Google Cloud TTS (fallback) ===
+ 
+ // Proveedor de TTS
+ export type TTSProvider = 'elevenlabs' | 'google';
 
-// Proveedor de TTS (solo Google)
-export type TTSProvider = 'google';
-
-// Catálogo de voces disponibles (Google Cloud TTS)
+ // Catálogo de voces disponibles
 export type VoiceType =
+   // === ELEVENLABS PREMIUM - Voces Latinas ===
+   | 'el-colombiana-paisa'
+   | 'el-colombiana-bogotana'
+   | 'el-venezolana-caraqueña'
+   | 'el-venezolana-caribeña'
+   | 'el-venezolana-gocha'
+   | 'el-argentina-porteña'
+   | 'el-argentina-cordobesa'
+   | 'el-mexicana-capitalina'
+   | 'el-mexicana-norteña'
+   | 'el-chilena'
+   | 'el-peruana'
+   | 'el-española-madrileña'
+   | 'el-colombiano-paisa'
+   | 'el-venezolano-caraqueño'
+   | 'el-argentino-porteño'
+   | 'el-mexicano-capitalino'
+   | 'el-español-madrileño'
   // === GOOGLE CLOUD TTS - Voces Neural2 ===
   | 'es-US-Neural2-A' // Femenina - Latino (recomendada)
   | 'es-US-Neural2-B' // Masculina - Latino grave
@@ -26,7 +43,10 @@ export type VoiceType =
   | 'es-ES-Chirp3-HD-Kore'
   | 'es-ES-Chirp3-HD-Aoede'
   | 'es-ES-Chirp3-HD-Charon'
-  | 'es-ES-Chirp3-HD-Puck';
+   | 'es-ES-Chirp3-HD-Puck';
+ 
+ // Tier de la voz (para restricciones de plan)
+ export type VoiceTier = 'standard' | 'premium';
 
 // IDs legacy (guardados en BD / versiones previas) que normalizamos a Google
 export type LegacyVoiceId =
@@ -57,8 +77,8 @@ export type VoiceGender = 'FEMALE' | 'MALE';
 // Región de voz
 export type VoiceRegion = 'COLOMBIA' | 'VENEZUELA' | 'ARGENTINA' | 'MEXICO' | 'LATINO' | 'ESPAÑA';
 
-// Calidad de voz
-export type VoiceQuality = 'NEURAL2' | 'CHIRP3_HD';
+ // Calidad de voz  
+ export type VoiceQuality = 'NEURAL2' | 'CHIRP3_HD' | 'FLASH_V2_5';
 
 // Configuración de voz
 export interface VoiceConfig {
@@ -68,8 +88,9 @@ export interface VoiceConfig {
   description: string;
   gender: VoiceGender;
   region: VoiceRegion;
-  quality: VoiceQuality;
-  provider: TTSProvider;
+   quality: VoiceQuality;
+   provider: TTSProvider;
+   tier: VoiceTier;
   // Para Google Cloud TTS
   languageCode?: string;
   voiceName?: string;
@@ -77,9 +98,201 @@ export interface VoiceConfig {
   pitch?: number;
 }
 
-// Catálogo completo de voces para la UI
-export const VOICE_CATALOG: VoiceConfig[] = [
-  // === GOOGLE CLOUD TTS - NEURAL2 ESPAÑOL LATINO (es-US) ===
+ // === ELEVENLABS PREMIUM VOICES ===
+ export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
+   // === FEMENINAS LATINAS ===
+   {
+     id: 'el-colombiana-paisa',
+     label: 'Colombiana Paisa',
+     icon: '🇨🇴',
+     description: 'Acento paisa cálido y expresivo',
+     gender: 'FEMALE',
+     region: 'COLOMBIA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-colombiana-bogotana',
+     label: 'Colombiana Bogotana',
+     icon: '🏔️',
+     description: 'Acento rolo suave y educado',
+     gender: 'FEMALE',
+     region: 'COLOMBIA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-venezolana-caraqueña',
+     label: 'Venezolana Caraqueña',
+     icon: '🇻🇪',
+     description: 'Acento caraqueño vibrante',
+     gender: 'FEMALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-venezolana-caribeña',
+     label: 'Venezolana Caribeña',
+     icon: '🌴',
+     description: 'Acento caribeño alegre',
+     gender: 'FEMALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-venezolana-gocha',
+     label: 'Venezolana Andina',
+     icon: '⛰️',
+     description: 'Acento gocho de los Andes',
+     gender: 'FEMALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-argentina-porteña',
+     label: 'Argentina Porteña',
+     icon: '🇦🇷',
+     description: 'Acento porteño con tonada',
+     gender: 'FEMALE',
+     region: 'ARGENTINA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-argentina-cordobesa',
+     label: 'Argentina Cordobesa',
+     icon: '🎸',
+     description: 'Acento cordobés melodioso',
+     gender: 'FEMALE',
+     region: 'ARGENTINA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-mexicana-capitalina',
+     label: 'Mexicana Capitalina',
+     icon: '🇲🇽',
+     description: 'Acento chilango de CDMX',
+     gender: 'FEMALE',
+     region: 'MEXICO',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-mexicana-norteña',
+     label: 'Mexicana Norteña',
+     icon: '🤠',
+     description: 'Acento norteño mexicano',
+     gender: 'FEMALE',
+     region: 'MEXICO',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-chilena',
+     label: 'Chilena',
+     icon: '🇨🇱',
+     description: 'Acento chileno característico',
+     gender: 'FEMALE',
+     region: 'LATINO',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-peruana',
+     label: 'Peruana Limeña',
+     icon: '🇵🇪',
+     description: 'Acento limeño suave',
+     gender: 'FEMALE',
+     region: 'LATINO',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-española-madrileña',
+     label: 'Española Madrileña',
+     icon: '🇪🇸',
+     description: 'Acento madrileño castizo',
+     gender: 'FEMALE',
+     region: 'ESPAÑA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   // === MASCULINAS LATINAS ===
+   {
+     id: 'el-colombiano-paisa',
+     label: 'Colombiano Paisa',
+     icon: '☕',
+     description: 'Acento paisa masculino',
+     gender: 'MALE',
+     region: 'COLOMBIA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-venezolano-caraqueño',
+     label: 'Venezolano Caraqueño',
+     icon: '🏙️',
+     description: 'Acento caraqueño masculino',
+     gender: 'MALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-argentino-porteño',
+     label: 'Argentino Porteño',
+     icon: '🎭',
+     description: 'Acento porteño masculino',
+     gender: 'MALE',
+     region: 'ARGENTINA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-mexicano-capitalino',
+     label: 'Mexicano Capitalino',
+     icon: '🌮',
+     description: 'Acento chilango masculino',
+     gender: 'MALE',
+     region: 'MEXICO',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-español-madrileño',
+     label: 'Español Madrileño',
+     icon: '👔',
+     description: 'Acento madrileño masculino',
+     gender: 'MALE',
+     region: 'ESPAÑA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+ ];
+ 
+ // === GOOGLE CLOUD TTS VOICES (Standard) ===
+ export const GOOGLE_VOICE_CATALOG: VoiceConfig[] = [
   {
     id: 'es-US-Neural2-A',
     label: 'Latina Neural',
@@ -89,6 +302,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'LATINO',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'es-US-Neural2-A',
   },
@@ -101,6 +315,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'LATINO',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'es-US-Neural2-B',
   },
@@ -113,11 +328,10 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'LATINO',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'es-US-Neural2-C',
   },
-  
-  // === GOOGLE CLOUD TTS - NEURAL2 ESPAÑOL ESPAÑA (es-ES) ===
   {
     id: 'es-ES-Neural2-A',
     label: 'Española Clara',
@@ -127,6 +341,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'es-ES-Neural2-A',
   },
@@ -139,6 +354,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'es-ES-Neural2-B',
   },
@@ -151,6 +367,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'es-ES-Neural2-C',
   },
@@ -163,6 +380,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'es-ES-Neural2-D',
   },
@@ -175,6 +393,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'es-ES-Neural2-E',
   },
@@ -187,11 +406,10 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'es-ES-Neural2-F',
   },
-  
-  // === GOOGLE CLOUD TTS - NEURAL2 ESPAÑOL MÉXICO (es-MX) ===
   {
     id: 'es-MX-Neural2-A',
     label: 'Mexicana Cálida',
@@ -201,6 +419,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'MEXICO',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-MX',
     voiceName: 'es-MX-Neural2-A',
   },
@@ -213,11 +432,10 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'MEXICO',
     quality: 'NEURAL2',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-MX',
     voiceName: 'es-MX-Neural2-B',
   },
-  
-  // === GOOGLE CLOUD TTS - CHIRP 3: HD PREMIUM ===
   {
     id: 'es-US-Chirp3-HD-Kore',
     label: 'Kore Premium',
@@ -227,6 +445,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'LATINO',
     quality: 'CHIRP3_HD',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'Kore',
   },
@@ -239,6 +458,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'LATINO',
     quality: 'CHIRP3_HD',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'Aoede',
   },
@@ -251,6 +471,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'LATINO',
     quality: 'CHIRP3_HD',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'Charon',
   },
@@ -263,6 +484,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'LATINO',
     quality: 'CHIRP3_HD',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'Puck',
   },
@@ -275,6 +497,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'CHIRP3_HD',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'Kore',
   },
@@ -287,6 +510,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'CHIRP3_HD',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'Aoede',
   },
@@ -299,6 +523,7 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'CHIRP3_HD',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'Charon',
   },
@@ -311,15 +536,29 @@ export const VOICE_CATALOG: VoiceConfig[] = [
     region: 'ESPAÑA',
     quality: 'CHIRP3_HD',
     provider: 'google',
+     tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'Puck',
   },
 ];
 
-// Opciones de voz agrupadas por proveedor
-export const VOICE_OPTIONS_BY_PROVIDER = {
-  GOOGLE: VOICE_CATALOG,
-};
+ // Catálogo completo de voces para la UI (ElevenLabs primero, luego Google)
+ export const VOICE_CATALOG: VoiceConfig[] = [
+   ...ELEVENLABS_VOICE_CATALOG,
+   ...GOOGLE_VOICE_CATALOG,
+ ];
+ 
+ // Opciones de voz agrupadas por proveedor
+ export const VOICE_OPTIONS_BY_PROVIDER = {
+   ELEVENLABS: ELEVENLABS_VOICE_CATALOG,
+   GOOGLE: GOOGLE_VOICE_CATALOG,
+ };
+ 
+ // Opciones de voz por tier
+ export const VOICE_OPTIONS_BY_TIER = {
+   premium: VOICE_CATALOG.filter(v => v.tier === 'premium'),
+   standard: VOICE_CATALOG.filter(v => v.tier === 'standard'),
+ };
 
 // Opciones de voz agrupadas por región
 export const VOICE_OPTIONS_BY_REGION = {
@@ -336,16 +575,29 @@ export const VOICE_OPTIONS_BY_GENDER = {
   MALE: VOICE_CATALOG.filter(v => v.gender === 'MALE'),
 };
 
-export const VOICE_OPTIONS_BY_QUALITY = {
-  NEURAL2: VOICE_CATALOG.filter(v => v.quality === 'NEURAL2'),
-  CHIRP3_HD: VOICE_CATALOG.filter(v => v.quality === 'CHIRP3_HD'),
-};
+ export const VOICE_OPTIONS_BY_QUALITY = {
+   FLASH_V2_5: VOICE_CATALOG.filter(v => v.quality === 'FLASH_V2_5'),
+   NEURAL2: VOICE_CATALOG.filter(v => v.quality === 'NEURAL2'),
+   CHIRP3_HD: VOICE_CATALOG.filter(v => v.quality === 'CHIRP3_HD'),
+ };
 
 // Voz por defecto - Latina Neural (Google Cloud TTS)
 export const DEFAULT_VOICE: VoiceType = 'es-US-Neural2-A';
 
 // Normalización de voces legacy -> voces Google reales (para no perder compatibilidad)
-const VALID_VOICES = new Set(VOICE_CATALOG.map(v => v.id));
+ const VALID_VOICES = new Set(VOICE_CATALOG.map(v => v.id));
+ 
+ // Helper para determinar si una voz es premium
+ export const isPremiumVoice = (voiceId: string): boolean => {
+   const voice = VOICE_CATALOG.find(v => v.id === voiceId);
+   return voice?.tier === 'premium';
+ };
+ 
+ // Helper para determinar el proveedor de una voz
+ export const getVoiceProvider = (voiceId: string): TTSProvider => {
+   const voice = VOICE_CATALOG.find(v => v.id === voiceId);
+   return voice?.provider || 'google';
+ };
 
 export const LEGACY_VOICE_MAP: Record<string, VoiceType> = {
   // Legacy antiguos
