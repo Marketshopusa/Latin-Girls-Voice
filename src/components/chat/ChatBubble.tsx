@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Play, Pause, Loader2, Volume2 } from 'lucide-react';
 import { Message, VoiceType, DEFAULT_VOICE } from '@/types';
 import { cn } from '@/lib/utils';
 import { useTTS } from '@/hooks/useTTS';
 import { ChatMessageContent } from '@/components/chat/ChatMessageContent';
+import { useSoundEffects, detectSfxFromText } from '@/hooks/useSoundEffects';
 
 interface ChatBubbleProps {
   message: Message;
@@ -20,16 +21,36 @@ export const ChatBubble = ({
 }: ChatBubbleProps) => {
   const isUser = message.role === 'user';
   const { playAudio, isLoading, isPlaying, error } = useTTS({ voiceType });
+  const { playPreset, isPlaying: isSfxPlaying } = useSoundEffects();
   const hasAutoPlayed = useRef(false);
+  const hasSfxPlayed = useRef(false);
+
+  // Auto-play SFX for expressions in AI messages
+  useEffect(() => {
+    if (!isUser && !hasSfxPlayed.current && message.text) {
+      const sfxPreset = detectSfxFromText(message.text);
+      if (sfxPreset) {
+        hasSfxPlayed.current = true;
+        // Play SFX before TTS starts (small delay)
+        const timer = setTimeout(() => {
+          playPreset(sfxPreset);
+        }, 200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isUser, message.text, playPreset]);
 
   // Auto-play TTS for new AI messages
   useEffect(() => {
     if (autoPlay && !isUser && !hasAutoPlayed.current && message.text) {
       hasAutoPlayed.current = true;
-      // Small delay to ensure the message is rendered
+      // Delay TTS to allow SFX to play first if present
+      const sfxPreset = detectSfxFromText(message.text);
+      const delay = sfxPreset ? 2500 : 500; // Wait for SFX if present
+      
       const timer = setTimeout(() => {
         playAudio(message.text);
-      }, 500);
+      }, delay);
       return () => clearTimeout(timer);
     }
   }, [autoPlay, isUser, message.text, playAudio]);

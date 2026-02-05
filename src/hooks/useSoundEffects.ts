@@ -25,6 +25,127 @@
  
  export type SfxPreset = keyof typeof SFX_PRESETS;
  
+ // Mapeo de expresiones de texto a presets de sonido
+ // Las expresiones pueden estar entre paréntesis () o asteriscos *
+ const EXPRESSION_TO_SFX: Array<{ patterns: RegExp[]; preset: SfxPreset }> = [
+   // Gemidos
+   {
+     patterns: [
+       /\*gime[s]?\*/gi,
+       /\(gime[s]?\)/gi,
+       /\*gimiendo\*/gi,
+       /\(gimiendo\)/gi,
+       /\*suelta un gemido\*/gi,
+       /\(suelta un gemido\)/gi,
+     ],
+     preset: "moan-soft",
+   },
+   {
+     patterns: [
+       /\*gime fuerte\*/gi,
+       /\(gime fuerte\)/gi,
+       /\*gime con fuerza\*/gi,
+       /\(gime con fuerza\)/gi,
+       /\*gime intensamente\*/gi,
+       /\(gime intensamente\)/gi,
+     ],
+     preset: "moan-intense",
+   },
+   // Suspiros
+   {
+     patterns: [
+       /\*suspira\*/gi,
+       /\(suspira\)/gi,
+       /\*suspiro\*/gi,
+       /\(suspiro\)/gi,
+       /\*suelta un suspiro\*/gi,
+       /\(suelta un suspiro\)/gi,
+     ],
+     preset: "sigh-pleasure",
+   },
+   // Jadeos
+   {
+     patterns: [
+       /\*jadea\*/gi,
+       /\(jadea\)/gi,
+       /\*jadeando\*/gi,
+       /\(jadeando\)/gi,
+       /\*jadeo\*/gi,
+       /\(jadeo\)/gi,
+     ],
+     preset: "gasp-surprise",
+   },
+   // Respiración
+   {
+     patterns: [
+       /\*respira agitad/gi,
+       /\(respira agitad/gi,
+       /\*respiración pesada\*/gi,
+       /\(respiración pesada\)/gi,
+       /\*sin aliento\*/gi,
+       /\(sin aliento\)/gi,
+     ],
+     preset: "breath-heavy",
+   },
+   // Risas
+   {
+     patterns: [
+       /\*ríe\*/gi,
+       /\(ríe\)/gi,
+       /\*risita\*/gi,
+       /\(risita\)/gi,
+       /\*se ríe\*/gi,
+       /\(se ríe\)/gi,
+       /\*riendo\*/gi,
+       /\(riendo\)/gi,
+     ],
+     preset: "giggle-playful",
+   },
+   {
+     patterns: [
+       /\*ríe seductora/gi,
+       /\(ríe seductora/gi,
+       /\*risa traviesa\*/gi,
+       /\(risa traviesa\)/gi,
+     ],
+     preset: "laugh-seductive",
+   },
+   // Gritos de placer
+   {
+     patterns: [
+       /\*grita\*/gi,
+       /\(grita\)/gi,
+       /\*grito de placer\*/gi,
+       /\(grito de placer\)/gi,
+       /\*se viene\*/gi,
+       /\(se viene\)/gi,
+     ],
+     preset: "cry-pleasure",
+   },
+   // Expresiones vocales
+   {
+     patterns: [
+       /\bmmm+\b/gi,
+       /\bhmm+\b/gi,
+     ],
+     preset: "mmm-approval",
+   },
+ ];
+ 
+ /**
+  * Detecta expresiones en el texto y devuelve el primer preset de SFX correspondiente
+  */
+ export const detectSfxFromText = (text: string): SfxPreset | null => {
+   for (const { patterns, preset } of EXPRESSION_TO_SFX) {
+     for (const pattern of patterns) {
+       if (pattern.test(text)) {
+         return preset;
+       }
+     }
+   }
+   return null;
+ };
+ 
  interface UseSoundEffectsOptions {
    onPlay?: () => void;
    onEnd?: () => void;
