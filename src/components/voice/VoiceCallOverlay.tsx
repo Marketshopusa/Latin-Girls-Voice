@@ -38,15 +38,61 @@ export const VoiceCallOverlay = ({
   const isCallActiveRef = useRef(false);
 
   // Clean text for TTS - remove markdown formatting
-  const cleanTextForTTS = (text: string): string => {
-    return text
-      .replace(/\*\*_|_\*\*/g, '') // Remove **_ and _**
-      .replace(/\*\*|__/g, '')     // Remove ** and __
-      .replace(/\*|_/g, '')        // Remove single * and _
-      .replace(/^[-–—]\s*/gm, '')  // Remove leading dashes
-      .replace(/\n+/g, ' ')        // Replace newlines with spaces
-      .trim();
-  };
+   const cleanTextForTTS = (text: string): string => {
+     // PASO 1: Eliminar TODAS las narraciones entre paréntesis
+     // Esto incluye: (suspira), (Tu voz se quiebra...), etc.
+     let cleaned = text.replace(/\([^)]*\)/g, '');
+     
+     // PASO 2: Eliminar formatos markdown
+     // **_texto_** -> texto
+     cleaned = cleaned.replace(/\*\*_(.+?)_\*\*/gs, '$1');
+     // **texto** -> texto
+     cleaned = cleaned.replace(/\*\*([^*]+?)\*\*/g, '$1');
+     // *texto* -> texto (acciones en cursiva)
+     cleaned = cleaned.replace(/\*[^*]+\*/g, '');
+     // _texto_ -> texto
+     cleaned = cleaned.replace(/_([^_]+)_/g, '$1');
+     
+     // PASO 3: Limpiar residuos
+     cleaned = cleaned
+       .replace(/\*\*/g, '')
+       .replace(/_/g, '')
+       .replace(/\s+/g, ' ')
+       .trim();
+     
+     if (!cleaned) return "";
+ 
+     // PASO 4: Optimización de puntuación para TTS natural
+     cleaned = cleaned.replace(/,{2,}/g, ',');
+     cleaned = cleaned.replace(/\.{4,}/g, '...');
+     cleaned = cleaned.replace(/!{2,}/g, '!');
+     cleaned = cleaned.replace(/\?{2,}/g, '?');
+     cleaned = cleaned.replace(/¡{2,}/g, '¡');
+     cleaned = cleaned.replace(/¿{2,}/g, '¿');
+     cleaned = cleaned.replace(/[—–]+/g, ', ');
+     cleaned = cleaned.replace(/\s+/g, ' ').trim();
+     cleaned = cleaned.replace(/([.!?,:])([A-ZÁÉÍÓÚÑa-záéíóúñ])/g, '$1 $2');
+ 
+     // Límite para TTS (ahorro de créditos)
+     const MAX_CHARS = 2500;
+     
+     if (cleaned.length <= MAX_CHARS) {
+       return cleaned;
+     }
+     
+     const truncated = cleaned.slice(0, MAX_CHARS);
+     const lastSentenceEnd = Math.max(
+       truncated.lastIndexOf('.'),
+       truncated.lastIndexOf('!'),
+       truncated.lastIndexOf('?')
+     );
+     
+     if (lastSentenceEnd > MAX_CHARS * 0.6) {
+       return truncated.slice(0, lastSentenceEnd + 1);
+     }
+     
+     return truncated;
+   };
 
   // Initialize speech recognition
   useEffect(() => {
