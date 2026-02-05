@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
+      // Garantiza que la web cargue /registerSW.js y registre el SW (PWABuilder lo detecta)
+      injectRegister: "script",
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "icons/*.png", "characters/*.jpg", "characters/*.webp", "characters/*.gif", "characters/*.mp4"],
       manifest: {
