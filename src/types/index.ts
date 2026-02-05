@@ -17,6 +17,8 @@
    | 'el-ana-maria'         // Ana María - Calma y natural
    | 'el-daniela-valentina' // Daniela Valentina - Joven y optimista
    | 'el-ligia-elena'       // Ligia Elena - Tranquila y neutral
+   | 'el-caraqueña-suave'   // Caraqueña suave - Malandra dulce
+   | 'el-caraqueña-malandra' // Caraqueña malandra - Expresiva y grosera
   // === GOOGLE CLOUD TTS - Voces Neural2 ===
   | 'es-US-Neural2-A' // Femenina - Latino (recomendada)
   | 'es-US-Neural2-B' // Masculina - Latino grave
@@ -218,6 +220,28 @@ export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
     provider: 'elevenlabs',
     tier: 'premium',
   },
+   {
+     id: 'el-caraqueña-suave',
+     label: 'Caraqueña Suave',
+     icon: '🌺',
+     description: 'Malandra caraqueña dulce y suavecita, 18 años',
+     gender: 'FEMALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-caraqueña-malandra',
+     label: 'Malandra Caraqueña',
+     icon: '💋',
+     description: 'Caraqueña zumbada y expresiva, 25 años',
+     gender: 'FEMALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
 ];
  
 // === GOOGLE CLOUD TTS VOICES (Standard) ===
