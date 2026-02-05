@@ -155,6 +155,18 @@ const ChatPage = () => {
   const handleSendMessage = async (text: string) => {
     if (!character) return;
 
+    // Block non-authenticated users from chatting
+    if (!user) {
+      toast.error('Inicia sesión para chatear', {
+        description: 'Necesitas una cuenta para conversar con los personajes.',
+        action: {
+          label: 'Iniciar sesión',
+          onClick: () => navigate('/'),
+        },
+      });
+      return;
+    }
+
     // Add user message
     await addMessage('user', text);
 
@@ -165,7 +177,7 @@ const ChatPage = () => {
       const aiResponse = await sendAIMessage(text, messages);
       
       if (aiResponse) {
-        const audioDuration = Math.floor(aiResponse.length / 15); // Estimate based on text length
+        const audioDuration = Math.floor(aiResponse.length / 15);
         const newMessage = await addMessage('assistant', aiResponse, audioDuration);
         if (newMessage) {
           setLastAIMessageId(newMessage.id);
