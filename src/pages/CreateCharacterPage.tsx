@@ -20,6 +20,7 @@ const CreateCharacterPage = () => {
   const [nsfw, setNsfw] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const [isAnimatedImage, setIsAnimatedImage] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
 
   const generateStoryWithAI = async () => {
@@ -28,7 +29,8 @@ const CreateCharacterPage = () => {
       return;
     }
 
-    if (mediaType === 'video') {
+    // Solo bloquear videos reales (MP4, WEBM), permitir GIFs y otras imágenes
+    if (mediaType === 'video' && !isAnimatedImage) {
       toast.error('La generación con IA solo funciona con imágenes, no con videos');
       return;
     }
@@ -96,14 +98,29 @@ const CreateCharacterPage = () => {
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // More robust type detection
-      const isVideo = file.type.startsWith('video/') || 
-                      file.name.toLowerCase().endsWith('.mp4') || 
-                      file.name.toLowerCase().endsWith('.webm');
-      const type = isVideo ? 'video' : 'image';
+      const fileName = file.name.toLowerCase();
+      const mimeType = file.type.toLowerCase();
       
-      console.log('File uploaded:', file.name, 'Type:', file.type, 'Detected as:', type);
+      // Detectar GIFs animados (son imágenes, no videos)
+      const isGif = mimeType === 'image/gif' || fileName.endsWith('.gif');
       
+      // Detectar videos reales (MP4, WEBM, etc.)
+      const isRealVideo = (mimeType.startsWith('video/') || 
+                          fileName.endsWith('.mp4') || 
+                          fileName.endsWith('.webm') ||
+                          fileName.endsWith('.mov') ||
+                          fileName.endsWith('.avi')) && !isGif;
+      
+      // Detectar imágenes animadas (GIF, WEBP animado, APNG)
+      const isAnimated = isGif || 
+                        (mimeType === 'image/webp' && fileName.endsWith('.webp')) ||
+                        (mimeType === 'image/apng' || fileName.endsWith('.apng'));
+      
+      const type = isRealVideo ? 'video' : 'image';
+      
+      console.log('File uploaded:', file.name, 'MIME:', mimeType, 'Type:', type, 'Animated:', isAnimated);
+      
+      setIsAnimatedImage(isAnimated);
       setMediaType(type);
       
       const reader = new FileReader();
@@ -252,7 +269,7 @@ const CreateCharacterPage = () => {
             {/* AI Generate Button - Always visible, enabled only with image */}
             <button
               onClick={generateStoryWithAI}
-              disabled={generatingStory || !mediaUrl || mediaType !== 'image'}
+              disabled={generatingStory || !mediaUrl || (mediaType === 'video' && !isAnimatedImage)}
               className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg flex items-center justify-center gap-3"
             >
               {generatingStory ? (
@@ -265,7 +282,7 @@ const CreateCharacterPage = () => {
                   <Wand2 className="h-5 w-5" />
                   Sube una imagen para generar con IA
                 </>
-              ) : mediaType === 'video' ? (
+              ) : mediaType === 'video' && !isAnimatedImage ? (
                 <>
                   <Wand2 className="h-5 w-5" />
                   La IA solo funciona con imágenes
@@ -273,7 +290,7 @@ const CreateCharacterPage = () => {
               ) : (
                 <>
                   <Wand2 className="h-5 w-5" />
-                  ✨ Generar Historia con IA
+                  ✨ Generar Historia con IA {isAnimatedImage ? '(GIF)' : ''}
                 </>
               )}
             </button>
@@ -284,7 +301,7 @@ const CreateCharacterPage = () => {
                 <label className="text-sm text-muted-foreground">
                   Descripción & Personalidad (PROMPT)
                 </label>
-                {mediaUrl && mediaType === 'image' && (
+                {mediaUrl && (mediaType === 'image' || isAnimatedImage) && (
                   <button 
                     onClick={generateStoryWithAI}
                     disabled={generatingStory}
