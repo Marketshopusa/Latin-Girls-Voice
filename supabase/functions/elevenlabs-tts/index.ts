@@ -12,96 +12,145 @@
   * Soporte: 32 idiomas incluyendo español con acentos latinos
   */
  
- // Catálogo de voces ElevenLabs Premium (españolas/latinas)
- const ELEVENLABS_VOICES: Record<string, { voiceId: string; name: string; accent: string }> = {
-   // === VOCES FEMENINAS LATINAS ===
-   "el-colombiana-paisa": {
-     voiceId: "pFZP5JQG7iQjIQuC4Bku", // Lily - cálida y expresiva
-     name: "Colombiana Paisa",
-     accent: "paisa",
-   },
-   "el-colombiana-bogotana": {
-     voiceId: "XrExE9yKIg1WjnnlVkGX", // Matilda - suave
-     name: "Colombiana Bogotana", 
-     accent: "bogotana",
-   },
-   "el-venezolana-caraqueña": {
-     voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah - clara y expresiva
-     name: "Venezolana Caraqueña",
-     accent: "caraqueña",
-   },
-   "el-venezolana-caribeña": {
-     voiceId: "FGY2WhTYpPnrIDTdsKH5", // Laura - cálida
-     name: "Venezolana Caribeña",
-     accent: "caribeña",
-   },
-   "el-venezolana-gocha": {
-     voiceId: "Xb7hH8MSUJpSbSDYk0k2", // Alice - suave
-     name: "Venezolana Andina",
-     accent: "gocha",
-   },
-   "el-argentina-porteña": {
-     voiceId: "cgSgspJ2msm6clMCkdW9", // Jessica - expresiva
-     name: "Argentina Porteña",
-     accent: "porteña",
-   },
-   "el-argentina-cordobesa": {
-     voiceId: "pFZP5JQG7iQjIQuC4Bku", // Lily
-     name: "Argentina Cordobesa",
-     accent: "cordobesa",
-   },
-   "el-mexicana-capitalina": {
-     voiceId: "XrExE9yKIg1WjnnlVkGX", // Matilda
-     name: "Mexicana Capitalina",
-     accent: "CDMX",
-   },
-   "el-mexicana-norteña": {
-     voiceId: "FGY2WhTYpPnrIDTdsKH5", // Laura
-     name: "Mexicana Norteña",
-     accent: "norteña",
-   },
-   "el-chilena": {
-     voiceId: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-     name: "Chilena",
-     accent: "chilena",
-   },
-   "el-peruana": {
-     voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah
-     name: "Peruana Limeña",
-     accent: "limeña",
-   },
-   "el-española-madrileña": {
-     voiceId: "cgSgspJ2msm6clMCkdW9", // Jessica
-     name: "Española Madrileña",
-     accent: "madrileña",
-   },
-   // === VOCES MASCULINAS LATINAS ===
-   "el-colombiano-paisa": {
-     voiceId: "TX3LPaxmHKxFdv7VOQHJ", // Liam - profunda
-     name: "Colombiano Paisa",
-     accent: "paisa",
-   },
-   "el-venezolano-caraqueño": {
-     voiceId: "iP95p4xoKVk53GoZ742B", // Chris - clara
-     name: "Venezolano Caraqueño",
-     accent: "caraqueño",
-   },
-   "el-argentino-porteño": {
-     voiceId: "onwK4e9ZLuTAKqWW03F9", // Daniel - suave
-     name: "Argentino Porteño",
-     accent: "porteño",
-   },
-   "el-mexicano-capitalino": {
-     voiceId: "cjVigY5qzO86Huf0OWal", // Eric - seria
-     name: "Mexicano Capitalino",
-     accent: "CDMX",
-   },
-   "el-español-madrileño": {
-     voiceId: "nPczCjzI2devNBz1zQrb", // Brian - narrativo
-     name: "Español Madrileño",
-     accent: "madrileño",
-   },
- };
+/**
+ * Catálogo de voces ElevenLabs Premium - Voces hispanas diferenciadas
+ * Cada voz tiene un ID único de la Voice Library de ElevenLabs
+ * con características de tono, acento y estilo distintas
+ */
+const ELEVENLABS_VOICES: Record<string, { voiceId: string; name: string; accent: string; style: string }> = {
+  // ========== VOCES FEMENINAS LATINAS ==========
+  
+  // COLOMBIANAS
+  "el-colombiana-paisa": {
+    voiceId: "J4vZAFDEcpenkMp3f3R9", // Valentina - Medellín warm conversational
+    name: "Valentina",
+    accent: "paisa",
+    style: "cálida, conversacional, amigable",
+  },
+  "el-colombiana-bogotana": {
+    voiceId: "86V9x9hrQds83qf7zaGn", // Marcela - Colombian natural engaging
+    name: "Marcela",
+    accent: "bogotana",
+    style: "natural, profesional, suave",
+  },
+  
+  // VENEZOLANAS
+  "el-venezolana-caraqueña": {
+    voiceId: "iyvXhCAqzDxKnq3FDjZl", // Valeria - Venezuelan dynamic sweet
+    name: "Valeria",
+    accent: "caraqueña",
+    style: "dinámica, dulce, expresiva",
+  },
+  "el-venezolana-caribeña": {
+    voiceId: "n4x17EKVqyxfey8QMqvy", // Ale - Happy & Lovely cheerful
+    name: "Alejandra",
+    accent: "caribeña",
+    style: "alegre, vibrante, encantadora",
+  },
+  "el-venezolana-gocha": {
+    voiceId: "wvLjO30m1EKxxecVo059", // Patricia - calm serene quiet
+    name: "Patricia",
+    accent: "gocha",
+    style: "serena, tranquila, suave",
+  },
+  
+  // ARGENTINAS
+  "el-argentina-porteña": {
+    voiceId: "9rvdnhrYoXoUt4igKpBw", // Mariana - Intimate deep Buenos Aires
+    name: "Mariana",
+    accent: "porteña",
+    style: "íntima, profunda, emotiva",
+  },
+  "el-argentina-cordobesa": {
+    voiceId: "ctNcnV1Afv0vxW8U4yOC", // Melisa - young Argentinian woman
+    name: "Melisa",
+    accent: "cordobesa",
+    style: "joven, fresca, melodiosa",
+  },
+  
+  // MEXICANAS
+  "el-mexicana-capitalina": {
+    voiceId: "cXc71f0YJUpgE7PMi4jF", // Eugenia - Expressive Mexican neutral
+    name: "Eugenia",
+    accent: "CDMX",
+    style: "expresiva, neutral, versátil",
+  },
+  "el-mexicana-norteña": {
+    voiceId: "wBnAJRbu3cj93gnAm02O", // Daniela - high energy persuasive
+    name: "Daniela",
+    accent: "norteña",
+    style: "enérgica, persuasiva, directa",
+  },
+  
+  // OTRAS LATINAS
+  "el-chilena": {
+    voiceId: "prblQcKOdF08ozhxP2mk", // Andrea Rabbit - Chilean warm lovely calm
+    name: "Andrea",
+    accent: "chilena",
+    style: "cálida, encantadora, tranquila",
+  },
+  "el-peruana": {
+    voiceId: "ZIxEPysv7w52OU1uxmur", // Lilli - Latin soothing calm
+    name: "Lilli",
+    accent: "limeña",
+    style: "suave, relajante, dulce",
+  },
+  
+  // ESPAÑOLAS
+  "el-española-madrileña": {
+    voiceId: "HYlEvvU9GMan5YdjFYpg", // LoidaBurgos - Spanish accent friendly calm
+    name: "Loida",
+    accent: "madrileña",
+    style: "clara, amigable, elegante",
+  },
+  
+  // VOCES ESPECIALES FEMENINAS
+  "el-seductora": {
+    voiceId: "wbbP5EPoL4EwxUGRl2PE", // Yessica Rabit - Soft seductive whisper
+    name: "Yessica",
+    accent: "latina",
+    style: "seductora, susurrante, íntima",
+  },
+  "el-sensual": {
+    voiceId: "IrUuRgsybSxwyiJfDSJu", // Yessica Rabit Alluring - deep captivating
+    name: "Yessica Allure",
+    accent: "latina",
+    style: "sensual, profunda, cautivadora",
+  },
+  
+  // ========== VOCES MASCULINAS LATINAS ==========
+  
+  "el-colombiano-paisa": {
+    voiceId: "ucWwAruuGtBeHfnAaKcJ", // JuanRestrepoPro - young engineer Paisa accent
+    name: "Juan",
+    accent: "paisa",
+    style: "natural, cercano, auténtico",
+  },
+  "el-venezolano-caraqueño": {
+    voiceId: "lFqce66WsdO9Jd8l0zz2", // Yobanis - warm natural professional
+    name: "Yobanis",
+    accent: "caraqueño",
+    style: "cálido, natural, profesional",
+  },
+  "el-argentino-porteño": {
+    voiceId: "KqSsYz0buWgkvSbaGn1n", // Agustin - powerful Buenos Aires accent
+    name: "Agustín",
+    accent: "porteño",
+    style: "potente, narrativo, auténtico",
+  },
+  "el-mexicano-capitalino": {
+    voiceId: "wSFJ1H2XywFI0wLdTylp", // Karim - neutral Mexican professional
+    name: "Karim",
+    accent: "CDMX",
+    style: "neutral, profesional, claro",
+  },
+  "el-español-madrileño": {
+    voiceId: "syjZiIvIUSwKREBfMpKZ", // Jacobo Montoro - Southern Spain warm
+    name: "Jacobo",
+    accent: "madrileño",
+    style: "cálido, narrativo, cercano",
+  },
+};
  
  // Voz por defecto de ElevenLabs
  const DEFAULT_VOICE = "el-colombiana-paisa";
