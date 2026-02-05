@@ -6,17 +6,17 @@
  // Catálogo de voces disponibles
  export type VoiceType =
    // === ELEVENLABS PREMIUM - VOCES VERIFICADAS EN LA BIBLIOTECA ===
-   | 'el-latina-alegre'    // Ale - Happy & Lovely
-   | 'el-venezolana'       // Valeria Venezuelan Spanish
-   | 'el-seductora'        // Yessica Soft-Spoken
-   | 'el-sensual'          // Yessica Allure
-   | 'el-sarah'            // Sarah - Mature
-   | 'el-laura'            // Laura - Enthusiastic
-   | 'el-jessica'          // Jessica - Playful
-   | 'el-lily'             // Lily - British
-   | 'el-alice'            // Alice - Educator
-   | 'el-matilda'          // Matilda - Professional
-   | 'el-bella'            // Bella - Warm
+   | 'el-venezolana-gocha'  // diominicana venezolana - Gocha accent
+   | 'el-caraqueña'         // caraqueña loca - Caracas accent
+   | 'el-colombiana-paisa'  // Vanessa - Paisa accent
+   | 'el-colombiana-natural'// Jessica Natural - Colombian natural
+   | 'el-colombiana-linda'  // Linda Gómez - Enérgica
+   | 'el-lina'              // Lina - Soleada y amigable
+   | 'el-teylu'             // Teylu - Dramática y cálida
+   | 'el-maria'             // María - Radiante y melódica
+   | 'el-ana-maria'         // Ana María - Calma y natural
+   | 'el-daniela-valentina' // Daniela Valentina - Joven y optimista
+   | 'el-ligia-elena'       // Ligia Elena - Tranquila y neutral
   // === GOOGLE CLOUD TTS - Voces Neural2 ===
   | 'es-US-Neural2-A' // Femenina - Latino (recomendada)
   | 'es-US-Neural2-B' // Masculina - Latino grave
@@ -92,136 +92,136 @@ export interface VoiceConfig {
   pitch?: number;
 }
 
- // === ELEVENLABS PREMIUM VOICES - SOLO VOCES VERIFICADAS ===
- // Estas voces están confirmadas en la Voice Library accesible con la API key actual
- export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
-   // === VOCES LATINAS VERIFICADAS ===
-   {
-     id: 'el-latina-alegre',
-     label: 'Ale Latina',
-     icon: '🌺',
-     description: 'Latina joven, alegre, cálida y vibrante',
-     gender: 'FEMALE',
-     region: 'LATINO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-venezolana',
-     label: 'Valeria Venezolana',
-     icon: '🇻🇪',
-     description: 'Venezolana dulce, dinámica y familiar',
-     gender: 'FEMALE',
-     region: 'VENEZUELA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-seductora',
-     label: 'Yessica Seductora',
-     icon: '💋',
-     description: 'Latina seductora, susurrante e íntima',
-     gender: 'FEMALE',
-     region: 'LATINO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-sensual',
-     label: 'Yessica Sensual',
-     icon: '🔥',
-     description: 'Latina sensual, profunda y cautivadora',
-     gender: 'FEMALE',
-     region: 'LATINO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   // === VOCES PREMADE INTERNACIONALES ===
-   {
-     id: 'el-sarah',
-     label: 'Sarah Confiada',
-     icon: '💼',
-     description: 'Madura, reconfortante y profesional',
-     gender: 'FEMALE',
-     region: 'LATINO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-laura',
-     label: 'Laura Entusiasta',
-     icon: '✨',
-     description: 'Entusiasta, peculiar y brillante',
-     gender: 'FEMALE',
-     region: 'LATINO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-jessica',
-     label: 'Jessica Juguetona',
-     icon: '🎀',
-     description: 'Juguetona, brillante y cálida',
-     gender: 'FEMALE',
-     region: 'LATINO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-lily',
-     label: 'Lily Elegante',
-     icon: '🌸',
-     description: 'Aterciopelada y elegante',
-     gender: 'FEMALE',
-     region: 'ESPAÑA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-alice',
-     label: 'Alice Educadora',
-     icon: '📚',
-     description: 'Clara, educadora y amigable',
-     gender: 'FEMALE',
-     region: 'ESPAÑA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-matilda',
-     label: 'Matilda Profesional',
-     icon: '👩‍💻',
-     description: 'Profesional, conocedora y seria',
-     gender: 'FEMALE',
-     region: 'LATINO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-bella',
-     label: 'Bella Cálida',
-     icon: '🌷',
-     description: 'Profesional, brillante y cálida',
-     gender: 'FEMALE',
-     region: 'LATINO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
- ];
+// === ELEVENLABS PREMIUM VOICES - VOCES LATINAS DE TU BIBLIOTECA ===
+export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
+  // === VOCES VENEZOLANAS ===
+  {
+    id: 'el-venezolana-gocha',
+    label: 'Venezolana Gocha',
+    icon: '🇻🇪',
+    description: 'Acento gocho venezolano, expresiva y juvenil',
+    gender: 'FEMALE',
+    region: 'VENEZUELA',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  {
+    id: 'el-caraqueña',
+    label: 'Caraqueña',
+    icon: '🌴',
+    description: 'Acento caraqueño, expresiva y femenina',
+    gender: 'FEMALE',
+    region: 'VENEZUELA',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  // === VOCES COLOMBIANAS ===
+  {
+    id: 'el-colombiana-paisa',
+    label: 'Vanessa Paisa',
+    icon: '🇨🇴',
+    description: 'Colombiana paisa, cálida y carismática',
+    gender: 'FEMALE',
+    region: 'COLOMBIA',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  {
+    id: 'el-colombiana-natural',
+    label: 'Jessica Natural',
+    icon: '💚',
+    description: 'Colombiana natural, cálida y clara',
+    gender: 'FEMALE',
+    region: 'COLOMBIA',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  {
+    id: 'el-colombiana-linda',
+    label: 'Linda Enérgica',
+    icon: '⚡',
+    description: 'Colombiana enérgica y optimista',
+    gender: 'FEMALE',
+    region: 'COLOMBIA',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  // === VOCES LATINAS GENERALES ===
+  {
+    id: 'el-lina',
+    label: 'Lina Soleada',
+    icon: '☀️',
+    description: 'Soleada, amable y amigable',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  {
+    id: 'el-teylu',
+    label: 'Teylu Dramática',
+    icon: '🎭',
+    description: 'Segura, dramática y cálida',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  {
+    id: 'el-maria',
+    label: 'María Radiante',
+    icon: '✨',
+    description: 'Cálida, radiante y melódica',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  {
+    id: 'el-ana-maria',
+    label: 'Ana María Calma',
+    icon: '🌊',
+    description: 'Calma, natural y clara',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  {
+    id: 'el-daniela-valentina',
+    label: 'Daniela Joven',
+    icon: '🌸',
+    description: 'Joven, optimista y animada',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  {
+    id: 'el-ligia-elena',
+    label: 'Ligia Elena Serena',
+    icon: '🍃',
+    description: 'Tranquila, pulida y neutral',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+];
  
- // === GOOGLE CLOUD TTS VOICES (Standard) ===
- export const GOOGLE_VOICE_CATALOG: VoiceConfig[] = [
+// === GOOGLE CLOUD TTS VOICES (Standard) ===
+export const GOOGLE_VOICE_CATALOG: VoiceConfig[] = [
   {
     id: 'es-US-Neural2-A',
     label: 'Latina Neural',
