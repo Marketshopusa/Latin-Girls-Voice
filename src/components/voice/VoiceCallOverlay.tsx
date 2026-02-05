@@ -467,13 +467,16 @@ export const VoiceCallOverlay = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Full-screen character image */}
-      <div className="flex-1 relative overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-gradient-to-b from-black via-black/95 to-black flex flex-col">
+      {/* Character image container - centered and contained */}
+      <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+        {/* Dark background pattern */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/10" />
+        
         {isVideoUrl(character.image) ? (
           <video
             src={character.image}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="relative z-10 max-h-[70vh] md:max-h-[75vh] w-auto max-w-[90vw] md:max-w-[50vw] object-contain rounded-2xl shadow-2xl shadow-black/50"
             autoPlay
             loop
             muted
@@ -483,23 +486,26 @@ export const VoiceCallOverlay = ({
           <img
             src={character.image}
             alt={character.name}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="relative z-10 max-h-[70vh] md:max-h-[75vh] w-auto max-w-[90vw] md:max-w-[50vw] object-contain rounded-2xl shadow-2xl shadow-black/50"
           />
         )}
         
-        {/* Gradient overlay at bottom for controls visibility */}
-        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-        
         {/* Animated ring overlay when speaking */}
-        <div 
+        <div
           className={cn(
-            "absolute inset-0 border-4 transition-all duration-300 pointer-events-none",
-            isSpeaking ? "border-pink-500 animate-pulse" : "border-transparent"
+            "absolute z-20 inset-0 flex items-center justify-center pointer-events-none"
           )}
-        />
+        >
+          <div 
+            className={cn(
+              "max-h-[70vh] md:max-h-[75vh] w-auto max-w-[90vw] md:max-w-[50vw] aspect-[3/4] rounded-2xl border-4 transition-all duration-300",
+              isSpeaking ? "border-pink-500 animate-pulse" : "border-transparent"
+            )}
+          />
+        </div>
         
         {/* Top info bar */}
-        <div className="absolute top-0 inset-x-0 pt-safe px-4 py-4 bg-gradient-to-b from-black/70 to-transparent">
+        <div className="absolute top-0 inset-x-0 z-30 pt-safe px-4 py-4">
           <div className="flex flex-col items-center gap-1">
             <h2 className="text-xl font-display font-bold text-white drop-shadow-lg">
               {character.name}
@@ -521,7 +527,7 @@ export const VoiceCallOverlay = ({
         
         {/* Speaker indicator floating badge */}
         {isSpeaking && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="absolute z-30 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <div className="w-20 h-20 bg-pink-500/30 backdrop-blur-sm rounded-full flex items-center justify-center animate-pulse">
               <Volume2 className="w-10 h-10 text-white drop-shadow-lg" />
             </div>
@@ -530,7 +536,7 @@ export const VoiceCallOverlay = ({
         
         {/* Audio visualization bars - floating at center bottom of image */}
         {isConnected && !isSpeaking && (
-          <div className="absolute bottom-36 inset-x-0 flex items-center justify-center gap-1.5">
+          <div className="absolute z-30 bottom-32 md:bottom-36 inset-x-0 flex items-center justify-center gap-1.5">
             {[...Array(7)].map((_, i) => (
               <div
                 key={i}
@@ -551,54 +557,54 @@ export const VoiceCallOverlay = ({
       </div>
 
       {/* Control buttons - fixed at bottom */}
-      <div className="absolute bottom-0 inset-x-0 pb-safe px-6 py-6 flex flex-col items-center gap-4">
+      <div className="absolute bottom-0 inset-x-0 z-40 pb-safe px-6 py-4 md:py-6 flex flex-col items-center gap-3 md:gap-4 bg-gradient-to-t from-black via-black/80 to-transparent pt-8">
         {/* Control row */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6">
           <Button
             variant="outline"
             size="icon"
-            className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20"
+            className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20"
             onClick={toggleMute}
           >
             {isMuted ? (
-              <MicOff className="w-6 h-6 text-red-400" />
+              <MicOff className="w-5 h-5 md:w-6 md:h-6 text-red-400" />
             ) : (
-              <Mic className="w-6 h-6 text-white" />
+              <Mic className="w-5 h-5 md:w-6 md:h-6 text-white" />
             )}
           </Button>
 
           {/* Main status indicator */}
           <div
             className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center transition-all backdrop-blur-md",
+              "w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all backdrop-blur-md",
               isSpeaking ? "bg-pink-500" :
               isListening && !isMuted ? "bg-primary animate-pulse" :
               "bg-white/20"
             )}
           >
             {isSpeaking ? (
-              <Volume2 className="w-7 h-7 text-white" />
+              <Volume2 className="w-6 h-6 md:w-7 md:h-7 text-white" />
             ) : (
-              <Mic className="w-7 h-7 text-white" />
+              <Mic className="w-6 h-6 md:w-7 md:h-7 text-white" />
             )}
           </div>
 
           <Button
             variant="outline"
             size="icon"
-            className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md border-white/20"
+            className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-md border-white/20"
             disabled
           >
-            <Volume2 className="w-6 h-6 text-white/50" />
+            <Volume2 className="w-5 h-5 md:w-6 md:h-6 text-white/50" />
           </Button>
         </div>
 
         {/* End call button */}
         <Button
-          className="w-full max-w-xs h-12 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-2"
+          className="w-full max-w-[280px] md:max-w-xs h-11 md:h-12 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-2 text-sm md:text-base"
           onClick={endCall}
         >
-          <PhoneOff className="w-5 h-5" />
+          <PhoneOff className="w-4 h-4 md:w-5 md:h-5" />
           Terminar llamada
         </Button>
       </div>
