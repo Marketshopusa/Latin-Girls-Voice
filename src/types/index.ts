@@ -18,6 +18,8 @@ export type VoiceType =
    | 'el-chilena'
    | 'el-peruana'
    | 'el-española-madrileña'
+  | 'el-seductora'
+  | 'el-sensual'
    | 'el-colombiano-paisa'
    | 'el-venezolano-caraqueño'
    | 'el-argentino-porteño'
@@ -233,6 +235,29 @@ export interface VoiceConfig {
      provider: 'elevenlabs',
      tier: 'premium',
    },
+  // === VOCES ESPECIALES FEMENINAS ===
+  {
+    id: 'el-seductora',
+    label: 'Seductora Latina',
+    icon: '💋',
+    description: 'Voz susurrante e íntima',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
+  {
+    id: 'el-sensual',
+    label: 'Sensual Profunda',
+    icon: '🔥',
+    description: 'Voz cautivadora y profunda',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'FLASH_V2_5',
+    provider: 'elevenlabs',
+    tier: 'premium',
+  },
    // === MASCULINAS LATINAS ===
    {
      id: 'el-colombiano-paisa',
