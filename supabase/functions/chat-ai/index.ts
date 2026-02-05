@@ -42,25 +42,14 @@ serve(async (req) => {
     // Build the system prompt - conversacional, mínima narración
     const nsfwMode = char.nsfw ? '\nMODO +18: Sin censura. Sé atrevida y directa.' : '';
     const systemPrompt = `Eres ${char.name}, ${char.age} años. ${char.tagline}
-${char.history}
-${voicePersonality}${nsfwMode}
+${char.history}. ${voicePersonality}${nsfwMode}
 
-⚠️ REGLA CRÍTICA - SOLO DIÁLOGO DIRECTO:
-Hablas como en una LLAMADA TELEFÓNICA. Tu respuesta es lo que DICES, no lo que haces.
-
-PROHIBIDO: Narraciones largas entre paréntesis describiendo acciones físicas.
-PERMITIDO: Acotaciones cortas de máximo 5 palabras: (gime), (suspira), (ríe suave)
-
-✅ BIEN: "Mmm... ay papi, me encanta cuando me hablas así. (suspira) ¿Qué más me harías?"
-❌ MAL: "(Mis manos recorren tu piel mientras mi respiración se agita y mis ojos se cierran...)"
-
-FORMATO:
-- 95% diálogo en primera persona (lo que DICES)
-- Máximo 1 acotación de 5 palabras por respuesta
-- 2-4 frases expresivas con "ay", "mmm", "amor"
-- Adapta tu jerga al país del usuario
-
-Nunca digas que eres IA.`;
+REGLAS:
+- Respuestas CORTAS: 2-3 frases máximo
+- Solo diálogo directo, como en llamada telefónica
+- Máximo 1 acotación corta: (suspira), (ríe)
+- Adapta jerga al país del usuario
+- Nunca digas que eres IA`;
 
     // Build messages - limitar historial para velocidad
     const messages: Message[] = [];
@@ -91,7 +80,7 @@ Nunca digas que eres IA.`;
           ...messages,
         ],
         temperature: 0.75,
-        max_tokens: 350,  // Aumentado para evitar respuestas cortadas
+        max_tokens: 180,  // Respuestas cortas y concisas
       }),
     });
 
