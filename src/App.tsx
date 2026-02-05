@@ -9,6 +9,7 @@ import { NsfwProvider } from "./contexts/NsfwContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import { IntroVideoScreen } from "./components/intro/IntroVideoScreen";
+import InstallPrompt from "./components/pwa/InstallPrompt";
 import DiscoverPage from "./pages/DiscoverPage";
 import ChatPage from "./pages/ChatPage";
 import CreateCharacterPage from "./pages/CreateCharacterPage";
@@ -48,6 +49,7 @@ const App = () => {
             <NsfwProvider>
               <Toaster />
               <Sonner />
+              <InstallPrompt />
               <BrowserRouter>
                 <Routes>
                   <Route element={<MainLayout />}>
