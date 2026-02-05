@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Home, MessageCircle, Plus, Crown, Settings, Globe, Shield, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import { useNsfw } from '@/contexts/NsfwContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -87,6 +88,23 @@ export const Sidebar = () => {
             );
           })}
         </nav>
+
+        {/* QR Code Section */}
+        <div className="hidden lg:flex flex-col items-center justify-center flex-1 px-4 py-6">
+          <div className="bg-white p-3 rounded-xl shadow-lg">
+            <QRCodeSVG
+              value="https://persona-virtual-chat.lovable.app"
+              size={120}
+              level="H"
+              includeMargin={false}
+              bgColor="#ffffff"
+              fgColor="#000000"
+            />
+          </div>
+          <p className="text-center text-xs text-muted-foreground mt-3 leading-relaxed">
+            📱 Escanea el código y disfruta tu APP en tu celular
+          </p>
+        </div>
 
         {/* Footer */}
         <div className="p-2 lg:p-4 border-t border-sidebar-border space-y-1">
