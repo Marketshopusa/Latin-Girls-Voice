@@ -9,151 +9,100 @@
   * ElevenLabs TTS - Voces Premium con modelo Flash v2.5
   * 
   * Modelo: eleven_flash_v2_5 (consume 0.5 créditos por carácter)
-  * Soporte: 32 idiomas incluyendo español con acentos latinos
+  * 
+  * IMPORTANTE: Solo se usan las voces REALES disponibles en la Voice Library.
+  * Verificadas mediante la API /v2/voices con la API key actual.
   */
  
-/**
- * Catálogo de voces ElevenLabs Premium - Voces hispanas diferenciadas
- * Cada voz tiene un ID único de la Voice Library de ElevenLabs
- * con características de tono, acento y estilo distintas
- */
-const ELEVENLABS_VOICES: Record<string, { voiceId: string; name: string; accent: string; style: string }> = {
-  // ========== VOCES FEMENINAS LATINAS ==========
-  
-  // COLOMBIANAS
-  "el-colombiana-paisa": {
-    voiceId: "J4vZAFDEcpenkMp3f3R9", // Valentina - Medellín warm conversational
-    name: "Valentina",
-    accent: "paisa",
-    style: "cálida, conversacional, amigable",
-  },
-  "el-colombiana-bogotana": {
-    voiceId: "86V9x9hrQds83qf7zaGn", // Marcela - Colombian natural engaging
-    name: "Marcela",
-    accent: "bogotana",
-    style: "natural, profesional, suave",
-  },
-  
-  // VENEZOLANAS
-  "el-venezolana-caraqueña": {
-    voiceId: "iyvXhCAqzDxKnq3FDjZl", // Valeria - Venezuelan dynamic sweet
-    name: "Valeria",
-    accent: "caraqueña",
-    style: "dinámica, dulce, expresiva",
-  },
-  "el-venezolana-caribeña": {
-    voiceId: "n4x17EKVqyxfey8QMqvy", // Ale - Happy & Lovely cheerful
-    name: "Alejandra",
-    accent: "caribeña",
-    style: "alegre, vibrante, encantadora",
-  },
-  "el-venezolana-gocha": {
-    voiceId: "wvLjO30m1EKxxecVo059", // Patricia - calm serene quiet
-    name: "Patricia",
-    accent: "gocha",
-    style: "serena, tranquila, suave",
-  },
-  
-  // ARGENTINAS
-  "el-argentina-porteña": {
-    voiceId: "9rvdnhrYoXoUt4igKpBw", // Mariana - Intimate deep Buenos Aires
-    name: "Mariana",
-    accent: "porteña",
-    style: "íntima, profunda, emotiva",
-  },
-  "el-argentina-cordobesa": {
-    voiceId: "ctNcnV1Afv0vxW8U4yOC", // Melisa - young Argentinian woman
-    name: "Melisa",
-    accent: "cordobesa",
-    style: "joven, fresca, melodiosa",
-  },
-  
-  // MEXICANAS
-  "el-mexicana-capitalina": {
-    voiceId: "cXc71f0YJUpgE7PMi4jF", // Eugenia - Expressive Mexican neutral
-    name: "Eugenia",
-    accent: "CDMX",
-    style: "expresiva, neutral, versátil",
-  },
-  "el-mexicana-norteña": {
-    voiceId: "wBnAJRbu3cj93gnAm02O", // Daniela - high energy persuasive
-    name: "Daniela",
-    accent: "norteña",
-    style: "enérgica, persuasiva, directa",
-  },
-  
-  // OTRAS LATINAS
-  "el-chilena": {
-    voiceId: "prblQcKOdF08ozhxP2mk", // Andrea Rabbit - Chilean warm lovely calm
-    name: "Andrea",
-    accent: "chilena",
-    style: "cálida, encantadora, tranquila",
-  },
-  "el-peruana": {
-    voiceId: "ZIxEPysv7w52OU1uxmur", // Lilli - Latin soothing calm
-    name: "Lilli",
-    accent: "limeña",
-    style: "suave, relajante, dulce",
-  },
-  
-  // ESPAÑOLAS
-  "el-española-madrileña": {
-    voiceId: "HYlEvvU9GMan5YdjFYpg", // LoidaBurgos - Spanish accent friendly calm
-    name: "Loida",
-    accent: "madrileña",
-    style: "clara, amigable, elegante",
-  },
-  
-  // VOCES ESPECIALES FEMENINAS
-  "el-seductora": {
-    voiceId: "wbbP5EPoL4EwxUGRl2PE", // Yessica Rabit - Soft seductive whisper
-    name: "Yessica",
-    accent: "latina",
-    style: "seductora, susurrante, íntima",
-  },
-  "el-sensual": {
-    voiceId: "IrUuRgsybSxwyiJfDSJu", // Yessica Rabit Alluring - deep captivating
-    name: "Yessica Allure",
-    accent: "latina",
-    style: "sensual, profunda, cautivadora",
-  },
-  
-  // ========== VOCES MASCULINAS LATINAS ==========
-  
-  "el-colombiano-paisa": {
-    voiceId: "ucWwAruuGtBeHfnAaKcJ", // JuanRestrepoPro - young engineer Paisa accent
-    name: "Juan",
-    accent: "paisa",
-    style: "natural, cercano, auténtico",
-  },
-  "el-venezolano-caraqueño": {
-    voiceId: "lFqce66WsdO9Jd8l0zz2", // Yobanis - warm natural professional
-    name: "Yobanis",
-    accent: "caraqueño",
-    style: "cálido, natural, profesional",
-  },
-  "el-argentino-porteño": {
-    voiceId: "KqSsYz0buWgkvSbaGn1n", // Agustin - powerful Buenos Aires accent
-    name: "Agustín",
-    accent: "porteño",
-    style: "potente, narrativo, auténtico",
-  },
-  "el-mexicano-capitalino": {
-    voiceId: "wSFJ1H2XywFI0wLdTylp", // Karim - neutral Mexican professional
-    name: "Karim",
-    accent: "CDMX",
-    style: "neutral, profesional, claro",
-  },
-  "el-español-madrileño": {
-    voiceId: "syjZiIvIUSwKREBfMpKZ", // Jacobo Montoro - Southern Spain warm
-    name: "Jacobo",
-    accent: "madrileño",
-    style: "cálido, narrativo, cercano",
-  },
-};
+ /**
+  * Catálogo de voces ElevenLabs VERIFICADAS
+  * Estos voice_id están confirmados en la biblioteca accesible
+  */
+ const ELEVENLABS_VOICES: Record<string, { voiceId: string; name: string; description: string }> = {
+   // ========== VOCES LATINAS VERIFICADAS ==========
+   
+   // Ale - Happy & Lovely (Latina joven, alegre, cálida)
+   "el-latina-alegre": {
+     voiceId: "n4x17EKVqyxfey8QMqvy",
+     name: "Ale",
+     description: "Latina joven, alegre, cálida y vibrante",
+   },
+   
+   // Valeria - Venezuelan Spanish (Venezolana, dulce, dinámica)
+   "el-venezolana": {
+     voiceId: "iyvXhCAqzDxKnq3FDjZl",
+     name: "Valeria",
+     description: "Venezolana dulce, dinámica y familiar",
+   },
+   
+   // Yessica Rabit - Soft-Spoken (Latina seductora, susurrante, íntima)
+   "el-seductora": {
+     voiceId: "wbbP5EPoL4EwxUGRl2PE",
+     name: "Yessica Soft",
+     description: "Latina seductora, susurrante e íntima",
+   },
+   
+   // Yessica Rabit - Alluring (Latina sensual, profunda, cautivadora)
+   "el-sensual": {
+     voiceId: "IrUuRgsybSxwyiJfDSJu",
+     name: "Yessica Allure",
+     description: "Latina sensual, profunda y cautivadora",
+   },
+   
+   // ========== VOCES PREMADE (Inglés con calidad premium) ==========
+   
+   // Sarah - Young professional woman
+   "el-sarah": {
+     voiceId: "EXAVITQu4vr4xnSDxMaL",
+     name: "Sarah",
+     description: "Madura, reconfortante y confiada",
+   },
+   
+   // Laura - Enthusiastic quirky 
+   "el-laura": {
+     voiceId: "FGY2WhTYpPnrIDTdsKH5",
+     name: "Laura",
+     description: "Entusiasta, peculiar y brillante",
+   },
+   
+   // Jessica - Playful bright
+   "el-jessica": {
+     voiceId: "cgSgspJ2msm6clMCkdW9",
+     name: "Jessica",
+     description: "Juguetona, brillante y cálida",
+   },
+   
+   // Lily - Velvety British
+   "el-lily": {
+     voiceId: "pFZP5JQG7iQjIQuC4Bku",
+     name: "Lily",
+     description: "Aterciopelada, británica elegante",
+   },
+   
+   // Alice - Clear educator
+   "el-alice": {
+     voiceId: "Xb7hH8MSUJpSbSDYk0k2",
+     name: "Alice",
+     description: "Clara, educadora británica",
+   },
+   
+   // Matilda - Professional alto
+   "el-matilda": {
+     voiceId: "XrExE9yKIg1WjnnlVkGX",
+     name: "Matilda",
+     description: "Profesional, conocedora",
+   },
+   
+   // Bella - Warm professional
+   "el-bella": {
+     voiceId: "hpp4J3VqNfWAUOO0d1Us",
+     name: "Bella",
+     description: "Profesional, brillante y cálida",
+   },
+ };
  
- // Voz por defecto de ElevenLabs
- const DEFAULT_VOICE = "el-colombiana-paisa";
+ // Voz por defecto de ElevenLabs (Valeria venezolana)
+ const DEFAULT_VOICE = "el-venezolana";
  
  serve(async (req) => {
    if (req.method === "OPTIONS") {
