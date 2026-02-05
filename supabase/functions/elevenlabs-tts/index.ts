@@ -34,6 +34,20 @@
     name: "Caraqueña",
     description: "Acento caraqueño, expresiva y femenina",
   },
+   
+   // Caraqueña suave - Malandra dulce
+   "el-caraqueña-suave": {
+     voiceId: "oK1rPi7An5Ii9CAYjLdP",
+     name: "Caraqueña Suave",
+     description: "Malandra caraqueña dulce y suavecita, 18 años",
+   },
+   
+   // Caraqueña Malandra - Expresiva y zumbada
+   "el-caraqueña-malandra": {
+     voiceId: "SrW0xDsRgzAnEsFZ9C2y",
+     name: "Malandra Caraqueña",
+     description: "Caraqueña zumbada y expresiva, 25 años",
+   },
   
   // ========== VOCES COLOMBIANAS ==========
   
