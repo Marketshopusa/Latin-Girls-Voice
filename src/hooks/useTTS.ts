@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { VoiceType, DEFAULT_VOICE, getVoiceConfig, normalizeVoiceType } from '@/types';
+ import { useState, useRef, useCallback } from 'react';
+ import { VoiceType, DEFAULT_VOICE, getVoiceConfig, normalizeVoiceType, getVoiceProvider } from '@/types';
 
 interface UseTTSOptions {
   voiceType?: VoiceType;
@@ -77,11 +77,43 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
     setIsPlaying(false);
   }, []);
 
-  // Endpoint TTS (solo Google Cloud)
-  const getTTSEndpoint = useCallback((): string => {
+ 
+   // Endpoint TTS según proveedor
+   const getTTSEndpoint = useCallback((provider: 'elevenlabs' | 'google'): string => {
     const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-    return `${baseUrl}/functions/v1/google-cloud-tts`;
+     return provider === 'elevenlabs' 
+       ? `${baseUrl}/functions/v1/elevenlabs-tts`
+       : `${baseUrl}/functions/v1/google-cloud-tts`;
   }, []);
+ 
+   // Llamar a Google Cloud TTS como fallback
+   const callGoogleTTS = useCallback(async (ttsText: string, normalizedVoice: VoiceType): Promise<Blob | null> => {
+     try {
+       const endpoint = getTTSEndpoint('google');
+       const response = await fetch(endpoint, {
+         method: "POST",
+         headers: {
+           "Content-Type": "application/json",
+           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+         },
+         body: JSON.stringify({ 
+           text: ttsText, 
+           voiceType: normalizedVoice,
+         }),
+       });
+ 
+       if (!response.ok) {
+         console.error("Google TTS fallback error:", response.status);
+         return null;
+       }
+ 
+       return await response.blob();
+     } catch (err) {
+       console.error("Google TTS fallback error:", err);
+       return null;
+     }
+   }, [getTTSEndpoint]);
 
   const playAudio = useCallback(async (text: string) => {
     if (isLoading) return;
@@ -95,42 +127,62 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
     setIsLoading(true);
     setError(null);
 
-    try {
-      const ttsText = prepareTextForTTS(text);
-      if (!ttsText) {
-        throw new Error('No hay texto para reproducir.');
-      }
-
-      // Normalizar la voz (convierte legacy IDs a Google voices)
-      const normalizedVoice = normalizeVoiceType(voiceType);
-      
-      console.log(`Requesting TTS: voice=${normalizedVoice}, chars=${ttsText.length}`);
-
-      const endpoint = getTTSEndpoint();
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ 
-          text: ttsText, 
-          voiceType: normalizedVoice,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error("TTS error:", response.status, errorData);
-        
-        if (response.status === 503) {
-          throw new Error('Voz no disponible temporalmente');
-        }
-        throw new Error(`Error de voz: ${response.status}`);
-      }
-
-      const audioBlob = await response.blob();
+     try {
+       const ttsText = prepareTextForTTS(text);
+       if (!ttsText) {
+         throw new Error('No hay texto para reproducir.');
+       }
+ 
+       // Normalizar la voz
+       const normalizedVoice = normalizeVoiceType(voiceType);
+       const provider = getVoiceProvider(normalizedVoice);
+       
+       console.log(`Requesting TTS: voice=${normalizedVoice}, provider=${provider}, chars=${ttsText.length}`);
+ 
+       let audioBlob: Blob | null = null;
+ 
+       // Intentar con el proveedor principal
+       const endpoint = getTTSEndpoint(provider);
+       const response = await fetch(endpoint, {
+         method: "POST",
+         headers: {
+           "Content-Type": "application/json",
+           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+         },
+         body: JSON.stringify({ 
+           text: ttsText, 
+           voiceType: normalizedVoice,
+         }),
+       });
+ 
+       if (!response.ok) {
+         const errorData = await response.text();
+         console.error(`${provider} TTS error:`, response.status, errorData);
+         
+         // Si es ElevenLabs y falla, intentar fallback a Google Cloud
+         if (provider === 'elevenlabs') {
+           console.log("ElevenLabs failed, trying Google Cloud TTS fallback...");
+           audioBlob = await callGoogleTTS(ttsText, 'es-US-Neural2-A');
+           
+           if (!audioBlob) {
+             throw new Error('Voz no disponible temporalmente');
+           }
+           console.log("Google Cloud TTS fallback successful");
+         } else {
+           if (response.status === 503) {
+             throw new Error('Voz no disponible temporalmente');
+           }
+           throw new Error(`Error de voz: ${response.status}`);
+         }
+       } else {
+         audioBlob = await response.blob();
+       }
+ 
+       if (!audioBlob) {
+         throw new Error('No se pudo generar audio');
+       }
+ 
       const playableBlob = audioBlob.type.includes('audio')
         ? audioBlob
         : new Blob([audioBlob], { type: 'audio/mpeg' });
@@ -156,7 +208,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
 
       await audio.play();
       setIsPlaying(true);
-      console.log(`TTS playing successfully (Google Cloud)`);
+       console.log(`TTS playing successfully (${provider})`);
 
     } catch (err) {
       console.error("TTS error:", err);
@@ -177,7 +229,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType, getTTSEndpoint]);
+   }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType, getTTSEndpoint, callGoogleTTS]);
 
   return {
     playAudio,
