@@ -2,29 +2,21 @@
  
  // Proveedor de TTS
  export type TTSProvider = 'elevenlabs' | 'google';
-
+ 
  // Catálogo de voces disponibles
-export type VoiceType =
-   // === ELEVENLABS PREMIUM - Voces Latinas ===
-   | 'el-colombiana-paisa'
-   | 'el-colombiana-bogotana'
-   | 'el-venezolana-caraqueña'
-   | 'el-venezolana-caribeña'
-   | 'el-venezolana-gocha'
-   | 'el-argentina-porteña'
-   | 'el-argentina-cordobesa'
-   | 'el-mexicana-capitalina'
-   | 'el-mexicana-norteña'
-   | 'el-chilena'
-   | 'el-peruana'
-   | 'el-española-madrileña'
-  | 'el-seductora'
-  | 'el-sensual'
-   | 'el-colombiano-paisa'
-   | 'el-venezolano-caraqueño'
-   | 'el-argentino-porteño'
-   | 'el-mexicano-capitalino'
-   | 'el-español-madrileño'
+ export type VoiceType =
+   // === ELEVENLABS PREMIUM - VOCES VERIFICADAS EN LA BIBLIOTECA ===
+   | 'el-latina-alegre'    // Ale - Happy & Lovely
+   | 'el-venezolana'       // Valeria Venezuelan Spanish
+   | 'el-seductora'        // Yessica Soft-Spoken
+   | 'el-sensual'          // Yessica Allure
+   | 'el-sarah'            // Sarah - Mature
+   | 'el-laura'            // Laura - Enthusiastic
+   | 'el-jessica'          // Jessica - Playful
+   | 'el-lily'             // Lily - British
+   | 'el-alice'            // Alice - Educator
+   | 'el-matilda'          // Matilda - Professional
+   | 'el-bella'            // Bella - Warm
   // === GOOGLE CLOUD TTS - Voces Neural2 ===
   | 'es-US-Neural2-A' // Femenina - Latino (recomendada)
   | 'es-US-Neural2-B' // Masculina - Latino grave
@@ -45,7 +37,7 @@ export type VoiceType =
   | 'es-ES-Chirp3-HD-Kore'
   | 'es-ES-Chirp3-HD-Aoede'
   | 'es-ES-Chirp3-HD-Charon'
-   | 'es-ES-Chirp3-HD-Puck';
+ | 'es-ES-Chirp3-HD-Puck';
  
  // Tier de la voz (para restricciones de plan)
  export type VoiceTier = 'standard' | 'premium';
@@ -100,36 +92,26 @@ export interface VoiceConfig {
   pitch?: number;
 }
 
- // === ELEVENLABS PREMIUM VOICES ===
+ // === ELEVENLABS PREMIUM VOICES - SOLO VOCES VERIFICADAS ===
+ // Estas voces están confirmadas en la Voice Library accesible con la API key actual
  export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
-   // === FEMENINAS LATINAS ===
+   // === VOCES LATINAS VERIFICADAS ===
    {
-     id: 'el-colombiana-paisa',
-     label: 'Colombiana Paisa',
-     icon: '🇨🇴',
-     description: 'Acento paisa cálido y expresivo',
+     id: 'el-latina-alegre',
+     label: 'Ale Latina',
+     icon: '🌺',
+     description: 'Latina joven, alegre, cálida y vibrante',
      gender: 'FEMALE',
-     region: 'COLOMBIA',
+     region: 'LATINO',
      quality: 'FLASH_V2_5',
      provider: 'elevenlabs',
      tier: 'premium',
    },
    {
-     id: 'el-colombiana-bogotana',
-     label: 'Colombiana Bogotana',
-     icon: '🏔️',
-     description: 'Acento rolo suave y educado',
-     gender: 'FEMALE',
-     region: 'COLOMBIA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-venezolana-caraqueña',
-     label: 'Venezolana Caraqueña',
+     id: 'el-venezolana',
+     label: 'Valeria Venezolana',
      icon: '🇻🇪',
-     description: 'Acento caraqueño vibrante',
+     description: 'Venezolana dulce, dinámica y familiar',
      gender: 'FEMALE',
      region: 'VENEZUELA',
      quality: 'FLASH_V2_5',
@@ -137,76 +119,10 @@ export interface VoiceConfig {
      tier: 'premium',
    },
    {
-     id: 'el-venezolana-caribeña',
-     label: 'Venezolana Caribeña',
-     icon: '🌴',
-     description: 'Acento caribeño alegre',
-     gender: 'FEMALE',
-     region: 'VENEZUELA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-venezolana-gocha',
-     label: 'Venezolana Andina',
-     icon: '⛰️',
-     description: 'Acento gocho de los Andes',
-     gender: 'FEMALE',
-     region: 'VENEZUELA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-argentina-porteña',
-     label: 'Argentina Porteña',
-     icon: '🇦🇷',
-     description: 'Acento porteño con tonada',
-     gender: 'FEMALE',
-     region: 'ARGENTINA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-argentina-cordobesa',
-     label: 'Argentina Cordobesa',
-     icon: '🎸',
-     description: 'Acento cordobés melodioso',
-     gender: 'FEMALE',
-     region: 'ARGENTINA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-mexicana-capitalina',
-     label: 'Mexicana Capitalina',
-     icon: '🇲🇽',
-     description: 'Acento chilango de CDMX',
-     gender: 'FEMALE',
-     region: 'MEXICO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-mexicana-norteña',
-     label: 'Mexicana Norteña',
-     icon: '🤠',
-     description: 'Acento norteño mexicano',
-     gender: 'FEMALE',
-     region: 'MEXICO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-chilena',
-     label: 'Chilena',
-     icon: '🇨🇱',
-     description: 'Acento chileno característico',
+     id: 'el-seductora',
+     label: 'Yessica Seductora',
+     icon: '💋',
+     description: 'Latina seductora, susurrante e íntima',
      gender: 'FEMALE',
      region: 'LATINO',
      quality: 'FLASH_V2_5',
@@ -214,10 +130,22 @@ export interface VoiceConfig {
      tier: 'premium',
    },
    {
-     id: 'el-peruana',
-     label: 'Peruana Limeña',
-     icon: '🇵🇪',
-     description: 'Acento limeño suave',
+     id: 'el-sensual',
+     label: 'Yessica Sensual',
+     icon: '🔥',
+     description: 'Latina sensual, profunda y cautivadora',
+     gender: 'FEMALE',
+     region: 'LATINO',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   // === VOCES PREMADE INTERNACIONALES ===
+   {
+     id: 'el-sarah',
+     label: 'Sarah Confiada',
+     icon: '💼',
+     description: 'Madura, reconfortante y profesional',
      gender: 'FEMALE',
      region: 'LATINO',
      quality: 'FLASH_V2_5',
@@ -225,91 +153,67 @@ export interface VoiceConfig {
      tier: 'premium',
    },
    {
-     id: 'el-española-madrileña',
-     label: 'Española Madrileña',
-     icon: '🇪🇸',
-     description: 'Acento madrileño castizo',
+     id: 'el-laura',
+     label: 'Laura Entusiasta',
+     icon: '✨',
+     description: 'Entusiasta, peculiar y brillante',
+     gender: 'FEMALE',
+     region: 'LATINO',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-jessica',
+     label: 'Jessica Juguetona',
+     icon: '🎀',
+     description: 'Juguetona, brillante y cálida',
+     gender: 'FEMALE',
+     region: 'LATINO',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-lily',
+     label: 'Lily Elegante',
+     icon: '🌸',
+     description: 'Aterciopelada y elegante',
      gender: 'FEMALE',
      region: 'ESPAÑA',
      quality: 'FLASH_V2_5',
      provider: 'elevenlabs',
      tier: 'premium',
    },
-  // === VOCES ESPECIALES FEMENINAS ===
-  {
-    id: 'el-seductora',
-    label: 'Seductora Latina',
-    icon: '💋',
-    description: 'Voz susurrante e íntima',
-    gender: 'FEMALE',
-    region: 'LATINO',
-    quality: 'FLASH_V2_5',
-    provider: 'elevenlabs',
-    tier: 'premium',
-  },
-  {
-    id: 'el-sensual',
-    label: 'Sensual Profunda',
-    icon: '🔥',
-    description: 'Voz cautivadora y profunda',
-    gender: 'FEMALE',
-    region: 'LATINO',
-    quality: 'FLASH_V2_5',
-    provider: 'elevenlabs',
-    tier: 'premium',
-  },
-   // === MASCULINAS LATINAS ===
    {
-     id: 'el-colombiano-paisa',
-     label: 'Colombiano Paisa',
-     icon: '☕',
-     description: 'Acento paisa masculino',
-     gender: 'MALE',
-     region: 'COLOMBIA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-venezolano-caraqueño',
-     label: 'Venezolano Caraqueño',
-     icon: '🏙️',
-     description: 'Acento caraqueño masculino',
-     gender: 'MALE',
-     region: 'VENEZUELA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-argentino-porteño',
-     label: 'Argentino Porteño',
-     icon: '🎭',
-     description: 'Acento porteño masculino',
-     gender: 'MALE',
-     region: 'ARGENTINA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-mexicano-capitalino',
-     label: 'Mexicano Capitalino',
-     icon: '🌮',
-     description: 'Acento chilango masculino',
-     gender: 'MALE',
-     region: 'MEXICO',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
-   {
-     id: 'el-español-madrileño',
-     label: 'Español Madrileño',
-     icon: '👔',
-     description: 'Acento madrileño masculino',
-     gender: 'MALE',
+     id: 'el-alice',
+     label: 'Alice Educadora',
+     icon: '📚',
+     description: 'Clara, educadora y amigable',
+     gender: 'FEMALE',
      region: 'ESPAÑA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-matilda',
+     label: 'Matilda Profesional',
+     icon: '👩‍💻',
+     description: 'Profesional, conocedora y seria',
+     gender: 'FEMALE',
+     region: 'LATINO',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-bella',
+     label: 'Bella Cálida',
+     icon: '🌷',
+     description: 'Profesional, brillante y cálida',
+     gender: 'FEMALE',
+     region: 'LATINO',
      quality: 'FLASH_V2_5',
      provider: 'elevenlabs',
      tier: 'premium',
