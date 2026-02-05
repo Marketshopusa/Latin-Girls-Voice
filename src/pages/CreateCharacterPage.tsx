@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useCreateCharacter } from '@/hooks/useCharacters';
 import { toast } from 'sonner';
+import { mediaToAiImageDataUrl } from '@/lib/mediaForAi';
 
 const CreateCharacterPage = () => {
   const navigate = useNavigate();
@@ -25,19 +26,21 @@ const CreateCharacterPage = () => {
 
   const generateStoryWithAI = async () => {
     if (!mediaUrl) {
-      toast.error('Primero sube una imagen para que la IA pueda analizarla');
-      return;
-    }
-
-    // Solo bloquear videos reales (MP4, WEBM), permitir GIFs y otras imágenes
-    if (mediaType === 'video' && !isAnimatedImage) {
-      toast.error('La generación con IA solo funciona con imágenes, no con videos');
+      toast.error('Primero sube una imagen o video para que la IA pueda analizarlo');
       return;
     }
 
     setGeneratingStory(true);
     
     try {
+      // Para videos: extrae un fotograma y lo convierte a JPG. Para GIF/WEBP: usa el primer frame.
+      const imageForAI = await mediaToAiImageDataUrl({
+        mediaUrl,
+        mediaType,
+        maxDimension: 1280,
+        quality: 0.9,
+      });
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-character-story`,
         {
@@ -48,7 +51,7 @@ const CreateCharacterPage = () => {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({
-            imageBase64: mediaUrl,
+            imageBase64: imageForAI,
             name: name || undefined,
             age: age ? parseInt(age) : undefined,
           }),
@@ -269,7 +272,7 @@ const CreateCharacterPage = () => {
             {/* AI Generate Button - Always visible, enabled only with image */}
             <button
               onClick={generateStoryWithAI}
-              disabled={generatingStory || !mediaUrl || (mediaType === 'video' && !isAnimatedImage)}
+              disabled={generatingStory || !mediaUrl}
               className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg flex items-center justify-center gap-3"
             >
               {generatingStory ? (
@@ -280,17 +283,14 @@ const CreateCharacterPage = () => {
               ) : !mediaUrl ? (
                 <>
                   <Wand2 className="h-5 w-5" />
-                  Sube una imagen para generar con IA
-                </>
-              ) : mediaType === 'video' && !isAnimatedImage ? (
-                <>
-                  <Wand2 className="h-5 w-5" />
-                  La IA solo funciona con imágenes
+                  Sube una imagen o video para generar con IA
                 </>
               ) : (
                 <>
                   <Wand2 className="h-5 w-5" />
-                  ✨ Generar Historia con IA {isAnimatedImage ? '(GIF)' : ''}
+                  {mediaType === 'video'
+                    ? '✨ Generar Historia desde Video'
+                    : `✨ Generar Historia con IA ${isAnimatedImage ? '(GIF)' : ''}`}
                 </>
               )}
             </button>
@@ -301,7 +301,7 @@ const CreateCharacterPage = () => {
                 <label className="text-sm text-muted-foreground">
                   Descripción & Personalidad (PROMPT)
                 </label>
-                {mediaUrl && (mediaType === 'image' || isAnimatedImage) && (
+                {mediaUrl && (
                   <button 
                     onClick={generateStoryWithAI}
                     disabled={generatingStory}
