@@ -163,15 +163,12 @@ serve(async (req) => {
     const cleanText = String(processedText).slice(0, 3000);
 
     console.log(
-      `ElevenLabs TTS (EXTREME Acting): ${cleanText.length} chars | Voice: ${voiceConfig.name} | ` +
+      `ElevenLabs TTS (Dynamic Acting): ${cleanText.length} chars | Voice: ${voiceConfig.name} | ` +
       `Emotion: ${context.emotion} (${(context.intensity * 100).toFixed(0)}%) | ` +
-      `Settings: stability=${voiceSettings.stability.toFixed(2)}, style=${voiceSettings.style.toFixed(2)}, speed=${voiceSettings.speed.toFixed(2)}`
+      `Settings: stability=${voiceSettings.stability}, style=${voiceSettings.style}`
     );
 
-    // ⭐ Llamar a ElevenLabs con parámetros de actuación EXTREMA
-    // - stability ultra bajo = máxima variación emocional
-    // - style ultra alto = máxima expresividad y dramatismo
-    // - speed variable = ritmo emocional adaptativo
+    // ⭐ Llamar a ElevenLabs con parámetros de actuación dinámica
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceConfig.voiceId}?output_format=mp3_44100_128`,
       {
@@ -182,13 +179,12 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           text: cleanText,
-          model_id: "eleven_multilingual_v2", // Mejor modelo para expresividad
+          model_id: "eleven_flash_v2_5",
           voice_settings: {
             stability: voiceSettings.stability,
             similarity_boost: voiceSettings.similarityBoost,
             style: voiceSettings.style,
             use_speaker_boost: voiceSettings.useSpeakerBoost,
-            speed: voiceSettings.speed, // Velocidad adaptativa
           },
         }),
       }
