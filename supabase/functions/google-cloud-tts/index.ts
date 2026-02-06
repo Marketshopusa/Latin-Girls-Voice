@@ -1,4 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { 
+  processForVocalInterpretation,
+  generateExpressiveSSML,
+  detectEmotionalContext,
+  prepareTextForActing
+} from "../_shared/vocal-interpretation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,10 +12,10 @@ const corsHeaders = {
 };
 
 /**
-  * Google Cloud TTS - Sistema de Voces Neural2 y Chirp 3: HD
+ * Google Cloud TTS - Interpretación Vocal Dinámica
  * 
- * Catálogo completo de voces de alta calidad sin depender de Gemini.
- * Solo usa la API de Google Cloud Text-to-Speech.
+ * Sistema de voces Neural2 y Chirp 3: HD con actuación emocional.
+ * Usa SSML expresivo para pausas dramáticas y modulación de prosodia.
  */
 
 interface VoiceConfig {
@@ -17,12 +23,11 @@ interface VoiceConfig {
   languageCode: string;
   ssmlGender: "FEMALE" | "MALE";
   isChirp3?: boolean;
-  // Configuración regional para acentos (pitch y rate)
   speakingRate?: number;
   pitch?: number;
 }
 
-// Catálogo completo de voces Neural2, Chirp 3: HD y Regionales
+// Catálogo de voces Neural2 y Chirp 3: HD
 const VOICE_CONFIG: Record<string, VoiceConfig> = {
   // === NEURAL2 - ESPAÑOL LATINO (es-US) ===
   "es-US-Neural2-A": {
@@ -176,9 +181,8 @@ const VOICE_CONFIG: Record<string, VoiceConfig> = {
   },
 };
 
-// Mapeo de voces legacy a las nuevas (compatibilidad histórica)
+// Mapeo de voces legacy
 const LEGACY_VOICE_MAP: Record<string, string> = {
-  // Legacy antiguos
   "LATINA_CALIDA": "es-US-Neural2-A",
   "LATINA_COQUETA": "es-ES-Neural2-D",
   "MEXICANA_DULCE": "es-MX-Neural2-A",
@@ -187,8 +191,6 @@ const LEGACY_VOICE_MAP: Record<string, string> = {
   "VENEZOLANA": "es-ES-Neural2-C",
   "COLOMBIANA": "es-US-Neural2-A",
   "ARGENTINA": "es-ES-Neural2-B",
-  
-  // IDs históricos (mapeados a Google con variedad real)
   "COLOMBIANA_PAISA": "es-US-Neural2-A",
   "COLOMBIANA_SUAVE": "es-US-Chirp3-HD-Aoede",
   "VENEZOLANA_CARAQUEÑA": "es-ES-Neural2-D",
@@ -202,7 +204,6 @@ const LEGACY_VOICE_MAP: Record<string, string> = {
   "MASCULINA_LATINA": "es-US-Chirp3-HD-Charon",
 };
 
-// Voz por defecto
 const DEFAULT_VOICE = "es-US-Neural2-A";
 
 serve(async (req) => {
@@ -229,26 +230,64 @@ serve(async (req) => {
       );
     }
 
-    // Resolver tipo de voz (soportar legacy y nuevos IDs)
+    // Resolver tipo de voz
     let resolvedVoiceType = voiceType || DEFAULT_VOICE;
-    
-    // Si es una voz legacy, mapear a la nueva
     if (LEGACY_VOICE_MAP[resolvedVoiceType]) {
       resolvedVoiceType = LEGACY_VOICE_MAP[resolvedVoiceType];
     }
     
-    // Obtener configuración de voz
     const voiceConfig = VOICE_CONFIG[resolvedVoiceType] || VOICE_CONFIG[DEFAULT_VOICE];
     
-    // Limpiar texto - límite ampliado para mensajes largos (Google TTS soporta hasta 5000 chars)
+    // ⭐ NUEVO: Procesar texto para interpretación vocal dinámica
     const cleanText = String(text).slice(0, 3000);
-    const ssml = textToSsml(cleanText);
+    const context = detectEmotionalContext(cleanText);
+    const processedText = prepareTextForActing(cleanText);
+    const ssml = generateExpressiveSSML(processedText, context);
+
+    // Ajustar rate y pitch según emoción detectada
+    let emotionalRateAdjust = 0;
+    let emotionalPitchAdjust = 0;
+    
+    switch (context.emotion) {
+      case 'seductive':
+        emotionalRateAdjust = -0.08;
+        emotionalPitchAdjust = -1;
+        break;
+      case 'passionate':
+        emotionalRateAdjust = 0.06;
+        emotionalPitchAdjust = 2;
+        break;
+      case 'whisper':
+        emotionalRateAdjust = -0.1;
+        emotionalPitchAdjust = -2;
+        break;
+      case 'intense':
+        emotionalRateAdjust = 0.05;
+        emotionalPitchAdjust = 3;
+        break;
+      case 'tender':
+        emotionalRateAdjust = -0.05;
+        emotionalPitchAdjust = -1;
+        break;
+      case 'playful':
+        emotionalRateAdjust = 0.03;
+        emotionalPitchAdjust = 1;
+        break;
+      case 'excited':
+        emotionalRateAdjust = 0.08;
+        emotionalPitchAdjust = 2;
+        break;
+    }
+
+    const finalRate = Math.max(0.7, Math.min(1.3, (voiceConfig.speakingRate ?? 1.0) + emotionalRateAdjust));
+    const finalPitch = (voiceConfig.pitch ?? 0) + emotionalPitchAdjust;
 
     console.log(
-      `TTS Request: ${cleanText.length} chars | Voice: ${voiceConfig.voiceName} | Lang: ${voiceConfig.languageCode} | Chirp3: ${voiceConfig.isChirp3 || false}`
+      `Google TTS (Dynamic Acting): ${cleanText.length} chars | Voice: ${voiceConfig.voiceName} | ` +
+      `Emotion: ${context.emotion} (${(context.intensity * 100).toFixed(0)}%) | ` +
+      `Rate: ${finalRate.toFixed(2)}, Pitch: ${finalPitch.toFixed(1)}`
     );
 
-    // Construir request (siempre Cloud TTS estándar; Chirp3 usa voiceName completo)
     const requestBody = {
       input: { ssml },
       voice: {
@@ -259,8 +298,8 @@ serve(async (req) => {
       audioConfig: {
         audioEncoding: "MP3",
         effectsProfileId: ["headphone-class-device"],
-        speakingRate: voiceConfig.speakingRate ?? 1.0,
-        pitch: voiceConfig.pitch ?? 0,
+        speakingRate: finalRate,
+        pitch: finalPitch,
       },
     };
 
@@ -277,7 +316,7 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error("Google Cloud TTS error:", response.status, errorText);
       
-      // Si falla con voces premium (Chirp3), intentar fallback a Neural2
+      // Fallback para Chirp3
       if (voiceConfig.isChirp3 || voiceConfig.voiceName.includes('Chirp3')) {
         console.log("Chirp3 failed, trying Neural2 fallback...");
         
@@ -295,8 +334,8 @@ serve(async (req) => {
           audioConfig: {
             audioEncoding: "MP3",
             effectsProfileId: ["headphone-class-device"],
-            speakingRate: fallbackVoice.speakingRate ?? 1.0,
-            pitch: fallbackVoice.pitch ?? 0,
+            speakingRate: finalRate,
+            pitch: finalPitch,
           },
         };
         
@@ -318,15 +357,16 @@ serve(async (req) => {
             for (let i = 0; i < binaryString.length; i++) {
               bytes[i] = binaryString.charCodeAt(i);
             }
-             return new Response(bytes.buffer, {
-               headers: {
-                 ...corsHeaders,
-                 "Content-Type": "audio/mpeg",
-                 "Access-Control-Expose-Headers": "x-tts-voice, x-tts-lang",
-                 "x-tts-voice": fallbackVoice.voiceName,
-                 "x-tts-lang": fallbackVoice.languageCode,
-               },
-             });
+            return new Response(bytes.buffer, {
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "audio/mpeg",
+                "Access-Control-Expose-Headers": "x-tts-voice, x-tts-lang, x-tts-emotion",
+                "x-tts-voice": fallbackVoice.voiceName,
+                "x-tts-lang": fallbackVoice.languageCode,
+                "x-tts-emotion": context.emotion,
+              },
+            });
           }
         }
       }
@@ -354,15 +394,16 @@ serve(async (req) => {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    console.log(`TTS Success: ${bytes.length} bytes of audio generated`);
+    console.log(`TTS Success: ${bytes.length} bytes | Emotion: ${context.emotion}`);
 
     return new Response(bytes.buffer, {
       headers: {
         ...corsHeaders,
         "Content-Type": "audio/mpeg",
-        "Access-Control-Expose-Headers": "x-tts-voice, x-tts-lang",
+        "Access-Control-Expose-Headers": "x-tts-voice, x-tts-lang, x-tts-emotion",
         "x-tts-voice": voiceConfig.voiceName,
         "x-tts-lang": voiceConfig.languageCode,
+        "x-tts-emotion": context.emotion,
       },
     });
   } catch (error) {
@@ -373,34 +414,3 @@ serve(async (req) => {
     );
   }
 });
-
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-// Convierte texto a SSML con pausas naturales (sin volverlo robótico)
-function textToSsml(raw: string): string {
-  let t = raw
-    .replace(/[—–]+/g, ",")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  // Unificar puntos suspensivos
-  t = t.replace(/\.{3,}/g, "…");
-
-  let s = escapeXml(t);
-
-  // Pausas sutiles por puntuación
-  s = s
-    .replace(/…/g, "...<break time=\"320ms\"/>")
-    .replace(/([!?])\s*/g, "$1<break time=\"260ms\"/>")
-    .replace(/([.])\s*/g, "$1<break time=\"300ms\"/>")
-    .replace(/([,])\s*/g, "$1<break time=\"160ms\"/>");
-
-  return `<speak>${s}</speak>`;
-}
