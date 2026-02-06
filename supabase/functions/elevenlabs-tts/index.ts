@@ -48,6 +48,27 @@ const corsHeaders = {
      name: "Malandra Caraqueña",
      description: "Caraqueña zumbada y expresiva, 25 años",
    },
+   
+   // la Pana vzla - Voz joven caraqueña con tono grave y rasposo
+   "el-pana-vzla": {
+     voiceId: "UkrE1PXKZzHbSDLWombK",
+     name: "La Pana Vzla",
+     description: "Joven caraqueña, tono grave rasposo y retador",
+   },
+   
+   // DominicP - Voz caraqueña con acento dominicano
+   "el-dominic-p": {
+     voiceId: "MhqexLpDpHRhh5mFR7EE",
+     name: "Dominic P",
+     description: "Caraqueña con estilo dominicano, juguetona y desafiante",
+   },
+   
+   // caracas01 - Voz ultra-natural caraqueña malandrosa
+   "el-caracas01": {
+     voiceId: "Na1MRhNLkzddf48WbAxW",
+     name: "Caracas 01",
+     description: "Ultra-natural caraqueña, malandrosa y expresiva",
+   },
   
   // ========== VOCES COLOMBIANAS ==========
   

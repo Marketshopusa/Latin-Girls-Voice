@@ -19,6 +19,9 @@
    | 'el-ligia-elena'       // Ligia Elena - Tranquila y neutral
    | 'el-caraqueña-suave'   // Caraqueña suave - Malandra dulce
    | 'el-caraqueña-malandra' // Caraqueña malandra - Expresiva y grosera
+   | 'el-pana-vzla'          // La Pana Vzla - Joven caraqueña grave
+   | 'el-dominic-p'          // Dominic P - Caraqueña con estilo dominicano
+   | 'el-caracas01'          // Caracas 01 - Ultra-natural malandrosa
   // === GOOGLE CLOUD TTS - Voces Neural2 ===
   | 'es-US-Neural2-A' // Femenina - Latino (recomendada)
   | 'es-US-Neural2-B' // Masculina - Latino grave
@@ -236,6 +239,39 @@ export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
      label: 'Malandra Caraqueña',
      icon: '💋',
      description: 'Caraqueña zumbada y expresiva, 25 años',
+     gender: 'FEMALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-pana-vzla',
+     label: 'La Pana Vzla',
+     icon: '🔥',
+     description: 'Joven caraqueña, tono grave rasposo y retador',
+     gender: 'FEMALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-dominic-p',
+     label: 'Dominic P',
+     icon: '🌴',
+     description: 'Caraqueña con estilo dominicano, juguetona',
+     gender: 'FEMALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-caracas01',
+     label: 'Caracas 01',
+     icon: '🎤',
+     description: 'Ultra-natural caraqueña, malandrosa y expresiva',
      gender: 'FEMALE',
      region: 'VENEZUELA',
      quality: 'FLASH_V2_5',
