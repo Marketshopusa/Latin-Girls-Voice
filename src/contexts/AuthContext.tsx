@@ -51,10 +51,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signInWithGoogle = async () => {
-    const { error } = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin,
+    // Use full origin URL for mobile compatibility
+    const redirectUrl = window.location.origin + '/';
+    console.log('Starting Google OAuth with redirect:', redirectUrl);
+    
+    const { error, redirected } = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: redirectUrl,
     });
-    if (error) throw error;
+    
+    if (error) {
+      console.error('OAuth error:', error);
+      throw error;
+    }
+    
+    // If redirected is false and no error, the popup might have been blocked
+    if (!redirected && !error) {
+      console.warn('OAuth may have been blocked by popup blocker');
+    }
   };
 
   const signOut = async () => {
