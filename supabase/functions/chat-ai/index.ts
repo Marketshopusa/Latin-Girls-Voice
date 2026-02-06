@@ -70,17 +70,27 @@ REGLAS:
 
     console.log(`Request: ${char.name}, history: ${messages.length} msgs`);
 
-    // Para NSFW usar modelo más permisivo y configuración relajada
-    const modelConfig = char.nsfw 
+    // Para NSFW usar modelo más permisivo, para SFW usar Gemini
+    const isNsfw = char.nsfw;
+    
+    const requestBody = isNsfw 
       ? {
           model: "openai/gpt-5-mini",  // GPT es más permisivo para contenido adulto
           temperature: 0.85,
-          max_tokens: 250,
+          max_completion_tokens: 250,  // GPT usa max_completion_tokens
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages,
+          ],
         }
       : {
           model: "google/gemini-2.5-flash",
           temperature: 0.75,
-          max_tokens: 180,
+          max_tokens: 180,  // Gemini usa max_tokens
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages,
+          ],
         };
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -89,13 +99,7 @@ REGLAS:
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        ...modelConfig,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const elapsed = Date.now() - startTime;
