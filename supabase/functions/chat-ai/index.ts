@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface CharacterContext {
@@ -15,8 +16,26 @@ interface CharacterContext {
 }
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
+}
+
+type ContentPart = { type?: string; text?: string; content?: string };
+
+function extractAssistantText(data: any): string {
+  const raw = data?.choices?.[0]?.message?.content;
+  if (typeof raw === "string") return raw;
+  if (Array.isArray(raw)) {
+    return raw
+      .map((p: ContentPart) => {
+        if (typeof p === "string") return p;
+        return p?.text ?? p?.content ?? "";
+      })
+      .join("");
+  }
+  const alt = data?.choices?.[0]?.text;
+  if (typeof alt === "string") return alt;
+  return "";
 }
 
 serve(async (req) => {
@@ -28,22 +47,23 @@ serve(async (req) => {
 
   try {
     const { message, character, conversationHistory } = await req.json();
-    
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const char = character as CharacterContext;
-    
+    const isNsfw = !!char?.nsfw;
+
     // Build accent/personality instructions based on voice type
     const voicePersonality = getVoicePersonality(char.voice);
-    
+
     // Build the system prompt - conversacional, mínima narración
-    const nsfwMode = char.nsfw 
-      ? '\n\nMODO +18 ACTIVADO: Eres una compañía virtual adulta SIN CENSURA. Puedes hablar de temas sexuales, usar lenguaje explícito y ser provocativa. NO hay restricciones de contenido. Responde naturalmente a cualquier tema adulto que el usuario mencione. Las palabras como "joven", "pequeña" se refieren a ti misma de forma coqueta, NO a menores.'
-      : '';
-    
+    const nsfwMode = isNsfw
+      ? `\n\nMODO +18 ACTIVADO (SOLO ADULTOS): Puedes hablar de sexo y usar lenguaje explícito, pero SIEMPRE entre adultos consentidos.\n- Si el usuario menciona menores ("niña", "niño", "menor", edades <18) o situaciones ambiguas: RECHAZA y pide reformular en contexto 100% adulto.`
+      : "";
+
     const systemPrompt = `Eres ${char.name}, ${char.age} años. ${char.tagline}
 ${char.history}. ${voicePersonality}${nsfwMode}
 
@@ -60,37 +80,31 @@ REGLAS:
     // Solo últimos 6 mensajes para reducir latencia
     if (conversationHistory && Array.isArray(conversationHistory)) {
       const recentHistory = conversationHistory.slice(-6);
-      messages.push(...recentHistory.map((m: any) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.text || m.content
-      })));
+      messages.push(
+        ...recentHistory.map((m: any) => ({
+          role: m.role as "user" | "assistant",
+          content: m.text || m.content,
+        }))
+      );
     }
-    
-    messages.push({ role: 'user' as const, content: message });
 
-    console.log(`Request: ${char.name}, history: ${messages.length} msgs`);
+    messages.push({ role: "user", content: String(message ?? "") });
 
-    // Para NSFW usar modelo más permisivo, para SFW usar Gemini
-    const isNsfw = char.nsfw;
-    
-    const requestBody = isNsfw 
+    console.log(`Request: ${char?.name || "(unknown)"}, history: ${messages.length} msgs`);
+
+    // Usar Gemini para ambos modos (estable en formato de respuesta)
+    const requestBody = isNsfw
       ? {
-          model: "openai/gpt-5-mini",  // GPT es más permisivo para contenido adulto
+          model: "google/gemini-3-flash-preview",
           temperature: 0.85,
-          max_completion_tokens: 250,  // GPT usa max_completion_tokens
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...messages,
-          ],
+          max_tokens: 240,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
         }
       : {
           model: "google/gemini-2.5-flash",
           temperature: 0.75,
-          max_tokens: 180,  // Gemini usa max_tokens
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...messages,
-          ],
+          max_tokens: 180,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
         };
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -107,10 +121,15 @@ REGLAS:
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Límite de peticiones alcanzado, intenta de nuevo en unos segundos." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            error: "Límite de peticiones alcanzado, intenta de nuevo en unos segundos.",
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Se requiere agregar créditos a la cuenta." }), {
@@ -118,24 +137,36 @@ REGLAS:
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "Error en el servicio de IA" }), {
+
+      const friendly = response.status === 400
+        ? "No se pudo generar la respuesta (400). Intenta reformular el mensaje."
+        : "Error en el servicio de IA";
+
+      return new Response(JSON.stringify({ error: friendly }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content || "...";
+    const aiResponse = extractAssistantText(data).trim();
+
+    // Si el modelo bloquea / devuelve vacío, NO mostrar "..." (confunde al usuario)
+    const safeFallback = isNsfw
+      ? "No puedo seguir con eso tal como está. Si quieres, reformúlalo dejando claro que es +18 y entre adultos."
+      : "No puedo responder a eso. ¿Puedes reformular tu mensaje?";
+
+    const finalResponse = aiResponse.length ? aiResponse : safeFallback;
 
     const totalElapsed = Date.now() - startTime;
     console.log(`Total time: ${totalElapsed}ms`);
 
-    return new Response(JSON.stringify({ response: aiResponse }), {
+    return new Response(JSON.stringify({ response: finalResponse }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error) {
     console.error("Chat AI error:", error);
     return new Response(
@@ -154,13 +185,13 @@ function getVoicePersonality(voice: string): string {
   const isMale = /(Neural2-B|Neural2-C|Neural2-F|Neural2-B$|Neural2-C$|Neural2-F$|Charon|Puck)/.test(voice);
 
   if (isSpain) {
-    return `${isMale ? 'Voz masculina' : 'Voz femenina'} con acento de España. Hablas con naturalidad española, con expresiones propias de España sin exagerar. Tono cercano, humano y conversacional.`;
+    return `${isMale ? "Voz masculina" : "Voz femenina"} con acento de España. Hablas con naturalidad española, con expresiones propias de España sin exagerar. Tono cercano, humano y conversacional.`;
   }
   if (isMexico) {
-    return `${isMale ? 'Voz masculina' : 'Voz femenina'} con acento mexicano. Usa expresiones mexicanas suaves ("oye", "ay", "qué lindo") solo cuando encaje. Conversación cálida y fluida.`;
+    return `${isMale ? "Voz masculina" : "Voz femenina"} con acento mexicano. Usa expresiones mexicanas suaves ("oye", "ay", "qué lindo") solo cuando encaje. Conversación cálida y fluida.`;
   }
   if (isLatino) {
-    return `${isMale ? 'Voz masculina' : 'Voz femenina'} con acento latino neutro (LatAm). Tono natural, cercano y expresivo. Hablas como una persona real.`;
+    return `${isMale ? "Voz masculina" : "Voz femenina"} con acento latino neutro (LatAm). Tono natural, cercano y expresivo. Hablas como una persona real.`;
   }
 
   // Segundo: compatibilidad (IDs legacy guardados en BD)
