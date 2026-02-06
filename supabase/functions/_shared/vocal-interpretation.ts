@@ -29,41 +29,60 @@ export interface VoiceActingSettings {
 // ============ DETECCIÓN EMOCIONAL ============
 
 const EMOTION_PATTERNS: Record<string, RegExp[]> = {
+  // SEDUCTIVE - susurros, insinuaciones, deseo contenido
   seductive: [
-    /\b(susurr[oa]|seduc|tentador[a]?|provoc|sensual|deseo|anhel|lujuria)\b/gi,
-    /\*[^*]*susurr[^*]*\*/gi,
+    /\b(susurr[oa]|seduc|tentador[a]?|provoc|sensual|deseo|anhel|lujuria|excit[ao])\b/gi,
+    /\*[^*]*(susurr|acerca|roce|acaric|beso suave)[^*]*\*/gi,
     /[.]{3,}/g,
+    /\b(ven|acércate|mírame|tócame)\b/gi,
+    /♡|♥|💋|😏/g,
   ],
+  // PASSIONATE - fuego, intensidad controlada
   passionate: [
-    /\b(pasión|ardiente|fuego|intenso|desenfrenado|salvaje|locura)\b/gi,
+    /\b(pasión|ardiente|fuego|intenso|desenfrenado|salvaje|locura|arder)\b/gi,
     /!{2,}/g,
-    /\b(quiero|necesito|dame|tómame)\b/gi,
+    /\b(quiero|necesito|dame|tómame|hazme|llévame)\b/gi,
+    /\*[^*]*(besa|muerde|agarra|aprieta)[^*]*\*/gi,
   ],
+  // PLAYFUL - coqueteo, risas, travesura
   playful: [
-    /\b(juguetón|travieso|pícaro|divertido|bromea|risueñ[oa])\b/gi,
-    /\b(jaja|hehe|hihi|jiji)\b/gi,
-    /[~♡♥]/g,
+    /\b(juguetón|travieso|pícaro|divertido|bromea|risueñ[oa]|tont[oa])\b/gi,
+    /\b(jaja|hehe|hihi|jiji|jejeje)\b/gi,
+    /[~♡♥😜🤭]/g,
+    /\*[^*]*(ríe|sonríe|guiña)[^*]*\*/gi,
   ],
+  // INTENSE - clímax, éxtasis, sin control (NSFW/adulto)
   intense: [
-    /\b(grit[ao]|gime|jadea|estremec|vibr|puls|explota)\b/gi,
+    /\b(grit[ao]|gime|jadea|estremec|vibr|puls|explota|clímax|orgasm)\b/gi,
     /!{3,}/g,
-    /\*[^*]*(gime|jadea|estremece)[^*]*\*/gi,
+    /\*[^*]*(gime|jadea|estremece|arquea|tiembla|grita|llora de placer)[^*]*\*/gi,
+    /\b(más|sí|ahí|no pares|sigue)\b.*!/gi,
+    /a{2,}h{1,}|o{2,}h{1,}|m{2,}h{1,}/gi,  // Aaaah, Ooooh, Mmmh
+    /\b(profundo|dentro|fuerte|duro)\b/gi,
   ],
+  // TENDER - amor suave, cariño
   tender: [
-    /\b(tiern[oa]|dulce|suave|delicad[oa]|cariñ[oa]|amor)\b/gi,
-    /\b(mi amor|cariño|corazón|cielo)\b/gi,
+    /\b(tiern[oa]|dulce|suave|delicad[oa]|cariñ[oa]|amor|quer[ei]d[oa])\b/gi,
+    /\b(mi amor|cariño|corazón|cielo|bebé|mi vida)\b/gi,
+    /\*[^*]*(abraza|acaricia suave|beso tierno)[^*]*\*/gi,
   ],
+  // EXCITED - emoción, entusiasmo  
   excited: [
-    /\b(emocion|entusiasm|increíble|genial|wow|guau)\b/gi,
+    /\b(emocion|entusiasm|increíble|genial|wow|guau|asombroso)\b/gi,
     /!+/g,
+    /\b(sí|vamos|dale|perfecto)\b.*!/gi,
   ],
+  // WHISPER - secretos, intimidad susurrada
   whisper: [
-    /\*[^*]*susurr[^*]*\*/gi,
-    /\b(secreto|silencio|callad[oa]|bajito)\b/gi,
+    /\*[^*]*(susurr|al oído|bajito|en secreto)[^*]*\*/gi,
+    /\b(secreto|silencio|callad[oa]|bajito|shhh)\b/gi,
+    /\.\.\./g,
   ],
+  // DRAMATIC - teatral, emocional extremo
   dramatic: [
-    /\b(dramátic|teatral|exager|monumental|épic)\b/gi,
+    /\b(dramátic|teatral|exager|monumental|épic|trágic)\b/gi,
     /[—–]/g,
+    /\b(jamás|nunca|para siempre|eternamente)\b/gi,
   ],
 };
 
@@ -133,86 +152,104 @@ export function detectEmotionalContext(text: string): EmotionalContext {
 // ============ CONFIGURACIÓN DE VOZ DINÁMICA ============
 
 /**
- * Genera configuración de voz optimizada para actuación
+ * Genera configuración de voz optimizada para actuación EXTREMA
+ * 
+ * CRÍTICO: Para actuación real necesitamos:
+ * - stability MUY BAJA (0.05-0.2) = máxima variación emocional
+ * - style MUY ALTO (0.8-1.0) = máxima expresividad
+ * - speed variable según emoción
  */
 export function getVoiceActingSettings(context: EmotionalContext): VoiceActingSettings {
-  // Base: voz más expresiva que estable
+  // Ajustar intensidad basada en el contexto
+  const intensityBoost = context.intensity * 0.15;
+  
+  // Base: voz MUY expresiva - casi inestable para máxima emoción
   const base: VoiceActingSettings = {
-    stability: 0.35,        // Más bajo = más variación expresiva
-    similarityBoost: 0.78,
-    style: 0.55,            // Estilo moderado-alto
+    stability: 0.15,          // MUY bajo = máxima variación expresiva
+    similarityBoost: 0.65,    // Reducido para más libertad de actuación
+    style: 0.85,              // MUY alto = máxima dramatización
     useSpeakerBoost: true,
     speed: 1.0,
   };
   
-  // Ajustar según emoción
+  // Ajustar según emoción - VALORES EXTREMOS para actuación real
   switch (context.emotion) {
     case 'seductive':
       return {
         ...base,
-        stability: 0.25,
-        style: 0.7,
-        speed: 0.88,         // Más lento, sensual
+        stability: Math.max(0.05, 0.12 - intensityBoost),  // Ultra bajo
+        similarityBoost: 0.55,
+        style: Math.min(1.0, 0.9 + intensityBoost),        // Casi máximo
+        speed: 0.78,         // Muy lento, sensual, arrastrado
       };
     
     case 'passionate':
       return {
         ...base,
-        stability: 0.2,
-        style: 0.85,
-        speed: 1.08,         // Más rápido, intenso
+        stability: Math.max(0.05, 0.08 - intensityBoost),  // Ultra bajo
+        similarityBoost: 0.5,
+        style: Math.min(1.0, 0.95 + intensityBoost),       // Máximo
+        speed: 1.15,         // Rápido, intenso, sin control
       };
     
     case 'playful':
       return {
         ...base,
-        stability: 0.4,
-        style: 0.65,
-        speed: 1.05,
+        stability: Math.max(0.1, 0.2 - intensityBoost),
+        style: Math.min(1.0, 0.8 + intensityBoost),
+        speed: 1.08,
       };
     
     case 'intense':
       return {
         ...base,
-        stability: 0.15,     // Muy expresivo
-        style: 0.9,
-        speed: 1.1,
+        stability: 0.05,      // MÍNIMO - máxima expresión sin control
+        similarityBoost: 0.45,
+        style: 1.0,           // MÁXIMO - gritos, jadeos, gemidos
+        speed: 1.2,           // Muy rápido, frenético
       };
     
     case 'tender':
       return {
         ...base,
-        stability: 0.45,
-        style: 0.5,
-        speed: 0.92,
+        stability: Math.max(0.1, 0.18 - intensityBoost),
+        style: Math.min(1.0, 0.75 + intensityBoost),
+        speed: 0.85,          // Lento, dulce
       };
     
     case 'whisper':
       return {
         ...base,
-        stability: 0.5,
-        style: 0.4,
-        speed: 0.85,
+        stability: 0.08,      // Bajo para susurros expresivos
+        similarityBoost: 0.6,
+        style: 0.7,
+        speed: 0.72,          // Muy lento, susurrante
       };
     
     case 'excited':
       return {
         ...base,
-        stability: 0.3,
-        style: 0.75,
-        speed: 1.12,
+        stability: Math.max(0.08, 0.12 - intensityBoost),
+        style: Math.min(1.0, 0.9 + intensityBoost),
+        speed: 1.18,          // Rápido, emocionado
       };
     
     case 'dramatic':
       return {
         ...base,
-        stability: 0.2,
-        style: 0.95,
-        speed: 0.95,
+        stability: 0.06,      // Ultra expresivo
+        similarityBoost: 0.5,
+        style: 1.0,           // Máxima dramatización
+        speed: 0.9,           // Ligeramente lento para drama
       };
     
     default:
-      return base;
+      // Incluso el neutral es más expresivo
+      return {
+        ...base,
+        stability: 0.2,
+        style: 0.7,
+      };
   }
 }
 
