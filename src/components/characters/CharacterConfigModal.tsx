@@ -42,14 +42,16 @@ export const CharacterConfigModal = ({
    };
  
 
-  // Cuando cambiamos de personaje o reabrimos, resetea estado al valor real del personaje
+  // Solo resetear estado cuando se ABRE el modal (no cuando character cambia por re-renders)
   useEffect(() => {
-    if (!isOpen) return;
-    setHistory(character.history);
-    setWelcomeMessage(character.welcomeMessage);
-    setVoice(normalizeVoiceType(character.voice));
-    setNsfw(character.nsfw);
-  }, [character, isOpen]);
+    if (isOpen) {
+      setHistory(character.history);
+      setWelcomeMessage(character.welcomeMessage);
+      setVoice(normalizeVoiceType(character.voice));
+      setNsfw(character.nsfw);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, character.id]); // Solo depender de isOpen y character.id, NO de todo el objeto character
 
   if (!isOpen) return null;
 
