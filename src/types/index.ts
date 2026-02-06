@@ -18,10 +18,13 @@
    | 'el-daniela-valentina' // Daniela Valentina - Joven y optimista
    | 'el-ligia-elena'       // Ligia Elena - Tranquila y neutral
    | 'el-caraqueña-suave'   // Caraqueña suave - Malandra dulce
-   | 'el-caraqueña-malandra' // Caraqueña malandra - Expresiva y grosera
+  | 'el-caraqueña-malandra' // Caraqueña malandra - Expresiva y grosera
    | 'el-pana-vzla'          // La Pana Vzla - Joven caraqueña grave
    | 'el-dominic-p'          // Dominic P - Caraqueña con estilo dominicano
    | 'el-caracas01'          // Caracas 01 - Ultra-natural malandrosa
+   | 'el-vzla-candy'         // VZLA Candy - Dulce venezolana de San Cristóbal
+   | 'el-paisa-dulce'        // Paisa Dulce - Colombiana paisa tierna
+   | 'el-arg-dulce'          // ARG Dulce - Argentina suave y soñadora
   // === GOOGLE CLOUD TTS - Voces Neural2 ===
   | 'es-US-Neural2-A' // Femenina - Latino (recomendada)
   | 'es-US-Neural2-B' // Masculina - Latino grave
@@ -267,13 +270,46 @@ export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
      provider: 'elevenlabs',
      tier: 'premium',
    },
-   {
+  {
      id: 'el-caracas01',
      label: 'Caracas 01',
      icon: '🎤',
      description: 'Ultra-natural caraqueña, malandrosa y expresiva',
      gender: 'FEMALE',
      region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-vzla-candy',
+     label: 'Dulces VZLA',
+     icon: '🍬',
+     description: 'Voz dulce y etérea, acento de San Cristóbal',
+     gender: 'FEMALE',
+     region: 'VENEZUELA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-paisa-dulce',
+     label: 'Paisa Dulce',
+     icon: '🌸',
+     description: 'Colombiana paisa suave, tierna e inocente',
+     gender: 'FEMALE',
+     region: 'COLOMBIA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-arg-dulce',
+     label: 'ARG Dulce',
+     icon: '💕',
+     description: 'Argentina suave, tierna y soñadora',
+     gender: 'FEMALE',
+     region: 'ARGENTINA',
      quality: 'FLASH_V2_5',
      provider: 'elevenlabs',
      tier: 'premium',

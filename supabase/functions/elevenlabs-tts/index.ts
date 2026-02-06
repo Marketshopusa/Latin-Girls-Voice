@@ -63,14 +63,37 @@ const corsHeaders = {
      description: "Caraqueña con estilo dominicano, juguetona y desafiante",
    },
    
-   // caracas01 - Voz ultra-natural caraqueña malandrosa
+  // caracas01 - Voz ultra-natural caraqueña malandrosa
    "el-caracas01": {
      voiceId: "Na1MRhNLkzddf48WbAxW",
      name: "Caracas 01",
      description: "Ultra-natural caraqueña, malandrosa y expresiva",
    },
+   
+   // VZLA CANDY - Voz dulce venezolana de San Cristóbal
+   "el-vzla-candy": {
+     voiceId: "719dQR7QYslVxD6ZoaKH",
+     name: "Dulces VZLA",
+     description: "Voz dulce y etérea, acento venezolano de San Cristóbal",
+   },
   
   // ========== VOCES COLOMBIANAS ==========
+  
+  // Paisa Dulce - Voz colombiana paisa tierna
+  "el-paisa-dulce": {
+    voiceId: "IzEBGttKuh6NIcZ8AduE",
+    name: "Paisa Dulce",
+    description: "Colombiana paisa suave, tierna e inocente",
+  },
+  
+  // ========== VOCES ARGENTINAS ==========
+  
+  // ARG DULCE - Voz argentina dulce
+  "el-arg-dulce": {
+    voiceId: "qFwDmr5qMPNoIA7KFJQW",
+    name: "ARG Dulce",
+    description: "Argentina suave, tierna y soñadora",
+  },
   
   // Vanessa - Paisa accent
   "el-colombiana-paisa": {
