@@ -1,12 +1,11 @@
- import { X, Volume2, Shield, Crown, Sparkles } from 'lucide-react';
- import { Character, VoiceType, normalizeVoiceType, ELEVENLABS_VOICE_CATALOG, GOOGLE_VOICE_CATALOG, isPremiumVoice } from '@/types';
-import { useEffect, useState } from 'react';
+import { X, Volume2, Shield, Crown, Sparkles, Play, Loader2, Pause } from 'lucide-react';
+import { Character, VoiceType, normalizeVoiceType, ELEVENLABS_VOICE_CATALOG, GOOGLE_VOICE_CATALOG, isPremiumVoice, getVoiceProvider } from '@/types';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
- import { useSubscription } from '@/contexts/SubscriptionContext';
- import { toast } from 'sonner';
- import { Badge } from '@/components/ui/badge';
-
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 interface CharacterConfigModalProps {
   character: Character;
   isOpen: boolean;
@@ -25,7 +24,107 @@ export const CharacterConfigModal = ({
   // Normalizar siempre a una voz real de Google (evita valores legacy que terminan en fallback)
   const [voice, setVoice] = useState<VoiceType>(normalizeVoiceType(character.voice));
   const [nsfw, setNsfw] = useState(character.nsfw);
-   const { limits, plan } = useSubscription();
+  const { limits, plan } = useSubscription();
+  
+  // Voice preview state
+  const [previewingVoice, setPreviewingVoice] = useState<VoiceType | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+
+  // Stop any playing preview
+  const stopPreview = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+    setPreviewingVoice(null);
+  }, []);
+
+  // Preview voice function
+  const previewVoice = useCallback(async (voiceId: VoiceType) => {
+    // If already previewing this voice, stop it
+    if (previewingVoice === voiceId) {
+      stopPreview();
+      return;
+    }
+
+    // Check if user has access to premium voices
+    if (isPremiumVoice(voiceId) && !limits.hasPremiumVoices) {
+      toast.error('🎙️ Voces Premium', {
+        description: 'Las voces de ElevenLabs solo están disponibles en planes Premium y Ultra.',
+      });
+      return;
+    }
+
+    stopPreview();
+    setIsPreviewLoading(true);
+    setPreviewingVoice(voiceId);
+
+    try {
+      const provider = getVoiceProvider(voiceId);
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const endpoint = provider === 'elevenlabs' 
+        ? `${baseUrl}/functions/v1/elevenlabs-tts`
+        : `${baseUrl}/functions/v1/google-cloud-tts`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ 
+          text: "Hola, así suena mi voz. ¿Te gusta cómo hablo?", 
+          voiceType: voiceId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const audioBlob = await response.blob();
+      const playableBlob = audioBlob.type.includes('audio')
+        ? audioBlob
+        : new Blob([audioBlob], { type: 'audio/mpeg' });
+
+      const audioUrl = URL.createObjectURL(playableBlob);
+      audioUrlRef.current = audioUrl;
+
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setPreviewingVoice(null);
+      };
+
+      audio.onerror = () => {
+        setPreviewingVoice(null);
+        toast.error('Error al reproducir la voz');
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error('Voice preview error:', error);
+      toast.error('No se pudo reproducir la voz');
+      setPreviewingVoice(null);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  }, [previewingVoice, stopPreview, limits.hasPremiumVoices]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopPreview();
+    };
+  }, [stopPreview]);
    const handleVoiceSelect = (voiceId: VoiceType) => {
      // Verificar si es voz premium y el usuario no tiene acceso
      if (isPremiumVoice(voiceId) && !limits.hasPremiumVoices) {
@@ -132,13 +231,14 @@ export const CharacterConfigModal = ({
                    PREMIUM
                  </Badge>
                </div>
-               <div className="grid grid-cols-3 gap-1.5">
+               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                  {ELEVENLABS_VOICE_CATALOG.map((option) => {
                    const isLocked = !limits.hasPremiumVoices;
+                   const isPreviewing = previewingVoice === option.id;
+                   const isLoadingThis = isPreviewLoading && previewingVoice === option.id;
                    return (
-                     <button
+                     <div
                        key={option.id}
-                       onClick={() => handleVoiceSelect(option.id)}
                        className={cn(
                          'voice-chip text-left p-2 relative group',
                          voice === option.id && 'voice-chip-active',
@@ -147,24 +247,53 @@ export const CharacterConfigModal = ({
                      >
                        {isLocked && (
                          <div className="absolute top-1 right-1">
-                         <Crown className="h-3 w-3 text-primary" />
+                           <Crown className="h-3 w-3 text-primary" />
                          </div>
                        )}
-                       <div className="flex items-center gap-1.5 mb-0.5">
-                         <span className="text-sm">
-                           {option.icon}
-                         </span>
-                         <span className={cn(
-                           'font-medium text-xs truncate',
-                           voice === option.id ? 'text-primary' : 'text-foreground'
-                         )}>
-                           {option.label}
-                         </span>
+                       <div 
+                         className="cursor-pointer"
+                         onClick={() => handleVoiceSelect(option.id)}
+                       >
+                         <div className="flex items-center gap-1.5 mb-0.5">
+                           <span className="text-sm">
+                             {option.icon}
+                           </span>
+                           <span className={cn(
+                             'font-medium text-xs truncate flex-1',
+                             voice === option.id ? 'text-primary' : 'text-foreground'
+                           )}>
+                             {option.label}
+                           </span>
+                         </div>
+                         <p className="text-[10px] text-muted-foreground line-clamp-1">
+                           {option.description}
+                         </p>
                        </div>
-                       <p className="text-[10px] text-muted-foreground line-clamp-1">
-                         {option.description}
-                       </p>
-                     </button>
+                       {/* Preview button */}
+                       <button
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           previewVoice(option.id);
+                         }}
+                         disabled={isLocked}
+                         className={cn(
+                           'absolute bottom-1.5 right-1.5 p-1 rounded-full transition-all',
+                           isPreviewing 
+                             ? 'bg-primary text-primary-foreground' 
+                             : 'bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary',
+                           isLocked && 'opacity-40 cursor-not-allowed'
+                         )}
+                         title="Escuchar voz"
+                       >
+                         {isLoadingThis ? (
+                           <Loader2 className="h-3 w-3 animate-spin" />
+                         ) : isPreviewing ? (
+                           <Pause className="h-3 w-3" />
+                         ) : (
+                           <Play className="h-3 w-3" />
+                         )}
+                       </button>
+                     </div>
                    );
                  })}
                </div>
@@ -176,32 +305,62 @@ export const CharacterConfigModal = ({
                  <Sparkles className="h-3.5 w-3.5" />
                  <span className="font-medium">Voces Estándar (Google Cloud)</span>
                </div>
-               <div className="grid grid-cols-3 gap-1.5">
-                 {GOOGLE_VOICE_CATALOG.map((option) => (
-                   <button
-                     key={option.id}
-                     onClick={() => handleVoiceSelect(option.id)}
-                     className={cn(
-                       'voice-chip text-left p-2',
-                       voice === option.id && 'voice-chip-active'
-                     )}
-                   >
-                     <div className="flex items-center gap-1.5 mb-0.5">
-                       <span className="text-sm">
-                         {option.icon}
-                       </span>
-                       <span className={cn(
-                         'font-medium text-xs truncate',
-                         voice === option.id ? 'text-primary' : 'text-foreground'
-                       )}>
-                         {option.label}
-                       </span>
+               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                 {GOOGLE_VOICE_CATALOG.map((option) => {
+                   const isPreviewing = previewingVoice === option.id;
+                   const isLoadingThis = isPreviewLoading && previewingVoice === option.id;
+                   return (
+                     <div
+                       key={option.id}
+                       className={cn(
+                         'voice-chip text-left p-2 relative',
+                         voice === option.id && 'voice-chip-active'
+                       )}
+                     >
+                       <div 
+                         className="cursor-pointer"
+                         onClick={() => handleVoiceSelect(option.id)}
+                       >
+                         <div className="flex items-center gap-1.5 mb-0.5">
+                           <span className="text-sm">
+                             {option.icon}
+                           </span>
+                           <span className={cn(
+                             'font-medium text-xs truncate flex-1',
+                             voice === option.id ? 'text-primary' : 'text-foreground'
+                           )}>
+                             {option.label}
+                           </span>
+                         </div>
+                         <p className="text-[10px] text-muted-foreground line-clamp-1">
+                           {option.description}
+                         </p>
+                       </div>
+                       {/* Preview button */}
+                       <button
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           previewVoice(option.id);
+                         }}
+                         className={cn(
+                           'absolute bottom-1.5 right-1.5 p-1 rounded-full transition-all',
+                           isPreviewing 
+                             ? 'bg-primary text-primary-foreground' 
+                             : 'bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary'
+                         )}
+                         title="Escuchar voz"
+                       >
+                         {isLoadingThis ? (
+                           <Loader2 className="h-3 w-3 animate-spin" />
+                         ) : isPreviewing ? (
+                           <Pause className="h-3 w-3" />
+                         ) : (
+                           <Play className="h-3 w-3" />
+                         )}
+                       </button>
                      </div>
-                     <p className="text-[10px] text-muted-foreground line-clamp-1">
-                       {option.description}
-                     </p>
-                   </button>
-                 ))}
+                   );
+                 })}
                </div>
              </div>
           </div>
