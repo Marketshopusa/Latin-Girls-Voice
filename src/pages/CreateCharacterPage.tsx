@@ -7,9 +7,12 @@ import { cn } from '@/lib/utils';
 import { useCreateCharacter } from '@/hooks/useCharacters';
 import { toast } from 'sonner';
 import { mediaToAiImageDataUrl } from '@/lib/mediaForAi';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CreateCharacterPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { createCharacter, loading, error } = useCreateCharacter();
   
   const [name, setName] = useState('');
@@ -41,6 +44,9 @@ const CreateCharacterPage = () => {
         quality: 0.9,
       });
 
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-character-story`,
         {
@@ -48,7 +54,7 @@ const CreateCharacterPage = () => {
           headers: {
             'Content-Type': 'application/json',
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             imageBase64: imageForAI,
@@ -141,6 +147,11 @@ const CreateCharacterPage = () => {
   };
 
   const handleCreate = async () => {
+    if (!user) {
+      toast.error('Debes iniciar sesión para crear un personaje');
+      return;
+    }
+
     if (!name || !age || !history || !tagline || !welcomeMessage) {
       toast.error('Por favor completa todos los campos requeridos');
       return;
