@@ -85,7 +85,7 @@ const ChatPage = () => {
     setIsVoiceCallOpen(true);
   };
 
-  // Load character data - first check mocks, then DB
+  // Load character data - first check mocks, then DB (using characters_public view)
   useEffect(() => {
     const loadCharacter = async () => {
       setCharacterLoading(true);
@@ -98,10 +98,10 @@ const ChatPage = () => {
         return;
       }
 
-      // Then check database
+      // Then check database using the public view (works for all users, no RLS issues)
       try {
         const { data, error } = await supabase
-          .from('characters')
+          .from('characters_public')
           .select('*')
           .eq('id', id)
           .maybeSingle();
@@ -114,16 +114,16 @@ const ChatPage = () => {
 
         if (data) {
           const dbChar: Character = {
-            id: data.id,
-            name: data.name,
-            age: data.age,
-            tagline: data.tagline,
-            history: data.history,
-            welcomeMessage: data.welcome_message,
+            id: data.id!,
+            name: data.name!,
+            age: data.age!,
+            tagline: data.tagline!,
+            history: data.history!,
+            welcomeMessage: data.welcome_message!,
             image: data.image_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop',
             tags: data.nsfw ? ['NSFW', '+18'] : ['SFW'],
-            voice: normalizeVoiceType(data.voice),
-            nsfw: data.nsfw,
+            voice: normalizeVoiceType(data.voice || 'es-US-Neural2-A'),
+            nsfw: data.nsfw || false,
             style: 'Realistic',
           };
           setBaseCharacter(dbChar);
