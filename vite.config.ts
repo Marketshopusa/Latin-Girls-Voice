@@ -128,6 +128,9 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
         globIgnores: ["**/characters/**", "**/intro/**"],
+        // CRITICAL: Exclude OAuth broker paths from service worker navigation fallback
+        // so the server can handle /~oauth/initiate redirects for Google login
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/~/, /^\/api/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
