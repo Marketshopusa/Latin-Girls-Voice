@@ -9,6 +9,7 @@ import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { MobileChatOverlay } from '@/components/chat/MobileChatOverlay';
 import { VoiceCallOverlay } from '@/components/voice/VoiceCallOverlay';
+import { ChatLoginGate } from '@/components/chat/ChatLoginGate';
 import { useConversation } from '@/hooks/useConversation';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useChatAI } from '@/hooks/useChatAI';
@@ -233,28 +234,9 @@ const ChatPage = () => {
     );
   }
 
-  // Block access for non-authenticated users - redirect to home with login prompt
+  // Block access for non-authenticated users - show login prompt with sign-in button
   if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center gap-4">
-        <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-2">
-          <span className="text-4xl">🔒</span>
-        </div>
-        <h2 className="text-xl font-display font-bold">Inicia sesión para chatear</h2>
-        <p className="text-muted-foreground max-w-sm">
-          Necesitas una cuenta para conversar con {character.name}. 
-          ¡Es gratis y solo toma unos segundos!
-        </p>
-        <div className="flex gap-3 mt-2">
-          <button
-            onClick={() => navigate('/')}
-            className="px-4 py-2 rounded-lg border border-border text-muted-foreground hover:bg-secondary transition-colors"
-          >
-            Volver
-          </button>
-        </div>
-      </div>
-    );
+    return <ChatLoginGate characterName={character.name} onBack={() => navigate('/')} />;
   }
 
   // Helper function to check if URL is a video
