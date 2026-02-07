@@ -42,10 +42,10 @@ export const useCharacters = () => {
   const fetchCharacters = async () => {
     setLoading(true);
     try {
+      // Use characters_public view to avoid exposing creator_id
       const { data, error } = await supabase
-        .from('characters' as any)
+        .from('characters_public' as any)
         .select('*')
-        .eq('is_public', true)
         .order('created_at', { ascending: false }) as { data: DbCharacter[] | null, error: any };
 
       if (error) {

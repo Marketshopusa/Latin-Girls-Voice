@@ -1,4 +1,5 @@
- import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -164,12 +165,33 @@ const corsHeaders = {
 // Voz por defecto de ElevenLabs (Vanessa colombiana paisa)
 const DEFAULT_VOICE = "el-colombiana-paisa";
  
- serve(async (req) => {
-   if (req.method === "OPTIONS") {
-     return new Response(null, { headers: corsHeaders });
-   }
- 
-   try {
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  // --- Auth check ---
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  const _sb = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const _tk = authHeader.replace('Bearer ', '');
+  const { data: _cl, error: _clErr } = await _sb.auth.getClaims(_tk);
+  if (_clErr || !_cl?.claims) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  // --- End auth check ---
+
+  try {
      // Obtener API key (priorizar override)
      const apiKey = Deno.env.get("ELEVENLABS_API_KEY_OVERRIDE") || Deno.env.get("ELEVENLABS_API_KEY");
      
