@@ -34,18 +34,54 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    // Check if there are auth tokens in the URL hash (from OAuth redirect on mobile)
+    const hash = window.location.hash;
+    if (hash && (hash.includes('access_token') || hash.includes('refresh_token'))) {
+      console.log('Auth tokens detected in URL hash, processing...');
+      // Parse tokens from hash
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      
+      if (accessToken && refreshToken) {
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }).then(({ data, error }) => {
+          if (error) {
+            console.error('Error setting session from URL tokens:', error);
+          } else {
+            console.log('Session set from URL tokens successfully');
+            setSession(data.session);
+            setUser(data.session?.user ?? null);
+          }
+          setIsLoading(false);
+          // Clean the URL hash
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        });
+      } else {
+        // THEN check for existing session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setIsLoading(false);
+        });
+      }
+    } else {
+      // THEN check for existing session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+      });
+    }
 
     return () => subscription.unsubscribe();
   }, []);
