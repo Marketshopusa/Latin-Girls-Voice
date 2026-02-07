@@ -133,8 +133,12 @@ export const useCreateCharacter = () => {
     setError(null);
 
     try {
-      // Get current user
+      // Require authentication
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('Debes iniciar sesión para crear un personaje');
+        return null;
+      }
       
       let imageUrl: string | null = null;
       
@@ -156,7 +160,7 @@ export const useCreateCharacter = () => {
           nsfw: characterData.nsfw,
           image_url: imageUrl,
           is_public: true,
-          creator_id: user?.id || null,
+          creator_id: user.id,
         })
         .select()
         .single() as { data: DbCharacter | null, error: any };
