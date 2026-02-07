@@ -1,4 +1,5 @@
- import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
  
  // Presets de efectos de sonido disponibles
  export const SFX_PRESETS = {
@@ -181,18 +182,24 @@
      setError(null);
  
      try {
-       const response = await fetch(
-         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
-         {
-           method: "POST",
-           headers: {
-             "Content-Type": "application/json",
-             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-           },
-           body: JSON.stringify({ preset }),
-         }
-       );
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          throw new Error('Debes iniciar sesión para usar efectos de sonido');
+        }
+
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ preset }),
+          }
+        );
  
        if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));
@@ -248,18 +255,24 @@
      setError(null);
  
      try {
-       const response = await fetch(
-         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
-         {
-           method: "POST",
-           headers: {
-             "Content-Type": "application/json",
-             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-           },
-           body: JSON.stringify({ customPrompt: prompt, duration }),
-         }
-       );
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          throw new Error('Debes iniciar sesión para usar efectos de sonido');
+        }
+
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ customPrompt: prompt, duration }),
+          }
+        );
  
        if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));
