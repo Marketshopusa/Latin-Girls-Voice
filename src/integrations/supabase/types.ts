@@ -157,6 +157,24 @@ export type Database = {
           },
         ]
       }
+      user_age_verifications: {
+        Row: {
+          id: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -268,6 +286,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_age_verified: { Args: { _user_id: string }; Returns: boolean }
       is_conversation_owner: {
         Args: { conversation_uuid: string }
         Returns: boolean

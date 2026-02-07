@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Character, Message } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseChatAIOptions {
   character: Character;
@@ -18,6 +19,12 @@ export const useChatAI = ({ character, onResponse }: UseChatAIOptions) => {
     setError(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+      if (!authToken) {
+        throw new Error('Debes iniciar sesión para chatear');
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`,
         {
@@ -25,7 +32,7 @@ export const useChatAI = ({ character, onResponse }: UseChatAIOptions) => {
           headers: {
             'Content-Type': 'application/json',
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({
             message: userMessage,

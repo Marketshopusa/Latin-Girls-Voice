@@ -1,5 +1,6 @@
- import { useState, useRef, useCallback } from 'react';
- import { VoiceType, DEFAULT_VOICE, getVoiceConfig, normalizeVoiceType, getVoiceProvider } from '@/types';
+import { useState, useRef, useCallback } from 'react';
+import { VoiceType, DEFAULT_VOICE, getVoiceConfig, normalizeVoiceType, getVoiceProvider } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseTTSOptions {
   voiceType?: VoiceType;
@@ -87,16 +88,18 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   }, []);
  
    // Llamar a Google Cloud TTS como fallback
-   const callGoogleTTS = useCallback(async (ttsText: string, normalizedVoice: VoiceType): Promise<Blob | null> => {
-     try {
-       const endpoint = getTTSEndpoint('google');
-       const response = await fetch(endpoint, {
-         method: "POST",
-         headers: {
-           "Content-Type": "application/json",
-           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-         },
+  const callGoogleTTS = useCallback(async (ttsText: string, normalizedVoice: VoiceType): Promise<Blob | null> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const endpoint = getTTSEndpoint('google');
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${authToken}`,
+        },
          body: JSON.stringify({ 
            text: ttsText, 
            voiceType: normalizedVoice,
@@ -137,6 +140,10 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
        const normalizedVoice = normalizeVoiceType(voiceType);
        const provider = getVoiceProvider(normalizedVoice);
        
+       // Get auth token
+       const { data: { session } } = await supabase.auth.getSession();
+       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+       
        console.log(`Requesting TTS: voice=${normalizedVoice}, provider=${provider}, chars=${ttsText.length}`);
  
        let audioBlob: Blob | null = null;
@@ -148,7 +155,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
          headers: {
            "Content-Type": "application/json",
            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+           Authorization: `Bearer ${authToken}`,
          },
          body: JSON.stringify({ 
            text: ttsText, 
