@@ -1,5 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+ import { useState, useRef, useCallback } from 'react';
  
  // Presets de efectos de sonido disponibles
  export const SFX_PRESETS = {
@@ -182,24 +181,18 @@ import { supabase } from '@/integrations/supabase/client';
      setError(null);
  
      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        if (!token) {
-          throw new Error('Debes iniciar sesión para usar efectos de sonido');
-        }
-
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ preset }),
-          }
-        );
+       const response = await fetch(
+         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
+         {
+           method: "POST",
+           headers: {
+             "Content-Type": "application/json",
+             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+           },
+           body: JSON.stringify({ preset }),
+         }
+       );
  
        if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));
@@ -255,24 +248,18 @@ import { supabase } from '@/integrations/supabase/client';
      setError(null);
  
      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        if (!token) {
-          throw new Error('Debes iniciar sesión para usar efectos de sonido');
-        }
-
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ customPrompt: prompt, duration }),
-          }
-        );
+       const response = await fetch(
+         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
+         {
+           method: "POST",
+           headers: {
+             "Content-Type": "application/json",
+             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+           },
+           body: JSON.stringify({ customPrompt: prompt, duration }),
+         }
+       );
  
        if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));

@@ -3,7 +3,7 @@ import { PhoneOff, Volume2, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Character, Message } from '@/types';
-import { getVoiceProvider } from '@/types';
+import { getVoiceProvider, isPremiumVoice } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -12,50 +12,9 @@ interface VoiceCallOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   conversationHistory: Array<{ role: string; content: string }>;
+  // Function to add messages to the chat history (syncs with DB)
   addMessageToChat: (role: 'user' | 'assistant', text: string, audioDuration?: number) => Promise<Message | null>;
 }
-
-// Clean text for TTS - remove markdown formatting
-const cleanTextForTTS = (text: string): string => {
-  let cleaned = text.replace(/\([^)]*\)/g, '');
-  cleaned = cleaned.replace(/\*\*_(.+?)_\*\*/gs, '$1');
-  cleaned = cleaned.replace(/\*\*([^*]+?)\*\*/g, '$1');
-  cleaned = cleaned.replace(/\*[^*]+\*/g, '');
-  cleaned = cleaned.replace(/_([^_]+)_/g, '$1');
-  cleaned = cleaned
-    .replace(/\*\*/g, '')
-    .replace(/_/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!cleaned) return "";
-  cleaned = cleaned.replace(/,{2,}/g, ',');
-  cleaned = cleaned.replace(/\.{4,}/g, '...');
-  cleaned = cleaned.replace(/!{2,}/g, '!');
-  cleaned = cleaned.replace(/\?{2,}/g, '?');
-  cleaned = cleaned.replace(/¡{2,}/g, '¡');
-  cleaned = cleaned.replace(/¿{2,}/g, '¿');
-  cleaned = cleaned.replace(/[—–]+/g, ', ');
-  cleaned = cleaned.replace(/\s+/g, ' ').trim();
-  cleaned = cleaned.replace(/([.!?,:])([A-ZÁÉÍÓÚÑa-záéíóúñ])/g, '$1 $2');
-
-  const MAX_CHARS = 2500;
-  if (cleaned.length <= MAX_CHARS) return cleaned;
-  const truncated = cleaned.slice(0, MAX_CHARS);
-  const lastSentenceEnd = Math.max(
-    truncated.lastIndexOf('.'),
-    truncated.lastIndexOf('!'),
-    truncated.lastIndexOf('?')
-  );
-  if (lastSentenceEnd > MAX_CHARS * 0.6) return truncated.slice(0, lastSentenceEnd + 1);
-  return truncated;
-};
-
-// Helper to check if URL is a video
-const isVideoUrl = (url: string): boolean => {
-  if (!url) return false;
-  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
-  return videoExtensions.some(ext => url.toLowerCase().includes(ext));
-};
 
 export const VoiceCallOverlay = ({ 
   character, 
@@ -77,197 +36,63 @@ export const VoiceCallOverlay = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const callHistoryRef = useRef<Array<{ role: string; content: string }>>([]);
   const isCallActiveRef = useRef(false);
-  
-  // CRITICAL: Use refs to track state inside callbacks to avoid stale closures
-  const isProcessingRef = useRef(false);
-  const isSpeakingRef = useRef(false);
-  const isMutedRef = useRef(false);
 
-  // Keep refs in sync with state
-  useEffect(() => { isProcessingRef.current = isProcessing; }, [isProcessing]);
-  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
-  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
-
-  // Store addMessageToChat in a ref so it's always current
-  const addMessageRef = useRef(addMessageToChat);
-  useEffect(() => { addMessageRef.current = addMessageToChat; }, [addMessageToChat]);
-
-  // Store character in ref for stable access
-  const characterRef = useRef(character);
-  useEffect(() => { characterRef.current = character; }, [character]);
-
-  const playTTS = useCallback(async (text: string) => {
-    isSpeakingRef.current = true;
-    setIsSpeaking(true);
-    
-    try {
-      const char = characterRef.current;
-      const voiceId = char.voice || 'es-US-Neural2-A';
-      const provider = getVoiceProvider(voiceId);
-      
-      // Get auth token (same as useTTS)
-      const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const endpoint = provider === 'elevenlabs' 
-        ? `${baseUrl}/functions/v1/elevenlabs-tts`
-        : `${baseUrl}/functions/v1/google-cloud-tts`;
-      
-      console.log(`[VoiceCall] TTS request: voice=${voiceId}, provider=${provider}, chars=${text.length}`);
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ text, voiceType: voiceId }),
-      });
-
-      if (!response.ok) {
-        console.warn(`[VoiceCall] ${provider} TTS failed (${response.status}), trying fallback...`);
-        if (provider === 'elevenlabs') {
-          const fallbackResponse = await fetch(
-            `${baseUrl}/functions/v1/google-cloud-tts`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                'Authorization': `Bearer ${authToken}`,
-              },
-              body: JSON.stringify({ text, voiceType: 'es-US-Neural2-A' }),
-            }
-          );
-          
-          if (!fallbackResponse.ok) {
-            console.error('[VoiceCall] Google TTS fallback also failed:', fallbackResponse.status);
-            throw new Error('TTS fallback failed');
-          }
-          
-          console.log('[VoiceCall] Google TTS fallback successful');
-          const audioBlob = await fallbackResponse.blob();
-          const playableBlob = audioBlob.type.includes('audio')
-            ? audioBlob
-            : new Blob([audioBlob], { type: 'audio/mpeg' });
-          const audioUrl = URL.createObjectURL(playableBlob);
-          const audio = new Audio(audioUrl);
-          audioRef.current = audio;
-          
-          audio.onended = () => {
-            isSpeakingRef.current = false;
-            setIsSpeaking(false);
-            URL.revokeObjectURL(audioUrl);
-          };
-          audio.onerror = () => {
-            console.error('[VoiceCall] Audio playback error (fallback)');
-            isSpeakingRef.current = false;
-            setIsSpeaking(false);
-            URL.revokeObjectURL(audioUrl);
-          };
-          await audio.play();
-          console.log('[VoiceCall] TTS playing (fallback)');
-          return;
-        }
-        throw new Error('TTS request failed');
-      }
-
-      console.log('[VoiceCall] TTS response OK, playing audio...');
-      const audioBlob = await response.blob();
-      const playableBlob = audioBlob.type.includes('audio')
-        ? audioBlob
-        : new Blob([audioBlob], { type: 'audio/mpeg' });
-      const audioUrl = URL.createObjectURL(playableBlob);
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      
-      audio.onended = () => {
-        isSpeakingRef.current = false;
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-        console.log('[VoiceCall] TTS playback ended');
-      };
-      audio.onerror = (e) => {
-        console.error('[VoiceCall] Audio playback error:', e);
-        isSpeakingRef.current = false;
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-      };
-      await audio.play();
-      console.log('[VoiceCall] TTS playing successfully');
-    } catch (error) {
-      console.error('[VoiceCall] TTS error:', error);
-      isSpeakingRef.current = false;
-      setIsSpeaking(false);
-    }
-  }, []);
-
-  // handleUserMessage stored as ref to always have latest version in recognition callbacks
-  const handleUserMessageRef = useRef<(text: string) => Promise<void>>();
-  
-  handleUserMessageRef.current = async (text: string) => {
-    // Use refs for guards - these are always current
-    if (isProcessingRef.current || isSpeakingRef.current || !isCallActiveRef.current) {
-      console.log('[VoiceCall] Skipping message - processing:', isProcessingRef.current, 'speaking:', isSpeakingRef.current, 'active:', isCallActiveRef.current);
-      return;
-    }
-    
-    isProcessingRef.current = true;
-    setIsProcessing(true);
-    setCurrentTranscript('');
-    
-    console.log('[VoiceCall] Processing user message:', text);
-    
-    // Add user message to call history
-    callHistoryRef.current.push({ role: 'user', content: text });
-    
-    // Save user message to chat
-    await addMessageRef.current('user', text);
-
-    try {
-      const char = characterRef.current;
-      const response = await supabase.functions.invoke('chat-ai', {
-        body: {
-          message: text,
-          character: {
-            name: char.name,
-            age: char.age || 25,
-            history: char.history,
-            tagline: char.tagline || '',
-            voice: char.voice || 'LATINA_COQUETA',
-            nsfw: char.nsfw || false,
-          },
-          conversationHistory: callHistoryRef.current.map(msg => ({
-            role: msg.role,
-            text: msg.content
-          })),
-        },
-      });
-
-      if (response.error) throw response.error;
-
-      const aiText = response.data?.response || 'Lo siento, no pude escucharte bien.';
-      console.log('[VoiceCall] AI response received, length:', aiText.length);
-      
-      setAgentResponse(aiText);
-      callHistoryRef.current.push({ role: 'assistant', content: aiText });
-      
-      const audioDuration = Math.floor(aiText.length / 15);
-      await addMessageRef.current('assistant', aiText, audioDuration);
-
-      if (isCallActiveRef.current) {
-        await playTTS(cleanTextForTTS(aiText));
-      }
-    } catch (error) {
-      console.error('[VoiceCall] Error getting AI response:', error);
-      toast.error('Error al obtener respuesta');
-    } finally {
-      isProcessingRef.current = false;
-      setIsProcessing(false);
-    }
-  };
+  // Clean text for TTS - remove markdown formatting
+   const cleanTextForTTS = (text: string): string => {
+     // PASO 1: Eliminar TODAS las narraciones entre paréntesis
+     // Esto incluye: (suspira), (Tu voz se quiebra...), etc.
+     let cleaned = text.replace(/\([^)]*\)/g, '');
+     
+     // PASO 2: Eliminar formatos markdown
+     // **_texto_** -> texto
+     cleaned = cleaned.replace(/\*\*_(.+?)_\*\*/gs, '$1');
+     // **texto** -> texto
+     cleaned = cleaned.replace(/\*\*([^*]+?)\*\*/g, '$1');
+     // *texto* -> texto (acciones en cursiva)
+     cleaned = cleaned.replace(/\*[^*]+\*/g, '');
+     // _texto_ -> texto
+     cleaned = cleaned.replace(/_([^_]+)_/g, '$1');
+     
+     // PASO 3: Limpiar residuos
+     cleaned = cleaned
+       .replace(/\*\*/g, '')
+       .replace(/_/g, '')
+       .replace(/\s+/g, ' ')
+       .trim();
+     
+     if (!cleaned) return "";
+ 
+     // PASO 4: Optimización de puntuación para TTS natural
+     cleaned = cleaned.replace(/,{2,}/g, ',');
+     cleaned = cleaned.replace(/\.{4,}/g, '...');
+     cleaned = cleaned.replace(/!{2,}/g, '!');
+     cleaned = cleaned.replace(/\?{2,}/g, '?');
+     cleaned = cleaned.replace(/¡{2,}/g, '¡');
+     cleaned = cleaned.replace(/¿{2,}/g, '¿');
+     cleaned = cleaned.replace(/[—–]+/g, ', ');
+     cleaned = cleaned.replace(/\s+/g, ' ').trim();
+     cleaned = cleaned.replace(/([.!?,:])([A-ZÁÉÍÓÚÑa-záéíóúñ])/g, '$1 $2');
+ 
+     // Límite para TTS (ahorro de créditos)
+     const MAX_CHARS = 2500;
+     
+     if (cleaned.length <= MAX_CHARS) {
+       return cleaned;
+     }
+     
+     const truncated = cleaned.slice(0, MAX_CHARS);
+     const lastSentenceEnd = Math.max(
+       truncated.lastIndexOf('.'),
+       truncated.lastIndexOf('!'),
+       truncated.lastIndexOf('?')
+     );
+     
+     if (lastSentenceEnd > MAX_CHARS * 0.6) {
+       return truncated.slice(0, lastSentenceEnd + 1);
+     }
+     
+     return truncated;
+   };
 
   // Initialize speech recognition
   useEffect(() => {
@@ -291,7 +116,6 @@ export const VoiceCallOverlay = ({
         if (isCallActiveRef.current) {
           setIsListening(true);
           setIsConnected(true);
-          console.log('[VoiceCall] Speech recognition started');
         }
       };
 
@@ -312,25 +136,25 @@ export const VoiceCallOverlay = ({
 
         setCurrentTranscript(interimTranscript || finalTranscript);
 
-        // Use REFS for guards, not state (avoids stale closure)
-        if (finalTranscript && !isProcessingRef.current && !isSpeakingRef.current && isCallActiveRef.current) {
-          console.log('[VoiceCall] Final transcript detected:', finalTranscript);
-          handleUserMessageRef.current?.(finalTranscript);
+        if (finalTranscript && !isProcessing && isCallActiveRef.current) {
+          handleUserMessage(finalTranscript);
         }
       };
 
       recognition.onerror = (event: any) => {
+        // Only log non-trivial errors
         if (event.error !== 'no-speech' && event.error !== 'aborted') {
-          console.warn('[VoiceCall] Speech recognition error:', event.error);
+          console.warn('Speech recognition error:', event.error);
         }
+        // Don't show toast for common non-critical errors
         if (event.error === 'network' || event.error === 'service-not-allowed') {
           toast.error('Error en el reconocimiento de voz');
         }
       };
 
       recognition.onend = () => {
-        // Use REFS to check state (avoids stale closure)
-        if (isCallActiveRef.current && !isMutedRef.current && !isSpeakingRef.current) {
+        // Only restart if call is still active and not muted and not speaking
+        if (isCallActiveRef.current && !isMuted && !isSpeaking) {
           try {
             recognition?.start();
           } catch (e) {
@@ -348,24 +172,26 @@ export const VoiceCallOverlay = ({
         content: msg.content
       }));
       
+      // Start listening with error handling
       try {
         recognition.start();
-        console.log('[VoiceCall] Starting speech recognition...');
       } catch (e) {
-        console.error('[VoiceCall] Failed to start recognition:', e);
+        console.error('Failed to start recognition:', e);
         toast.error('No se pudo iniciar el reconocimiento de voz');
       }
     } catch (e) {
-      console.error('[VoiceCall] Error initializing speech recognition:', e);
+      console.error('Error initializing speech recognition:', e);
       toast.error('Error al inicializar el reconocimiento de voz');
     }
 
     return () => {
+      // Mark as inactive first
       isCallActiveRef.current = false;
       
+      // Safely stop recognition
       if (recognition) {
         try {
-          recognition.onend = null;
+          recognition.onend = null; // Prevent restart on cleanup
           recognition.onerror = null;
           recognition.onresult = null;
           recognition.abort();
@@ -375,6 +201,7 @@ export const VoiceCallOverlay = ({
       }
       recognitionRef.current = null;
       
+      // Stop any playing audio
       if (audioRef.current) {
         try {
           audioRef.current.pause();
@@ -403,41 +230,198 @@ export const VoiceCallOverlay = ({
     };
   }, [isConnected]);
 
-  // Stop/restart recognition when speaking state changes
+  // Stop recognition while speaking
   useEffect(() => {
-    if (!recognitionRef.current || !isCallActiveRef.current) return;
-    
-    if (isSpeaking) {
-      try { recognitionRef.current.stop(); } catch (e) { /* ignore */ }
-    } else if (isConnected && !isMuted) {
-      try { recognitionRef.current.start(); } catch (e) { /* already started */ }
+    if (isSpeaking && recognitionRef.current) {
+      recognitionRef.current.stop();
+    } else if (!isSpeaking && isConnected && !isMuted && recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        // Already started
+      }
     }
   }, [isSpeaking, isConnected, isMuted]);
 
+  const handleUserMessage = async (text: string) => {
+    if (isProcessing || isSpeaking || !isCallActiveRef.current) return;
+    
+    setIsProcessing(true);
+    setCurrentTranscript('');
+    
+    // Add user message to call history
+    callHistoryRef.current.push({ role: 'user', content: text });
+    
+    // Save user message to chat database (sync with chat)
+    await addMessageToChat('user', text);
+
+    try {
+      // Get AI response using existing chat-ai function
+      const response = await supabase.functions.invoke('chat-ai', {
+        body: {
+          message: text,
+          character: {
+            name: character.name,
+            age: character.age || 25,
+            history: character.history,
+            tagline: character.tagline || '',
+            voice: character.voice || 'LATINA_COQUETA',
+            nsfw: character.nsfw || false,
+          },
+          conversationHistory: callHistoryRef.current.map(msg => ({
+            role: msg.role,
+            text: msg.content
+          })),
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      const aiText = response.data?.response || 'Lo siento, no pude escucharte bien.';
+      setAgentResponse(aiText);
+      callHistoryRef.current.push({ role: 'assistant', content: aiText });
+      
+      // Save assistant message to chat database (sync with chat)
+      const audioDuration = Math.floor(aiText.length / 15);
+      await addMessageToChat('assistant', aiText, audioDuration);
+
+      // Play TTS response - clean text first
+      if (isCallActiveRef.current) {
+        await playTTS(cleanTextForTTS(aiText));
+      }
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      toast.error('Error al obtener respuesta');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const playTTS = async (text: string) => {
+    setIsSpeaking(true);
+    
+    try {
+      const voiceId = character.voice || 'es-US-Neural2-A';
+      const provider = getVoiceProvider(voiceId);
+      
+      // Use ElevenLabs for premium voices, Google Cloud for standard
+      const endpoint = provider === 'elevenlabs' 
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`
+        : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`;
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          text,
+          voiceType: voiceId,
+        }),
+      });
+
+      if (!response.ok) {
+        // If ElevenLabs fails, fallback to Google Cloud TTS
+        if (provider === 'elevenlabs') {
+          console.warn('ElevenLabs TTS failed, falling back to Google Cloud');
+          const fallbackResponse = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+              body: JSON.stringify({
+                text,
+                voiceType: 'es-US-Neural2-A',
+              }),
+            }
+          );
+          
+          if (!fallbackResponse.ok) throw new Error('TTS request failed');
+          
+          const audioBlob = await fallbackResponse.blob();
+          const audioUrl = URL.createObjectURL(audioBlob);
+          
+          const audio = new Audio(audioUrl);
+          audioRef.current = audio;
+          
+          audio.onended = () => {
+            setIsSpeaking(false);
+            URL.revokeObjectURL(audioUrl);
+          };
+
+          audio.onerror = () => {
+            setIsSpeaking(false);
+            URL.revokeObjectURL(audioUrl);
+          };
+
+          await audio.play();
+          return;
+        }
+        throw new Error('TTS request failed');
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error('TTS error:', error);
+      setIsSpeaking(false);
+    }
+  };
+
   const endCall = useCallback(() => {
+    // Mark call as inactive FIRST to prevent any new processing
     isCallActiveRef.current = false;
     
+    // Safely stop speech recognition
     if (recognitionRef.current) {
       try {
+        // Remove event handlers to prevent callbacks during cleanup
         recognitionRef.current.onend = null;
         recognitionRef.current.onerror = null;
         recognitionRef.current.onresult = null;
         recognitionRef.current.onstart = null;
         recognitionRef.current.abort();
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        // Ignore errors when stopping
+      }
       recognitionRef.current = null;
     }
     
+    // Safely stop any playing audio
     if (audioRef.current) {
       try {
         audioRef.current.pause();
         audioRef.current.src = '';
         audioRef.current.onended = null;
         audioRef.current.onerror = null;
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        // Ignore audio cleanup errors
+      }
       audioRef.current = null;
     }
     
+    // Reset all state synchronously
     setIsConnected(false);
     setIsListening(false);
     setIsSpeaking(false);
@@ -445,24 +429,23 @@ export const VoiceCallOverlay = ({
     setCallDuration(0);
     setCurrentTranscript('');
     setAgentResponse('');
-    isProcessingRef.current = false;
-    isSpeakingRef.current = false;
-    isMutedRef.current = false;
     callHistoryRef.current = [];
     
+    // Close the overlay after state reset
     onClose();
   }, [onClose]);
 
   const toggleMute = () => {
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-    isMutedRef.current = newMuted;
-    
+    setIsMuted(!isMuted);
     if (recognitionRef.current) {
-      if (newMuted) {
-        try { recognitionRef.current.stop(); } catch (e) { /* ignore */ }
+      if (!isMuted) {
+        recognitionRef.current.stop();
       } else {
-        try { recognitionRef.current.start(); } catch (e) { /* already started */ }
+        try {
+          recognitionRef.current.start();
+        } catch (e) {
+          // Already started
+        }
       }
     }
   };
@@ -473,12 +456,21 @@ export const VoiceCallOverlay = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Helper to check if URL is a video
+  const isVideoUrl = (url: string): boolean => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+    const lowerUrl = url.toLowerCase();
+    return videoExtensions.some(ext => lowerUrl.includes(ext));
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-gradient-to-b from-black via-black/95 to-black flex flex-col">
-      {/* Character image container */}
+      {/* Character image container - centered and contained */}
       <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+        {/* Dark background pattern */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/10" />
         
         {isVideoUrl(character.image) ? (
@@ -499,7 +491,11 @@ export const VoiceCallOverlay = ({
         )}
         
         {/* Animated ring overlay when speaking */}
-        <div className="absolute z-20 inset-0 flex items-center justify-center pointer-events-none">
+        <div
+          className={cn(
+            "absolute z-20 inset-0 flex items-center justify-center pointer-events-none"
+          )}
+        >
           <div 
             className={cn(
               "max-h-[70vh] md:max-h-[75vh] w-auto max-w-[90vw] md:max-w-[50vw] aspect-[3/4] rounded-2xl border-4 transition-all duration-300",
@@ -529,7 +525,7 @@ export const VoiceCallOverlay = ({
           </div>
         </div>
         
-        {/* Speaker indicator */}
+        {/* Speaker indicator floating badge */}
         {isSpeaking && (
           <div className="absolute z-30 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <div className="w-20 h-20 bg-pink-500/30 backdrop-blur-sm rounded-full flex items-center justify-center animate-pulse">
@@ -538,7 +534,7 @@ export const VoiceCallOverlay = ({
           </div>
         )}
         
-        {/* Audio visualization bars */}
+        {/* Audio visualization bars - floating at center bottom of image */}
         {isConnected && !isSpeaking && (
           <div className="absolute z-30 bottom-32 md:bottom-36 inset-x-0 flex items-center justify-center gap-1.5">
             {[...Array(7)].map((_, i) => (
@@ -560,8 +556,9 @@ export const VoiceCallOverlay = ({
         )}
       </div>
 
-      {/* Control buttons */}
+      {/* Control buttons - fixed at bottom */}
       <div className="absolute bottom-0 inset-x-0 z-40 pb-safe px-6 py-4 md:py-6 flex flex-col items-center gap-3 md:gap-4 bg-gradient-to-t from-black via-black/80 to-transparent pt-8">
+        {/* Control row */}
         <div className="flex items-center gap-4 md:gap-6">
           <Button
             variant="outline"
@@ -576,6 +573,7 @@ export const VoiceCallOverlay = ({
             )}
           </Button>
 
+          {/* Main status indicator */}
           <div
             className={cn(
               "w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all backdrop-blur-md",
@@ -601,6 +599,7 @@ export const VoiceCallOverlay = ({
           </Button>
         </div>
 
+        {/* End call button */}
         <Button
           className="w-full max-w-[280px] md:max-w-xs h-11 md:h-12 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-2 text-sm md:text-base"
           onClick={endCall}
@@ -613,7 +612,7 @@ export const VoiceCallOverlay = ({
   );
 };
 
-// Web Speech API types
+// Add Web Speech API types
 declare global {
   interface Window {
     SpeechRecognition: any;

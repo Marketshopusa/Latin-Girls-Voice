@@ -29,6 +29,3 @@ verify_jwt = false
 
 [functions.generate-character-story]
 verify_jwt = false
-
-[functions.elevenlabs-sfx]
-verify_jwt = false

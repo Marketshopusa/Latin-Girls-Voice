@@ -48,18 +48,8 @@ export const MobileTopNav = () => {
       try {
         setIsSigningIn(true);
         await signInWithGoogle();
-        // If we reach here without redirect, show message
-        // (signInWithGoogle may redirect the page, so this may not execute)
-      } catch (error: any) {
-        console.error('Mobile sign in error:', error);
-        const msg = error?.message || 'Error al iniciar sesión';
-        if (msg.includes('Popup was blocked') || msg.includes('cancelled')) {
-          toast.error('No se pudo abrir la ventana de inicio de sesión', {
-            description: 'Intenta de nuevo o usa un navegador diferente.',
-          });
-        } else {
-          toast.error('Error al iniciar sesión', { description: msg });
-        }
+      } catch {
+        toast.error('Error al iniciar sesión');
       } finally {
         setIsSigningIn(false);
       }
