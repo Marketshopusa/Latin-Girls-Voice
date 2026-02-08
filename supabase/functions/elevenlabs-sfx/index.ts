@@ -1,82 +1,104 @@
- import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
- 
- const corsHeaders = {
-   "Access-Control-Allow-Origin": "*",
-   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
- };
- 
- /**
-  * ElevenLabs Sound Effects API
-  * 
-  * Genera efectos de sonido expresivos como gemidos, suspiros, gritos, etc.
-  * Duración máxima: 22 segundos
-  */
- 
- // Catálogo de efectos expresivos predefinidos
- const SFX_PRESETS: Record<string, { prompt: string; duration: number }> = {
-   // Gemidos y suspiros
-   "moan-soft": {
-     prompt: "soft sensual female moan, breathy, intimate whisper, pleasure sound",
-     duration: 2,
-   },
-   "moan-intense": {
-     prompt: "intense passionate female moan, pleasure, ecstasy, breathy gasping",
-     duration: 3,
-   },
-   "sigh-pleasure": {
-     prompt: "female sigh of pleasure, soft exhale, satisfied, relaxed, intimate",
-     duration: 1.5,
-   },
-   "gasp-surprise": {
-     prompt: "female gasp of surprise, sharp inhale, caught off guard, breathy",
-     duration: 1,
-   },
-   "breath-heavy": {
-     prompt: "heavy breathing female, panting, out of breath, intimate, close microphone",
-     duration: 3,
-   },
-   
-   // Risas y expresiones
-   "giggle-playful": {
-     prompt: "playful female giggle, flirty, teasing, lighthearted laughter",
-     duration: 2,
-   },
-   "laugh-seductive": {
-     prompt: "seductive female laugh, low and breathy, confident, alluring",
-     duration: 2,
-   },
-   
-   // Sonidos de dolor/placer
-   "whimper-soft": {
-     prompt: "soft female whimper, vulnerable, emotional, gentle cry",
-     duration: 1.5,
-   },
-   "cry-pleasure": {
-     prompt: "female cry of pleasure, peak moment, intense, passionate outburst",
-     duration: 2,
-   },
-   
-   // Expresiones vocales
-   "hmm-thinking": {
-     prompt: "female thinking sound, contemplative hmm, curious, interested",
-     duration: 1,
-   },
-   "mmm-approval": {
-     prompt: "female mmm sound of approval, satisfied, agreeing, pleased",
-     duration: 1,
-   },
-   "oh-realization": {
-     prompt: "female oh sound, realization, understanding, soft exclamation",
-     duration: 1,
-   },
- };
- 
- serve(async (req) => {
-   if (req.method === "OPTIONS") {
-     return new Response(null, { headers: corsHeaders });
-   }
- 
-   try {
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+/**
+ * ElevenLabs Sound Effects API
+ * 
+ * Genera efectos de sonido expresivos como gemidos, suspiros, gritos, etc.
+ * Duración máxima: 22 segundos
+ */
+
+// Catálogo de efectos expresivos predefinidos
+const SFX_PRESETS: Record<string, { prompt: string; duration: number }> = {
+  // Gemidos y suspiros
+  "moan-soft": {
+    prompt: "soft sensual female moan, breathy, intimate whisper, pleasure sound",
+    duration: 2,
+  },
+  "moan-intense": {
+    prompt: "intense passionate female moan, pleasure, ecstasy, breathy gasping",
+    duration: 3,
+  },
+  "sigh-pleasure": {
+    prompt: "female sigh of pleasure, soft exhale, satisfied, relaxed, intimate",
+    duration: 1.5,
+  },
+  "gasp-surprise": {
+    prompt: "female gasp of surprise, sharp inhale, caught off guard, breathy",
+    duration: 1,
+  },
+  "breath-heavy": {
+    prompt: "heavy breathing female, panting, out of breath, intimate, close microphone",
+    duration: 3,
+  },
+  
+  // Risas y expresiones
+  "giggle-playful": {
+    prompt: "playful female giggle, flirty, teasing, lighthearted laughter",
+    duration: 2,
+  },
+  "laugh-seductive": {
+    prompt: "seductive female laugh, low and breathy, confident, alluring",
+    duration: 2,
+  },
+  
+  // Sonidos de dolor/placer
+  "whimper-soft": {
+    prompt: "soft female whimper, vulnerable, emotional, gentle cry",
+    duration: 1.5,
+  },
+  "cry-pleasure": {
+    prompt: "female cry of pleasure, peak moment, intense, passionate outburst",
+    duration: 2,
+  },
+  
+  // Expresiones vocales
+  "hmm-thinking": {
+    prompt: "female thinking sound, contemplative hmm, curious, interested",
+    duration: 1,
+  },
+  "mmm-approval": {
+    prompt: "female mmm sound of approval, satisfied, agreeing, pleased",
+    duration: 1,
+  },
+  "oh-realization": {
+    prompt: "female oh sound, realization, understanding, soft exclamation",
+    duration: 1,
+  },
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  // --- Auth check ---
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  const _sb = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const _tk = authHeader.replace('Bearer ', '');
+  const { data: _cl, error: _clErr } = await _sb.auth.getClaims(_tk);
+  if (_clErr || !_cl?.claims) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  // --- End auth check ---
+
+  try {
      const apiKey = Deno.env.get("ELEVENLABS_API_KEY_OVERRIDE") || Deno.env.get("ELEVENLABS_API_KEY");
      
      if (!apiKey) {
