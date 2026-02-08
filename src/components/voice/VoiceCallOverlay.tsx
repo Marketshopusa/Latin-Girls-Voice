@@ -105,40 +105,54 @@ export const VoiceCallOverlay = ({
       const voiceId = char.voice || 'es-US-Neural2-A';
       const provider = getVoiceProvider(voiceId);
       
+      // Get auth token (same as useTTS)
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
       const endpoint = provider === 'elevenlabs' 
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`
-        : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`;
+        ? `${baseUrl}/functions/v1/elevenlabs-tts`
+        : `${baseUrl}/functions/v1/google-cloud-tts`;
+      
+      console.log(`[VoiceCall] TTS request: voice=${voiceId}, provider=${provider}, chars=${text.length}`);
       
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({ text, voiceType: voiceId }),
       });
 
       if (!response.ok) {
+        console.warn(`[VoiceCall] ${provider} TTS failed (${response.status}), trying fallback...`);
         if (provider === 'elevenlabs') {
-          console.warn('ElevenLabs TTS failed, falling back to Google Cloud');
           const fallbackResponse = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
+            `${baseUrl}/functions/v1/google-cloud-tts`,
             {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                'Authorization': `Bearer ${authToken}`,
               },
               body: JSON.stringify({ text, voiceType: 'es-US-Neural2-A' }),
             }
           );
           
-          if (!fallbackResponse.ok) throw new Error('TTS fallback failed');
+          if (!fallbackResponse.ok) {
+            console.error('[VoiceCall] Google TTS fallback also failed:', fallbackResponse.status);
+            throw new Error('TTS fallback failed');
+          }
           
+          console.log('[VoiceCall] Google TTS fallback successful');
           const audioBlob = await fallbackResponse.blob();
-          const audioUrl = URL.createObjectURL(audioBlob);
+          const playableBlob = audioBlob.type.includes('audio')
+            ? audioBlob
+            : new Blob([audioBlob], { type: 'audio/mpeg' });
+          const audioUrl = URL.createObjectURL(playableBlob);
           const audio = new Audio(audioUrl);
           audioRef.current = audio;
           
@@ -148,18 +162,24 @@ export const VoiceCallOverlay = ({
             URL.revokeObjectURL(audioUrl);
           };
           audio.onerror = () => {
+            console.error('[VoiceCall] Audio playback error (fallback)');
             isSpeakingRef.current = false;
             setIsSpeaking(false);
             URL.revokeObjectURL(audioUrl);
           };
           await audio.play();
+          console.log('[VoiceCall] TTS playing (fallback)');
           return;
         }
         throw new Error('TTS request failed');
       }
 
+      console.log('[VoiceCall] TTS response OK, playing audio...');
       const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const playableBlob = audioBlob.type.includes('audio')
+        ? audioBlob
+        : new Blob([audioBlob], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(playableBlob);
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
       
@@ -167,15 +187,18 @@ export const VoiceCallOverlay = ({
         isSpeakingRef.current = false;
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
+        console.log('[VoiceCall] TTS playback ended');
       };
-      audio.onerror = () => {
+      audio.onerror = (e) => {
+        console.error('[VoiceCall] Audio playback error:', e);
         isSpeakingRef.current = false;
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
       };
       await audio.play();
+      console.log('[VoiceCall] TTS playing successfully');
     } catch (error) {
-      console.error('TTS error:', error);
+      console.error('[VoiceCall] TTS error:', error);
       isSpeakingRef.current = false;
       setIsSpeaking(false);
     }
