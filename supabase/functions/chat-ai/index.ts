@@ -56,9 +56,9 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: authHeader } } }
   );
-  const _tk = authHeader.replace('Bearer ', '');
-  const { data: _cl, error: _clErr } = await _sb.auth.getClaims(_tk);
-  if (_clErr || !_cl?.claims) {
+  const { data: { user: _authUser }, error: _userErr } = await _sb.auth.getUser();
+  if (_userErr || !_authUser) {
+    console.error('Auth failed:', _userErr?.message);
     return new Response(JSON.stringify({ error: 'No autorizado' }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

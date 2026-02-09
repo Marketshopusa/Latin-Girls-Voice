@@ -75,6 +75,7 @@ export const VoiceCallOverlay = ({
   
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const preWarmedAudioRef = useRef<HTMLAudioElement | null>(null);
   const callHistoryRef = useRef<Array<{ role: string; content: string }>>([]);
   const isCallActiveRef = useRef(false);
   
@@ -105,7 +106,7 @@ export const VoiceCallOverlay = ({
       const voiceId = char.voice || 'es-US-Neural2-A';
       const provider = getVoiceProvider(voiceId);
       
-      // Get auth token (same as useTTS)
+      // Get auth token
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       
@@ -153,8 +154,11 @@ export const VoiceCallOverlay = ({
             ? audioBlob
             : new Blob([audioBlob], { type: 'audio/mpeg' });
           const audioUrl = URL.createObjectURL(playableBlob);
-          const audio = new Audio(audioUrl);
+          
+          // Use pre-warmed audio element for mobile compatibility
+          const audio = preWarmedAudioRef.current || new Audio();
           audioRef.current = audio;
+          audio.src = audioUrl;
           
           audio.onended = () => {
             isSpeakingRef.current = false;
@@ -180,8 +184,11 @@ export const VoiceCallOverlay = ({
         ? audioBlob
         : new Blob([audioBlob], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(playableBlob);
-      const audio = new Audio(audioUrl);
+      
+      // Use pre-warmed audio element for mobile compatibility
+      const audio = preWarmedAudioRef.current || new Audio();
       audioRef.current = audio;
+      audio.src = audioUrl;
       
       audio.onended = () => {
         isSpeakingRef.current = false;
@@ -272,6 +279,22 @@ export const VoiceCallOverlay = ({
   // Initialize speech recognition
   useEffect(() => {
     if (!isOpen) return;
+
+    // Pre-warm an Audio element during user gesture context
+    // This allows future audio.play() calls to work on mobile without gesture
+    const warmAudio = new Audio();
+    warmAudio.volume = 1;
+    // Play a tiny silent audio to unlock the audio context on mobile
+    warmAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+    warmAudio.play().then(() => {
+      warmAudio.pause();
+      warmAudio.currentTime = 0;
+      warmAudio.src = '';
+      console.log('[VoiceCall] Audio pre-warmed for mobile');
+    }).catch(() => {
+      console.warn('[VoiceCall] Could not pre-warm audio');
+    });
+    preWarmedAudioRef.current = warmAudio;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -383,6 +406,15 @@ export const VoiceCallOverlay = ({
           // Ignore audio cleanup errors
         }
         audioRef.current = null;
+      }
+      
+      // Cleanup pre-warmed audio
+      if (preWarmedAudioRef.current) {
+        try {
+          preWarmedAudioRef.current.pause();
+          preWarmedAudioRef.current.src = '';
+        } catch (e) { /* ignore */ }
+        preWarmedAudioRef.current = null;
       }
       
       setIsConnected(false);
