@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Character, VoiceType, normalizeVoiceType } from '@/types';
 import { mockCharacters } from '@/data/characters';
 import { useNsfw } from '@/contexts/NsfwContext';
+import { toast } from 'sonner';
 
 interface DbCharacter {
   id: string;
@@ -91,20 +92,40 @@ export const useCreateCharacter = () => {
 
   const uploadImage = async (imageDataUrl: string): Promise<string | null> => {
     try {
+      console.log('[Upload] Starting image upload, data URL length:', imageDataUrl.length);
+      
       const response = await fetch(imageDataUrl);
       const blob = await response.blob();
       
-      const fileName = `character_${Date.now()}.${blob.type.split('/')[1] || 'png'}`;
+      console.log('[Upload] Blob created:', blob.type, blob.size, 'bytes');
+      
+      // Determine proper extension from the blob type
+      const mimeToExt: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'video/mp4': 'mp4',
+        'video/webm': 'webm',
+        'application/octet-stream': 'jpg', // fallback for unknown types
+      };
+      
+      const ext = mimeToExt[blob.type] || blob.type.split('/')[1] || 'jpg';
+      const fileName = `character_${Date.now()}.${ext}`;
+      
+      console.log('[Upload] Uploading as:', fileName);
       
       const { data, error: uploadError } = await supabase.storage
         .from('character-images')
         .upload(fileName, blob, {
-          contentType: blob.type,
+          contentType: blob.type || 'image/jpeg',
           upsert: false
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
+        console.error('[Upload] Storage error:', uploadError.message, uploadError);
+        toast.error(`Error al subir la imagen: ${uploadError.message}`);
         return null;
       }
 
@@ -112,9 +133,11 @@ export const useCreateCharacter = () => {
         .from('character-images')
         .getPublicUrl(data.path);
 
+      console.log('[Upload] Success! URL:', urlData.publicUrl);
       return urlData.publicUrl;
     } catch (err) {
-      console.error('Image upload failed:', err);
+      console.error('[Upload] Failed:', err);
+      toast.error('Error al subir la imagen. Intenta con un archivo más pequeño.');
       return null;
     }
   };
@@ -144,6 +167,11 @@ export const useCreateCharacter = () => {
       
       if (characterData.image && characterData.image.startsWith('data:')) {
         imageUrl = await uploadImage(characterData.image);
+        if (!imageUrl) {
+          // Upload failed - don't create character with missing image
+          setError('No se pudo subir la imagen. Intenta de nuevo.');
+          return null;
+        }
       } else if (characterData.image) {
         imageUrl = characterData.image;
       }
