@@ -33,7 +33,7 @@ const AgePolicyPage = () => {
                 CONTENIDO EXCLUSIVO PARA ADULTOS (+18)
               </h2>
               <p className="text-foreground">
-                G-Latinas.ai contiene material explícito generado por Inteligencia Artificial 
+                Latin Girls Voice contiene material explícito generado por Inteligencia Artificial 
                 destinado exclusivamente a personas adultas mayores de 18 años. El acceso de 
                 menores está estrictamente prohibido.
               </p>
@@ -51,7 +51,7 @@ const AgePolicyPage = () => {
           </CardHeader>
           <CardContent className="prose prose-invert max-w-none">
             <p>
-              G-Latinas.ai está comprometido con la protección de menores de edad. Implementamos 
+              Latin Girls Voice está comprometido con la protección de menores de edad. Implementamos 
               múltiples capas de verificación y control para garantizar que el contenido para 
               adultos solo sea accesible por personas que han confirmado legalmente ser mayores 
               de 18 años.
@@ -184,7 +184,7 @@ const AgePolicyPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="prose prose-invert max-w-none">
-            <p className="text-sm mb-4">Al utilizar G-Latinas.ai, usted es responsable de:</p>
+            <p className="text-sm mb-4">Al utilizar Latin Girls Voice, usted es responsable de:</p>
             <ul className="space-y-2 text-sm">
               <li>• <strong>Proporcionar información veraz</strong> sobre su edad</li>
               <li>• <strong>No compartir su cuenta</strong> con menores de edad</li>
@@ -231,7 +231,7 @@ const AgePolicyPage = () => {
               accedido a nuestra plataforma:
             </p>
             <ul className="space-y-2 text-sm">
-              <li>• Contáctenos inmediatamente a <strong>safety@g-latinas.ai</strong></li>
+              <li>• Contáctenos inmediatamente a <strong>safety@latingirlsvoice.com</strong></li>
               <li>• Proporcione el correo electrónico o identificador de la cuenta</li>
               <li>• Tomaremos medidas inmediatas para investigar y eliminar la cuenta</li>
               <li>• Todos los datos asociados serán eliminados permanentemente</li>
@@ -272,7 +272,7 @@ const AgePolicyPage = () => {
               Para reportar violaciones de la política de edad o preocupaciones de seguridad:
             </p>
             <ul className="text-sm">
-              <li>• <strong>Correo prioritario:</strong> safety@g-latinas.ai</li>
+              <li>• <strong>Correo prioritario:</strong> safety@latingirlsvoice.com</li>
               <li>• <strong>Tiempo de respuesta:</strong> Menos de 24 horas para casos de menores</li>
             </ul>
           </CardContent>

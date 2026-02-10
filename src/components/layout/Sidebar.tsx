@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, MessageCircle, Plus, Crown, Settings, Globe, Shield, LogIn, LogOut, Loader2 } from 'lucide-react';
+import { Home, MessageCircle, Plus, Crown, Shield, LogIn, LogOut, Loader2, FileText } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
@@ -169,15 +169,27 @@ export const Sidebar = () => {
             )}
           </button>
           
-          <button className="sidebar-item w-full justify-center lg:justify-start">
-            <Settings className="h-5 w-5" />
-            <span className="hidden lg:block">Contáctanos</span>
-          </button>
-
-          <button className="sidebar-item w-full justify-center lg:justify-start">
-            <Globe className="h-5 w-5" />
-            <span className="hidden lg:block">Español</span>
-          </button>
+          {/* Políticas */}
+          <div className="p-2 lg:p-3 rounded-lg bg-muted/50 border border-border">
+            <div className="flex items-center gap-2 justify-center lg:justify-start mb-1">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="hidden lg:block text-xs font-medium text-muted-foreground uppercase tracking-wider">Políticas</span>
+            </div>
+            <div className="hidden lg:flex flex-col gap-0.5">
+              <Link to="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors py-1 px-2 rounded hover:bg-muted">
+                Privacidad
+              </Link>
+              <Link to="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors py-1 px-2 rounded hover:bg-muted">
+                Términos de Servicio
+              </Link>
+              <Link to="/age-policy" className="text-xs text-muted-foreground hover:text-primary transition-colors py-1 px-2 rounded hover:bg-muted">
+                Verificación de Edad
+              </Link>
+            </div>
+            <Link to="/privacy" className="lg:hidden flex justify-center">
+              <span className="text-[10px] text-muted-foreground">Políticas</span>
+            </Link>
+          </div>
         </div>
       </aside>
 

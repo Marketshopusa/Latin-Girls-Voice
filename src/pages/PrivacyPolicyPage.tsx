@@ -34,13 +34,13 @@ const PrivacyPolicyPage = () => {
           </CardHeader>
           <CardContent className="prose prose-invert max-w-none">
             <p>
-              Bienvenido a <strong>G-Latinas.ai</strong> ("nosotros", "nuestro" o "la Plataforma"). 
+               Bienvenido a <strong>Latin Girls Voice</strong> ("nosotros", "nuestro" o "la Plataforma"). 
               Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos y protegemos 
               su información personal cuando utiliza nuestra plataforma de chat con personajes de 
               inteligencia artificial.
             </p>
             <p>
-              Al acceder o utilizar G-Latinas.ai, usted acepta las prácticas descritas en esta 
+              Al acceder o utilizar Latin Girls Voice, usted acepta las prácticas descritas en esta
               Política de Privacidad. Si no está de acuerdo con estas prácticas, por favor no 
               utilice nuestra plataforma.
             </p>
@@ -58,7 +58,7 @@ const PrivacyPolicyPage = () => {
           <CardContent className="prose prose-invert max-w-none">
             <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/30">
               <p className="font-semibold text-destructive mb-2">
-                Todo el contenido en G-Latinas.ai es generado por Inteligencia Artificial.
+                Todo el contenido en Latin Girls Voice es generado por Inteligencia Artificial.
               </p>
               <ul className="space-y-2 text-sm">
                 <li>• Los personajes, imágenes, voces y conversaciones son <strong>100% ficticios</strong> y generados por IA.</li>
@@ -219,7 +219,7 @@ const PrivacyPolicyPage = () => {
           <CardContent className="prose prose-invert max-w-none">
             <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/30">
               <p className="font-semibold text-destructive mb-2">
-                G-Latinas.ai es una plataforma EXCLUSIVAMENTE para adultos mayores de 18 años.
+                Latin Girls Voice es una plataforma EXCLUSIVAMENTE para adultos mayores de 18 años.
               </p>
               <ul className="space-y-2 text-sm">
                 <li>• <strong>NO</strong> recopilamos intencionalmente información de menores de 18 años.</li>
@@ -260,7 +260,7 @@ const PrivacyPolicyPage = () => {
               puede contactarnos a través de:
             </p>
             <ul className="text-sm">
-              <li>• <strong>Correo electrónico:</strong> privacy@g-latinas.ai</li>
+              <li>• <strong>Correo electrónico:</strong> privacy@latingirlsvoice.com</li>
               <li>• <strong>Formulario de contacto:</strong> Disponible en la aplicación</li>
             </ul>
           </CardContent>
