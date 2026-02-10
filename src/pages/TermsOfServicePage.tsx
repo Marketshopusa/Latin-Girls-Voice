@@ -34,7 +34,7 @@ const TermsOfServicePage = () => {
           </CardHeader>
           <CardContent className="prose prose-invert max-w-none">
             <p>
-              Al acceder o utilizar <strong>G-Latinas.ai</strong> ("la Plataforma", "el Servicio"), 
+              Al acceder o utilizar <strong>Latin Girls Voice</strong> ("la Plataforma", "el Servicio"), 
               usted acepta estar legalmente vinculado por estos Términos de Servicio. Si no está 
               de acuerdo con alguna parte de estos términos, no debe utilizar la Plataforma.
             </p>
@@ -54,7 +54,7 @@ const TermsOfServicePage = () => {
           </CardHeader>
           <CardContent className="prose prose-invert max-w-none">
             <p className="mb-4">
-              G-Latinas.ai es una plataforma de entretenimiento que ofrece:
+              Latin Girls Voice es una plataforma de entretenimiento que ofrece:
             </p>
             <ul className="space-y-2 text-sm">
               <li>• Conversaciones interactivas con personajes virtuales generados por Inteligencia Artificial</li>
@@ -83,7 +83,7 @@ const TermsOfServicePage = () => {
                 <li>• <strong>Todo el contenido es ficticio:</strong> Los personajes, imágenes, voces y diálogos son generados por algoritmos de IA y no representan personas reales.</li>
                 <li>• <strong>Sin personas reales:</strong> Ninguna imagen representa, está basada en, o se deriva de fotografías de personas reales.</li>
                 <li>• <strong>Entretenimiento únicamente:</strong> El contenido es para entretenimiento y no constituye asesoramiento profesional, médico, legal o de otro tipo.</li>
-                <li>• <strong>Respuestas impredecibles:</strong> La IA puede generar respuestas inesperadas, inexactas o inapropiadas. G-Latinas.ai no se responsabiliza del contenido generado.</li>
+                <li>• <strong>Respuestas impredecibles:</strong> La IA puede generar respuestas inesperadas, inexactas o inapropiadas. Latin Girls Voice no se responsabiliza del contenido generado.</li>
                 <li>• <strong>No almacenamiento permanente:</strong> Las imágenes generadas son temporales y no se almacenan de forma permanente en nuestros servidores.</li>
               </ul>
             </div>
@@ -142,7 +142,7 @@ const TermsOfServicePage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="prose prose-invert max-w-none">
-            <p className="text-sm mb-4">Al utilizar G-Latinas.ai, usted acepta:</p>
+            <p className="text-sm mb-4">Al utilizar Latin Girls Voice, usted acepta:</p>
             <ul className="space-y-2 text-sm">
               <li>• <strong>No usar la plataforma para actividades ilegales</strong> en su jurisdicción</li>
               <li>• <strong>No intentar eludir</strong> las medidas de verificación de edad</li>
@@ -191,7 +191,7 @@ const TermsOfServicePage = () => {
           </CardHeader>
           <CardContent className="prose prose-invert max-w-none">
             <ul className="space-y-2 text-sm">
-              <li>• <strong>Plataforma:</strong> G-Latinas.ai, su diseño, código y funcionalidades son propiedad exclusiva de sus creadores.</li>
+              <li>• <strong>Plataforma:</strong> Latin Girls Voice, su diseño, código y funcionalidades son propiedad exclusiva de sus creadores.</li>
               <li>• <strong>Contenido generado:</strong> Las imágenes y textos generados por la IA se proporcionan para uso personal y no comercial.</li>
               <li>• <strong>Personajes del usuario:</strong> Los personajes creados por usuarios siguen siendo propiedad intelectual del usuario, pero nos otorgan licencia para mostrarlos en la plataforma.</li>
               <li>• <strong>Sin garantía de exclusividad:</strong> El contenido generado por IA puede ser similar a contenido generado para otros usuarios.</li>
@@ -256,7 +256,7 @@ const TermsOfServicePage = () => {
           <CardContent className="prose prose-invert max-w-none">
             <p className="text-sm">
               Para preguntas sobre estos Términos de Servicio, contáctenos en:{' '}
-              <strong>legal@g-latinas.ai</strong>
+              <strong>legal@latingirlsvoice.com</strong>
             </p>
           </CardContent>
         </Card>
