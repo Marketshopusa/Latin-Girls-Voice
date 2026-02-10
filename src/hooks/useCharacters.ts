@@ -90,42 +90,49 @@ export const useCreateCharacter = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const uploadImage = async (imageDataUrl: string): Promise<string | null> => {
+  const uploadMedia = async (dataUrl: string): Promise<string | null> => {
     try {
-      console.log('[Upload] Starting image upload, data URL length:', imageDataUrl.length);
+      console.log('[Upload] Starting media upload, data URL length:', dataUrl.length);
       
-      const response = await fetch(imageDataUrl);
+      // Extract MIME directly from data URL header — much more reliable than blob.type
+      const mimeMatch = dataUrl.match(/^data:([^;,]+)/);
+      const detectedMime = mimeMatch?.[1]?.toLowerCase() || '';
+      
+      const response = await fetch(dataUrl);
       const blob = await response.blob();
       
-      console.log('[Upload] Blob created:', blob.type, blob.size, 'bytes');
+      // Use the MIME from the data URL, fall back to blob.type
+      const mime = detectedMime || blob.type || 'application/octet-stream';
       
-      // Determine proper extension from the blob type
+      console.log('[Upload] Blob created:', blob.size, 'bytes, detected MIME:', mime);
+      
       const mimeToExt: Record<string, string> = {
         'image/jpeg': 'jpg',
         'image/jpg': 'jpg',
         'image/png': 'png',
         'image/gif': 'gif',
         'image/webp': 'webp',
+        'image/apng': 'apng',
         'video/mp4': 'mp4',
         'video/webm': 'webm',
-        'application/octet-stream': 'jpg', // fallback for unknown types
+        'video/quicktime': 'mov',
       };
       
-      const ext = mimeToExt[blob.type] || blob.type.split('/')[1] || 'jpg';
+      const ext = mimeToExt[mime] || mime.split('/')[1] || 'bin';
       const fileName = `character_${Date.now()}.${ext}`;
       
-      console.log('[Upload] Uploading as:', fileName);
+      console.log('[Upload] Uploading as:', fileName, 'with contentType:', mime);
       
       const { data, error: uploadError } = await supabase.storage
         .from('character-images')
         .upload(fileName, blob, {
-          contentType: blob.type || 'image/jpeg',
+          contentType: mime,
           upsert: false
         });
 
       if (uploadError) {
         console.error('[Upload] Storage error:', uploadError.message, uploadError);
-        toast.error(`Error al subir la imagen: ${uploadError.message}`);
+        toast.error(`Error al subir el archivo: ${uploadError.message}`);
         return null;
       }
 
@@ -137,7 +144,7 @@ export const useCreateCharacter = () => {
       return urlData.publicUrl;
     } catch (err) {
       console.error('[Upload] Failed:', err);
-      toast.error('Error al subir la imagen. Intenta con un archivo más pequeño.');
+      toast.error('Error al subir el archivo. Intenta con uno más pequeño.');
       return null;
     }
   };
@@ -166,7 +173,7 @@ export const useCreateCharacter = () => {
       let imageUrl: string | null = null;
       
       if (characterData.image && characterData.image.startsWith('data:')) {
-        imageUrl = await uploadImage(characterData.image);
+        imageUrl = await uploadMedia(characterData.image);
         if (!imageUrl) {
           // Upload failed - don't create character with missing image
           setError('No se pudo subir la imagen. Intenta de nuevo.');
