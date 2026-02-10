@@ -72,7 +72,7 @@ export const MobileTopNav = () => {
         <div className="flex items-center justify-between h-14 px-3">
           {/* Logo */}
           <h1 className="text-lg font-display font-bold logo-3d-gold">
-            G-Latinas
+            Latin Girls Voice
           </h1>
 
           {/* Navigation */}

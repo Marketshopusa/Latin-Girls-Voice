@@ -22,8 +22,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "icons/*.png", "characters/*.jpg", "characters/*.webp", "characters/*.gif", "characters/*.mp4"],
       manifest: {
-        name: "G-Latinas.ai",
-        short_name: "G-Latinas",
+        name: "Latin Girls Voice",
+        short_name: "LGV",
         description: "Chat con personajes virtuales de IA - Compañeras latinas virtuales",
         theme_color: "#d4af37",
         background_color: "#0a0a0a",
