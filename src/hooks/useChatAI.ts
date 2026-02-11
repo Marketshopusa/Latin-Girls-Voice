@@ -7,6 +7,19 @@ interface UseChatAIOptions {
   onResponse?: (response: string) => void;
 }
 
+// Build a summary of last 10-15 messages for NSFW history persistence
+function buildHistorySummary(characterId: string, conversationHistory: Message[]): string {
+  // Use conversation history directly (last 12 messages)
+  const recent = conversationHistory.slice(-12);
+  if (recent.length === 0) return "";
+
+  return recent.map(m => {
+    const role = m.role === 'user' ? 'Usuario' : 'Personaje';
+    const text = m.text.length > 120 ? m.text.slice(0, 120) + '...' : m.text;
+    return `${role}: ${text}`;
+  }).join('\n');
+}
+
 export const useChatAI = ({ character, onResponse }: UseChatAIOptions) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +38,12 @@ export const useChatAI = ({ character, onResponse }: UseChatAIOptions) => {
         throw new Error('Debes iniciar sesión para chatear');
       }
 
+      // Build history summary only for NSFW characters
+      const isNsfw = character.nsfw || false;
+      const historySummary = isNsfw
+        ? buildHistorySummary(character.id, conversationHistory)
+        : undefined;
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`,
         {
@@ -42,12 +61,13 @@ export const useChatAI = ({ character, onResponse }: UseChatAIOptions) => {
               history: character.history,
               tagline: character.tagline,
               voice: character.voice,
-              nsfw: character.nsfw || false,
+              nsfw: isNsfw,
             },
             conversationHistory: conversationHistory.map(m => ({
               role: m.role,
               text: m.text,
             })),
+            historySummary,
           }),
         }
       );
