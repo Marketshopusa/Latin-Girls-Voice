@@ -246,15 +246,18 @@ serve(async (req) => {
  
      if (!response.ok) {
        const errorText = await response.text();
-       console.error("ElevenLabs TTS error:", response.status, errorText);
+       // Use console.warn to avoid triggering Lovable error overlay
+       console.warn("ElevenLabs TTS unavailable:", response.status, errorText);
        
+       // CRITICAL: Return status 200 with fallback flag
+       // Returning non-200 triggers Lovable's runtime error overlay
        return new Response(
          JSON.stringify({ 
            error: `ElevenLabs TTS failed: ${response.status}`, 
            details: errorText,
            fallback: true 
          }),
-         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
        );
      }
  
@@ -273,13 +276,13 @@ serve(async (req) => {
        },
      });
    } catch (error) {
-     console.error("ElevenLabs TTS error:", error);
+     console.warn("ElevenLabs TTS error:", error);
      return new Response(
        JSON.stringify({ 
          error: error instanceof Error ? error.message : "Unknown error",
          fallback: true 
        }),
-       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
      );
    }
  });
