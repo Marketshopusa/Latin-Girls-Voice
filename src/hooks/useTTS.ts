@@ -164,8 +164,15 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
        });
  
        if (!response.ok) {
-         const errorData = await response.text();
-         console.error(`${provider} TTS error:`, response.status, errorData);
+        const errorData = await response.text();
+          
+          // Use console.warn instead of console.error to avoid triggering error overlays
+          // when fallback will handle it silently
+          if (provider === 'elevenlabs') {
+            console.warn(`ElevenLabs TTS unavailable (${response.status}), switching to Google Cloud fallback...`);
+          } else {
+            console.error(`${provider} TTS error:`, response.status, errorData);
+          }
          
          // Si es ElevenLabs y falla, intentar fallback a Google Cloud
          if (provider === 'elevenlabs') {
