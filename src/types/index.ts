@@ -25,27 +25,30 @@
    | 'el-vzla-candy'         // VZLA Candy - Dulce venezolana de San Cristóbal
    | 'el-paisa-dulce'        // Paisa Dulce - Colombiana paisa tierna
    | 'el-arg-dulce'          // ARG Dulce - Argentina suave y soñadora
-  // === GOOGLE CLOUD TTS - Voces Neural2 ===
-  | 'es-US-Neural2-A' // Femenina - Latino (recomendada)
-  | 'es-US-Neural2-B' // Masculina - Latino grave
-  | 'es-US-Neural2-C' // Masculina - Latino suave
-  | 'es-ES-Neural2-A' // Femenina - España
-  | 'es-ES-Neural2-B' // Masculina - España
-  | 'es-ES-Neural2-C' // Femenina - España alternativa
-  | 'es-ES-Neural2-D' // Femenina - España joven
-  | 'es-ES-Neural2-E' // Femenina - España madura
-  | 'es-ES-Neural2-F' // Masculina - España alternativo
-  | 'es-MX-Neural2-A' // Femenina - México
-  | 'es-MX-Neural2-B' // Masculina - México
-  // === GOOGLE CLOUD TTS - Chirp 3: HD Premium ===
-  | 'es-US-Chirp3-HD-Kore'
+ // === GOOGLE CLOUD TTS - Chirp 3: HD Latinas (es-US) ===
+  | 'es-US-Chirp3-HD-Achernar'
   | 'es-US-Chirp3-HD-Aoede'
+  | 'es-US-Chirp3-HD-Leda'
+  | 'es-US-Chirp3-HD-Kore'
+  | 'es-US-Chirp3-HD-Sulafat'
+  | 'es-US-Chirp3-HD-Zephyr'
+  | 'es-US-Chirp3-HD-Gacrux'
+  | 'es-US-Chirp3-HD-Callirrhoe'
+  | 'es-US-Chirp3-HD-Achird'
   | 'es-US-Chirp3-HD-Charon'
+  | 'es-US-Chirp3-HD-Fenrir'
+  | 'es-US-Chirp3-HD-Orus'
   | 'es-US-Chirp3-HD-Puck'
-  | 'es-ES-Chirp3-HD-Kore'
+  | 'es-US-Chirp3-HD-Schedar'
+  // === GOOGLE CLOUD TTS - Chirp 3: HD España (es-ES) ===
+  | 'es-ES-Chirp3-HD-Achernar'
   | 'es-ES-Chirp3-HD-Aoede'
+  | 'es-ES-Chirp3-HD-Leda'
+  | 'es-ES-Chirp3-HD-Kore'
+  | 'es-ES-Chirp3-HD-Achird'
   | 'es-ES-Chirp3-HD-Charon'
- | 'es-ES-Chirp3-HD-Puck';
+  | 'es-ES-Chirp3-HD-Fenrir'
+  | 'es-ES-Chirp3-HD-Puck';
  
  // Tier de la voz (para restricciones de plan)
  export type VoiceTier = 'standard' | 'premium';
@@ -80,7 +83,7 @@ export type VoiceGender = 'FEMALE' | 'MALE';
 export type VoiceRegion = 'COLOMBIA' | 'VENEZUELA' | 'ARGENTINA' | 'MEXICO' | 'LATINO' | 'ESPAÑA';
 
  // Calidad de voz  
- export type VoiceQuality = 'NEURAL2' | 'CHIRP3_HD' | 'FLASH_V2_5';
+ export type VoiceQuality = 'CHIRP3_HD' | 'FLASH_V2_5';
 
 // Configuración de voz
 export interface VoiceConfig {
@@ -316,252 +319,303 @@ export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
    },
 ];
  
-// === GOOGLE CLOUD TTS VOICES (Standard) ===
+// === GOOGLE CLOUD TTS - CHIRP 3: HD (Reemplazo completo de Neural2) ===
 export const GOOGLE_VOICE_CATALOG: VoiceConfig[] = [
+  // ═══════════════════════════════════════
+  // 🌎 VOCES LATINAS (es-US) — FEMENINAS
+  // ═══════════════════════════════════════
   {
-    id: 'es-US-Neural2-A',
-    label: 'Latina Neural',
-    icon: '🌸',
-    description: 'Voz femenina latina cálida (Google Cloud)',
-    gender: 'FEMALE',
-    region: 'LATINO',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-US',
-    voiceName: 'es-US-Neural2-A',
-  },
-  {
-    id: 'es-US-Neural2-B',
-    label: 'Latino Profundo',
-    icon: '🎤',
-    description: 'Voz masculina latina grave (Google Cloud)',
-    gender: 'MALE',
-    region: 'LATINO',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-US',
-    voiceName: 'es-US-Neural2-B',
-  },
-  {
-    id: 'es-US-Neural2-C',
-    label: 'Latino Suave',
-    icon: '🎵',
-    description: 'Voz masculina latina suave (Google Cloud)',
-    gender: 'MALE',
-    region: 'LATINO',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-US',
-    voiceName: 'es-US-Neural2-C',
-  },
-  {
-    id: 'es-ES-Neural2-A',
-    label: 'Española Clara',
-    icon: '🇪🇸',
-    description: 'Voz femenina española clara (Google Cloud)',
-    gender: 'FEMALE',
-    region: 'ESPAÑA',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-ES',
-    voiceName: 'es-ES-Neural2-A',
-  },
-  {
-    id: 'es-ES-Neural2-B',
-    label: 'Español Formal',
-    icon: '🎩',
-    description: 'Voz masculina española formal (Google Cloud)',
-    gender: 'MALE',
-    region: 'ESPAÑA',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-ES',
-    voiceName: 'es-ES-Neural2-B',
-  },
-  {
-    id: 'es-ES-Neural2-C',
-    label: 'Española Dulce',
-    icon: '🌷',
-    description: 'Voz femenina española dulce (Google Cloud)',
-    gender: 'FEMALE',
-    region: 'ESPAÑA',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-ES',
-    voiceName: 'es-ES-Neural2-C',
-  },
-  {
-    id: 'es-ES-Neural2-D',
-    label: 'Española Joven',
+    id: 'es-US-Chirp3-HD-Achernar',
+    label: 'Achernar',
     icon: '✨',
-    description: 'Voz femenina española joven (Google Cloud)',
-    gender: 'FEMALE',
-    region: 'ESPAÑA',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-ES',
-    voiceName: 'es-ES-Neural2-D',
-  },
-  {
-    id: 'es-ES-Neural2-E',
-    label: 'Española Elegante',
-    icon: '👑',
-    description: 'Voz femenina española madura (Google Cloud)',
-    gender: 'FEMALE',
-    region: 'ESPAÑA',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-ES',
-    voiceName: 'es-ES-Neural2-E',
-  },
-  {
-    id: 'es-ES-Neural2-F',
-    label: 'Español Amigable',
-    icon: '😊',
-    description: 'Voz masculina española amigable (Google Cloud)',
-    gender: 'MALE',
-    region: 'ESPAÑA',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-ES',
-    voiceName: 'es-ES-Neural2-F',
-  },
-  {
-    id: 'es-MX-Neural2-A',
-    label: 'Mexicana Cálida',
-    icon: '🌮',
-    description: 'Voz femenina mexicana cálida (Google Cloud)',
-    gender: 'FEMALE',
-    region: 'MEXICO',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-MX',
-    voiceName: 'es-MX-Neural2-A',
-  },
-  {
-    id: 'es-MX-Neural2-B',
-    label: 'Mexicano Natural',
-    icon: '🎺',
-    description: 'Voz masculina mexicana natural (Google Cloud)',
-    gender: 'MALE',
-    region: 'MEXICO',
-    quality: 'NEURAL2',
-    provider: 'google',
-     tier: 'standard',
-    languageCode: 'es-MX',
-    voiceName: 'es-MX-Neural2-B',
-  },
-  {
-    id: 'es-US-Chirp3-HD-Kore',
-    label: 'Kore Premium',
-    icon: '💎',
-    description: 'Voz premium ultra expresiva (Google Chirp 3)',
+    description: 'Latina brillante y expresiva',
     gender: 'FEMALE',
     region: 'LATINO',
     quality: 'CHIRP3_HD',
     provider: 'google',
-     tier: 'standard',
+    tier: 'standard',
     languageCode: 'es-US',
-    voiceName: 'Kore',
+    voiceName: 'Achernar',
   },
   {
     id: 'es-US-Chirp3-HD-Aoede',
-    label: 'Aoede Premium',
+    label: 'Aoede',
     icon: '🎭',
-    description: 'Voz premium cálida (Google Chirp 3)',
+    description: 'Latina cálida y melódica',
     gender: 'FEMALE',
     region: 'LATINO',
     quality: 'CHIRP3_HD',
     provider: 'google',
-     tier: 'standard',
+    tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'Aoede',
   },
   {
-    id: 'es-US-Chirp3-HD-Charon',
-    label: 'Charon Premium',
+    id: 'es-US-Chirp3-HD-Leda',
+    label: 'Leda',
     icon: '🌙',
-    description: 'Voz masculina premium profunda (Google Chirp 3)',
+    description: 'Latina suave y envolvente',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Leda',
+  },
+  {
+    id: 'es-US-Chirp3-HD-Kore',
+    label: 'Kore',
+    icon: '💎',
+    description: 'Latina ultra expresiva y clara',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Kore',
+  },
+  {
+    id: 'es-US-Chirp3-HD-Sulafat',
+    label: 'Sulafat',
+    icon: '🌺',
+    description: 'Latina dulce y natural',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Sulafat',
+  },
+  {
+    id: 'es-US-Chirp3-HD-Zephyr',
+    label: 'Zephyr',
+    icon: '🍃',
+    description: 'Latina fresca y juvenil',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Zephyr',
+  },
+  {
+    id: 'es-US-Chirp3-HD-Gacrux',
+    label: 'Gacrux',
+    icon: '🔮',
+    description: 'Latina misteriosa y profunda',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Gacrux',
+  },
+  {
+    id: 'es-US-Chirp3-HD-Callirrhoe',
+    label: 'Callirrhoe',
+    icon: '🌸',
+    description: 'Latina elegante y sofisticada',
+    gender: 'FEMALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Callirrhoe',
+  },
+  // ═══════════════════════════════════════
+  // 🌎 VOCES LATINAS (es-US) — MASCULINAS
+  // ═══════════════════════════════════════
+  {
+    id: 'es-US-Chirp3-HD-Achird',
+    label: 'Achird',
+    icon: '🎤',
+    description: 'Latino firme y confiable',
     gender: 'MALE',
     region: 'LATINO',
     quality: 'CHIRP3_HD',
     provider: 'google',
-     tier: 'standard',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Achird',
+  },
+  {
+    id: 'es-US-Chirp3-HD-Charon',
+    label: 'Charon',
+    icon: '🌑',
+    description: 'Latino profundo y misterioso',
+    gender: 'MALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'Charon',
   },
   {
-    id: 'es-US-Chirp3-HD-Puck',
-    label: 'Puck Premium',
-    icon: '⭐',
-    description: 'Voz masculina premium versátil (Google Chirp 3)',
+    id: 'es-US-Chirp3-HD-Fenrir',
+    label: 'Fenrir',
+    icon: '🐺',
+    description: 'Latino intenso y dramático',
     gender: 'MALE',
     region: 'LATINO',
     quality: 'CHIRP3_HD',
     provider: 'google',
-     tier: 'standard',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Fenrir',
+  },
+  {
+    id: 'es-US-Chirp3-HD-Orus',
+    label: 'Orus',
+    icon: '⚡',
+    description: 'Latino enérgico y versátil',
+    gender: 'MALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Orus',
+  },
+  {
+    id: 'es-US-Chirp3-HD-Puck',
+    label: 'Puck',
+    icon: '⭐',
+    description: 'Latino amigable y natural',
+    gender: 'MALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
     languageCode: 'es-US',
     voiceName: 'Puck',
   },
   {
-    id: 'es-ES-Chirp3-HD-Kore',
-    label: 'Kore España',
-    icon: '💜',
-    description: 'Voz premium española expresiva (Google Chirp 3)',
+    id: 'es-US-Chirp3-HD-Schedar',
+    label: 'Schedar',
+    icon: '🎵',
+    description: 'Latino cálido y seductor',
+    gender: 'MALE',
+    region: 'LATINO',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-US',
+    voiceName: 'Schedar',
+  },
+  // ═══════════════════════════════════════
+  // 🇪🇸 VOCES ESPAÑA (es-ES) — FEMENINAS
+  // ═══════════════════════════════════════
+  {
+    id: 'es-ES-Chirp3-HD-Achernar',
+    label: 'Achernar 🇪🇸',
+    icon: '✨',
+    description: 'Española brillante y expresiva',
     gender: 'FEMALE',
     region: 'ESPAÑA',
     quality: 'CHIRP3_HD',
     provider: 'google',
-     tier: 'standard',
+    tier: 'standard',
     languageCode: 'es-ES',
-    voiceName: 'Kore',
+    voiceName: 'Achernar',
   },
   {
     id: 'es-ES-Chirp3-HD-Aoede',
-    label: 'Aoede España',
-    icon: '🎪',
-    description: 'Voz premium española cálida (Google Chirp 3)',
+    label: 'Aoede 🇪🇸',
+    icon: '🎭',
+    description: 'Española cálida y melódica',
     gender: 'FEMALE',
     region: 'ESPAÑA',
     quality: 'CHIRP3_HD',
     provider: 'google',
-     tier: 'standard',
+    tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'Aoede',
   },
   {
-    id: 'es-ES-Chirp3-HD-Charon',
-    label: 'Charon España',
-    icon: '🌑',
-    description: 'Voz masculina premium española (Google Chirp 3)',
+    id: 'es-ES-Chirp3-HD-Leda',
+    label: 'Leda 🇪🇸',
+    icon: '🌙',
+    description: 'Española suave y envolvente',
+    gender: 'FEMALE',
+    region: 'ESPAÑA',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-ES',
+    voiceName: 'Leda',
+  },
+  {
+    id: 'es-ES-Chirp3-HD-Kore',
+    label: 'Kore 🇪🇸',
+    icon: '💜',
+    description: 'Española ultra expresiva y clara',
+    gender: 'FEMALE',
+    region: 'ESPAÑA',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
+    languageCode: 'es-ES',
+    voiceName: 'Kore',
+  },
+  // ═══════════════════════════════════════
+  // 🇪🇸 VOCES ESPAÑA (es-ES) — MASCULINAS
+  // ═══════════════════════════════════════
+  {
+    id: 'es-ES-Chirp3-HD-Achird',
+    label: 'Achird 🇪🇸',
+    icon: '🎤',
+    description: 'Español firme y confiable',
     gender: 'MALE',
     region: 'ESPAÑA',
     quality: 'CHIRP3_HD',
     provider: 'google',
-     tier: 'standard',
+    tier: 'standard',
+    languageCode: 'es-ES',
+    voiceName: 'Achird',
+  },
+  {
+    id: 'es-ES-Chirp3-HD-Charon',
+    label: 'Charon 🇪🇸',
+    icon: '🌑',
+    description: 'Español profundo y misterioso',
+    gender: 'MALE',
+    region: 'ESPAÑA',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'Charon',
   },
   {
-    id: 'es-ES-Chirp3-HD-Puck',
-    label: 'Puck España',
-    icon: '🌟',
-    description: 'Voz masculina premium española (Google Chirp 3)',
+    id: 'es-ES-Chirp3-HD-Fenrir',
+    label: 'Fenrir 🇪🇸',
+    icon: '🐺',
+    description: 'Español intenso y dramático',
     gender: 'MALE',
     region: 'ESPAÑA',
     quality: 'CHIRP3_HD',
     provider: 'google',
-     tier: 'standard',
+    tier: 'standard',
+    languageCode: 'es-ES',
+    voiceName: 'Fenrir',
+  },
+  {
+    id: 'es-ES-Chirp3-HD-Puck',
+    label: 'Puck 🇪🇸',
+    icon: '🌟',
+    description: 'Español amigable y natural',
+    gender: 'MALE',
+    region: 'ESPAÑA',
+    quality: 'CHIRP3_HD',
+    provider: 'google',
+    tier: 'standard',
     languageCode: 'es-ES',
     voiceName: 'Puck',
   },
@@ -600,14 +654,13 @@ export const VOICE_OPTIONS_BY_GENDER = {
   MALE: VOICE_CATALOG.filter(v => v.gender === 'MALE'),
 };
 
- export const VOICE_OPTIONS_BY_QUALITY = {
-   FLASH_V2_5: VOICE_CATALOG.filter(v => v.quality === 'FLASH_V2_5'),
-   NEURAL2: VOICE_CATALOG.filter(v => v.quality === 'NEURAL2'),
-   CHIRP3_HD: VOICE_CATALOG.filter(v => v.quality === 'CHIRP3_HD'),
- };
+  export const VOICE_OPTIONS_BY_QUALITY = {
+    FLASH_V2_5: VOICE_CATALOG.filter(v => v.quality === 'FLASH_V2_5'),
+    CHIRP3_HD: VOICE_CATALOG.filter(v => v.quality === 'CHIRP3_HD'),
+  };
 
-// Voz por defecto - Latina Neural (Google Cloud TTS)
-export const DEFAULT_VOICE: VoiceType = 'es-US-Neural2-A';
+// Voz por defecto - Chirp 3 HD Latina (Google Cloud TTS)
+export const DEFAULT_VOICE: VoiceType = 'es-US-Chirp3-HD-Kore';
 
 // Normalización de voces legacy -> voces Google reales (para no perder compatibilidad)
  const VALID_VOICES = new Set(VOICE_CATALOG.map(v => v.id));
@@ -625,28 +678,41 @@ export const DEFAULT_VOICE: VoiceType = 'es-US-Neural2-A';
  };
 
 export const LEGACY_VOICE_MAP: Record<string, VoiceType> = {
-  // Legacy antiguos
-  LATINA_CALIDA: 'es-US-Neural2-A',
-  LATINA_COQUETA: 'es-ES-Neural2-D',
-  MEXICANA_DULCE: 'es-MX-Neural2-A',
-  LATINO_PROFUNDO: 'es-US-Neural2-B',
-  LATINO_SUAVE: 'es-US-Neural2-C',
-  VENEZOLANA: 'es-ES-Neural2-C',
-  COLOMBIANA: 'es-US-Neural2-A',
-  ARGENTINA: 'es-ES-Neural2-B',
+  // Legacy antiguos → Chirp 3 HD
+  LATINA_CALIDA: 'es-US-Chirp3-HD-Kore',
+  LATINA_COQUETA: 'es-US-Chirp3-HD-Aoede',
+  MEXICANA_DULCE: 'es-US-Chirp3-HD-Sulafat',
+  LATINO_PROFUNDO: 'es-US-Chirp3-HD-Charon',
+  LATINO_SUAVE: 'es-US-Chirp3-HD-Puck',
+  VENEZOLANA: 'es-US-Chirp3-HD-Leda',
+  COLOMBIANA: 'es-US-Chirp3-HD-Achernar',
+  ARGENTINA: 'es-US-Chirp3-HD-Zephyr',
 
-  // IDs históricos (mapeados a Google con variedad real)
-  COLOMBIANA_PAISA: 'es-US-Neural2-A',
+  // IDs históricos → Chirp 3 HD
+  COLOMBIANA_PAISA: 'es-US-Chirp3-HD-Achernar',
   COLOMBIANA_SUAVE: 'es-US-Chirp3-HD-Aoede',
-  VENEZOLANA_CARAQUEÑA: 'es-ES-Neural2-D',
-  VENEZOLANA_GOCHA: 'es-ES-Neural2-C',
+  VENEZOLANA_CARAQUEÑA: 'es-US-Chirp3-HD-Callirrhoe',
+  VENEZOLANA_GOCHA: 'es-US-Chirp3-HD-Leda',
   LATINA_EXPRESIVA: 'es-US-Chirp3-HD-Kore',
-  LATINA_FUERTE: 'es-ES-Neural2-A',
-  MEXICANA_NATURAL: 'es-MX-Neural2-A',
-  ARGENTINA_PORTEÑA: 'es-ES-Neural2-B',
-  MASCULINA_PROFUNDA: 'es-US-Neural2-B',
-  MASCULINA_SUAVE: 'es-US-Neural2-C',
-  MASCULINA_LATINA: 'es-US-Chirp3-HD-Charon',
+  LATINA_FUERTE: 'es-US-Chirp3-HD-Gacrux',
+  MEXICANA_NATURAL: 'es-US-Chirp3-HD-Sulafat',
+  ARGENTINA_PORTEÑA: 'es-US-Chirp3-HD-Zephyr',
+  MASCULINA_PROFUNDA: 'es-US-Chirp3-HD-Charon',
+  MASCULINA_SUAVE: 'es-US-Chirp3-HD-Puck',
+  MASCULINA_LATINA: 'es-US-Chirp3-HD-Fenrir',
+  
+  // Neural2 legacy → Chirp 3 HD
+  'es-US-Neural2-A': 'es-US-Chirp3-HD-Kore',
+  'es-US-Neural2-B': 'es-US-Chirp3-HD-Charon',
+  'es-US-Neural2-C': 'es-US-Chirp3-HD-Puck',
+  'es-ES-Neural2-A': 'es-ES-Chirp3-HD-Kore',
+  'es-ES-Neural2-B': 'es-ES-Chirp3-HD-Charon',
+  'es-ES-Neural2-C': 'es-ES-Chirp3-HD-Aoede',
+  'es-ES-Neural2-D': 'es-ES-Chirp3-HD-Leda',
+  'es-ES-Neural2-E': 'es-ES-Chirp3-HD-Achernar',
+  'es-ES-Neural2-F': 'es-ES-Chirp3-HD-Puck',
+  'es-MX-Neural2-A': 'es-US-Chirp3-HD-Sulafat',
+  'es-MX-Neural2-B': 'es-US-Chirp3-HD-Orus',
 };
 
 export const normalizeVoiceType = (voice: string | null | undefined): VoiceType => {

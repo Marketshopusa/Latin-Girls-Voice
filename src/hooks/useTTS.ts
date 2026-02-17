@@ -194,7 +194,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
 
        // Fallback silencioso a Google Cloud TTS
        if (needsFallback) {
-         audioBlob = await callGoogleTTS(ttsText, 'es-US-Neural2-A');
+         audioBlob = await callGoogleTTS(ttsText, 'es-US-Chirp3-HD-Kore');
          if (!audioBlob) {
            throw new Error('Voz no disponible temporalmente');
          }
