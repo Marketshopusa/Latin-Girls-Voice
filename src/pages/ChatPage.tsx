@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, Phone } from 'lucide-react';
+import { ArrowLeft, Eye, Phone, MessageCircle } from 'lucide-react';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { CharacterPanel } from '@/components/chat/CharacterPanel';
@@ -39,6 +39,7 @@ const ChatPage = () => {
   const [characterLoading, setCharacterLoading] = useState(true);
   const [lastAIMessageId, setLastAIMessageId] = useState<string | null>(null);
   const [isVoiceCallOpen, setIsVoiceCallOpen] = useState(false);
+  const [showConversationList, setShowConversationList] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { characters } = useCharacters();
@@ -376,10 +377,12 @@ const ChatPage = () => {
       {/* Icon Sidebar */}
       <ChatSidebar />
 
-      {/* Conversation List */}
-      <div className="hidden lg:block h-screen overflow-hidden">
-        <ConversationList activeId={character.id} />
-      </div>
+      {/* Conversation List - togglable */}
+      {showConversationList && (
+        <div className="hidden lg:block h-screen overflow-hidden">
+          <ConversationList activeId={character.id} />
+        </div>
+      )}
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -390,6 +393,14 @@ const ChatPage = () => {
             className="lg:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
+          </button>
+          
+          <button
+            onClick={() => setShowConversationList(!showConversationList)}
+            className="hidden lg:flex p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+            title="Ver conversaciones"
+          >
+            <MessageCircle className="h-5 w-5" />
           </button>
           
           <img
