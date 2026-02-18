@@ -156,6 +156,7 @@ serve(async (req) => {
         speakingRate: 1.0,
         pitch: 0,
       },
+      model: "chirp3-hd",
     };
 
     const response = await fetch(
@@ -182,6 +183,7 @@ serve(async (req) => {
             name: fallbackConfig.voiceName,
           },
           audioConfig: { audioEncoding: "MP3", speakingRate: 1.0, pitch: 0 },
+          model: "chirp3-hd",
         };
 
         const fallbackResponse = await fetch(
