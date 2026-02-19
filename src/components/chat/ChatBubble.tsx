@@ -39,7 +39,9 @@ export const ChatBubble = ({
       if (sfxPreset) {
         hasSfxPlayed.current = true;
         const timer = setTimeout(() => {
-          playPreset(sfxPreset);
+          playPreset(sfxPreset).catch(() => {
+            // Silently ignore SFX errors (e.g. quota exceeded)
+          });
         }, 200);
         return () => clearTimeout(timer);
       }
