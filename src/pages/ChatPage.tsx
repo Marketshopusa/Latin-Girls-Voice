@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, Phone, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Eye, Phone, MessageCircle, Settings } from 'lucide-react';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { CharacterPanel } from '@/components/chat/CharacterPanel';
@@ -286,6 +286,17 @@ const ChatPage = () => {
         <div className="flex-1 min-w-0">
           <h2 className="font-display font-semibold text-outline">{character.name}</h2>
         </div>
+
+        {/* Character Config Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsConfigOpen(true)}
+          className="text-muted-foreground"
+          title="Configurar personaje"
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
 
         {/* Voice Call Button */}
         <Button
