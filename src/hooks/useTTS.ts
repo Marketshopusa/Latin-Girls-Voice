@@ -144,12 +144,16 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
        const { data: { session } } = await supabase.auth.getSession();
        const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
        
-       console.log(`Requesting TTS: voice=${normalizedVoice}, provider=${provider}, chars=${ttsText.length}`);
+       // ORDEN: Google Cloud TTS es el principal, ElevenLabs solo si la voz es premium
+       const useElevenLabs = provider === 'elevenlabs';
+       const primaryProvider = useElevenLabs ? 'elevenlabs' : 'google';
+       
+       console.log(`Requesting TTS: voice=${normalizedVoice}, provider=${primaryProvider}, chars=${ttsText.length}`);
  
        let audioBlob: Blob | null = null;
  
        // Intentar con el proveedor principal
-       const endpoint = getTTSEndpoint(provider);
+       const endpoint = getTTSEndpoint(primaryProvider);
        const response = await fetch(endpoint, {
          method: "POST",
          headers: {
@@ -163,42 +167,37 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
          }),
        });
 
-       // Check if response is JSON with fallback flag (ElevenLabs returns 200 + JSON when it fails)
-       let needsFallback = false;
-       if (response.ok && provider === 'elevenlabs') {
-         const contentType = response.headers.get('content-type') || '';
-         if (contentType.includes('application/json')) {
-           // ElevenLabs edge function returned JSON = error with fallback flag
-           const jsonData = await response.json();
-           if (jsonData.fallback) {
-             console.warn(`ElevenLabs TTS unavailable, switching to Google Cloud fallback...`);
-             needsFallback = true;
+       if (primaryProvider === 'elevenlabs') {
+         // ElevenLabs: check for JSON fallback flag
+         let needsFallback = false;
+         if (response.ok) {
+           const contentType = response.headers.get('content-type') || '';
+           if (contentType.includes('application/json')) {
+             const jsonData = await response.json();
+             if (jsonData.fallback) {
+               console.warn(`ElevenLabs unavailable, falling back to Google Cloud...`);
+               needsFallback = true;
+             }
+           } else {
+             audioBlob = await response.blob();
            }
          } else {
-           // Binary audio data = success
-           audioBlob = await response.blob();
-         }
-       } else if (response.ok) {
-         audioBlob = await response.blob();
-       }
-
-       // Handle non-200 responses (shouldn't happen for ElevenLabs anymore, but keep for Google)
-       if (!response.ok) {
-         if (provider === 'elevenlabs') {
-           console.warn(`ElevenLabs TTS unavailable (${response.status}), switching to Google Cloud fallback...`);
+           console.warn(`ElevenLabs error (${response.status}), falling back to Google Cloud...`);
            needsFallback = true;
-         } else {
+         }
+
+         if (needsFallback) {
+           audioBlob = await callGoogleTTS(ttsText, 'es-US-Chirp3-HD-Kore');
+           if (!audioBlob) {
+             throw new Error('Voz no disponible temporalmente');
+           }
+         }
+       } else {
+         // Google Cloud es el principal — sin fallback necesario
+         if (!response.ok) {
            throw new Error(`Error de voz: ${response.status}`);
          }
-       }
-
-       // Fallback silencioso a Google Cloud TTS
-       if (needsFallback) {
-         audioBlob = await callGoogleTTS(ttsText, 'es-US-Chirp3-HD-Kore');
-         if (!audioBlob) {
-           throw new Error('Voz no disponible temporalmente');
-         }
-         console.log("Google Cloud TTS fallback successful");
+         audioBlob = await response.blob();
        }
  
        if (!audioBlob) {
