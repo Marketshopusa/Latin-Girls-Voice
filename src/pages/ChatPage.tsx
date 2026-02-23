@@ -142,6 +142,22 @@ const ChatPage = () => {
     }
   }, [id]);
 
+  // Show customization tip once per session per character
+  useEffect(() => {
+    if (character && !isLoading && id) {
+      const tipKey = `chat_tip_shown_${id}`;
+      if (!sessionStorage.getItem(tipKey)) {
+        sessionStorage.setItem(tipKey, '1');
+        setTimeout(() => {
+          toast('✨ Personaliza tu experiencia', {
+            description: 'Toca ⚙️ para cambiar la historia, la voz y el estilo de tu personaje.',
+            duration: 5000,
+          });
+        }, 1500);
+      }
+    }
+  }, [character, isLoading, id]);
+
   // Set welcome message when conversation is ready
   useEffect(() => {
     if (character && !isLoading) {

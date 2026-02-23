@@ -659,8 +659,8 @@ export const VOICE_OPTIONS_BY_GENDER = {
     CHIRP3_HD: VOICE_CATALOG.filter(v => v.quality === 'CHIRP3_HD'),
   };
 
-// Voz por defecto - Chirp 3 HD Latina (Google Cloud TTS)
-export const DEFAULT_VOICE: VoiceType = 'es-US-Chirp3-HD-Kore';
+// Voz por defecto - Leda: suave, envolvente, versátil para cualquier personaje
+export const DEFAULT_VOICE: VoiceType = 'es-US-Chirp3-HD-Leda';
 
 // Normalización de voces legacy -> voces Google reales (para no perder compatibilidad)
  const VALID_VOICES = new Set(VOICE_CATALOG.map(v => v.id));
