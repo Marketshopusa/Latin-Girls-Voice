@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: redirectUrl,
-      });
+      } as any);
       
       console.log('OAuth result:', { 
         error: result.error?.message, 
@@ -142,6 +142,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    // Clear any stale session data from localStorage to prevent token conflicts
+    try {
+      const keysToRemove = Object.keys(localStorage).filter(
+        (key) => key.startsWith('sb-') || key.startsWith('supabase.')
+      );
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+    } catch (e) {
+      console.warn('Could not clear localStorage:', e);
+    }
   };
 
   return (
