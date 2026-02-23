@@ -42,11 +42,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     );
 
-    // Check if there are auth tokens in the URL hash (from OAuth redirect on mobile)
+    // Check if there are auth tokens in the URL hash (from OAuth redirect)
     const hash = window.location.hash;
-    if (hash && (hash.includes('access_token') || hash.includes('refresh_token'))) {
+    const search = window.location.search;
+    const hasTokensInHash = hash && (hash.includes('access_token') || hash.includes('refresh_token'));
+    const hasCodeInQuery = search && search.includes('code=');
+
+    if (hasTokensInHash) {
       console.log('Auth tokens detected in URL hash, processing...');
-      // Parse tokens from hash
       const params = new URLSearchParams(hash.substring(1));
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
@@ -64,19 +67,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setUser(data.session?.user ?? null);
           }
           setIsLoading(false);
-          // Clean the URL hash
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          // Clean the URL
+          window.history.replaceState(null, '', window.location.pathname);
         });
       } else {
-        // THEN check for existing session
         supabase.auth.getSession().then(({ data: { session } }) => {
           setSession(session);
           setUser(session?.user ?? null);
           setIsLoading(false);
         });
       }
+    } else if (hasCodeInQuery) {
+      // Authorization code flow — Supabase client handles exchange automatically
+      console.log('Auth code detected in URL query, letting Supabase process...');
+      // Give the Supabase client time to exchange the code for tokens
+      setTimeout(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          console.log('Session after code exchange:', session?.user?.email ?? 'none');
+          setSession(session);
+          setUser(session?.user ?? null);
+          setIsLoading(false);
+          window.history.replaceState(null, '', window.location.pathname);
+        });
+      }, 1000);
     } else {
-      // THEN check for existing session
+      // No tokens in URL — check for existing session
       supabase.auth.getSession().then(({ data: { session } }) => {
         setSession(session);
         setUser(session?.user ?? null);
@@ -88,21 +103,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signInWithGoogle = async () => {
-    // Use origin without trailing slash for maximum compatibility
     const redirectUrl = window.location.origin;
-    console.log('Starting Google OAuth with redirect:', redirectUrl);
-    console.log('Current location:', window.location.href);
-    
-    // Detect Capacitor environment
     const isCapacitor = !!(window as any).Capacitor;
-    console.log('Is Capacitor:', isCapacitor);
-    
+    console.log('Starting Google OAuth — redirect:', redirectUrl, '| Capacitor:', isCapacitor);
+
     try {
-      // Force unregister stale service workers before OAuth to prevent SW intercepting /~oauth
-      if ('serviceWorker' in navigator) {
+      // In Capacitor, ensure SWs are fully removed before redirect
+      // (belt-and-suspenders with main.tsx unregistration)
+      if (isCapacitor && 'serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         for (const reg of registrations) {
-          await reg.update().catch(() => {});
+          await reg.unregister();
+          console.log('[Capacitor] Pre-OAuth SW unregistered:', reg.scope);
         }
       }
 
@@ -129,7 +141,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signInWithEmail = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      // If user doesn't exist, try signing up
       if (error.message.includes('Invalid login credentials')) {
         const { error: signUpError } = await supabase.auth.signUp({ email, password });
         if (signUpError) throw signUpError;
