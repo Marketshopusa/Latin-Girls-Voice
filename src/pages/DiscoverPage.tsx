@@ -17,8 +17,7 @@ const DiscoverPage = () => {
   };
 
   const handleBannerCta = () => {
-    // Could navigate to pricing or show upgrade modal
-    console.log('CTA clicked - implement upgrade flow');
+    navigate('/subscription');
   };
 
   return (
