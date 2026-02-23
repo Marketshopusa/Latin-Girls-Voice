@@ -111,12 +111,12 @@ export const PromoBanner = ({ onCtaClick }: PromoBannerProps) => {
             <button
               onClick={() => setShowPromoModal(true)}
               className={cn(
-                "mt-2 inline-flex items-center gap-1.5 text-xs font-medium transition-colors",
-                "text-primary/80 hover:text-primary underline underline-offset-2"
+                "mt-2 inline-flex items-center gap-1.5 text-xs font-bold transition-colors",
+                "text-amber-400 hover:text-amber-300 underline underline-offset-4 drop-shadow-[0_0_6px_hsl(38_100%_50%/0.5)]"
               )}
             >
-              <Gift className="h-3 w-3" />
-              <span>¿Tienes un código promocional?</span>
+              <Gift className="h-3.5 w-3.5" />
+              <span>🎁 Ingresa tu código promocional aquí</span>
             </button>
 
             {/* CTA Button */}
