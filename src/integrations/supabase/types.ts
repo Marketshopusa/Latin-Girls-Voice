@@ -157,6 +157,36 @@ export type Database = {
           },
         ]
       }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          tts_responses: number
+          voice_call_minutes: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          tts_responses?: number
+          voice_call_minutes?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          tts_responses?: number
+          voice_call_minutes?: number
+        }
+        Relationships: []
+      }
       user_age_verifications: {
         Row: {
           id: string
@@ -174,6 +204,44 @@ export type Database = {
           verified_at?: string
         }
         Relationships: []
+      }
+      user_promo_redemptions: {
+        Row: {
+          expires_at: string
+          id: string
+          promo_code_id: string
+          redeemed_at: string
+          tts_responses_remaining: number
+          user_id: string
+          voice_call_seconds_remaining: number
+        }
+        Insert: {
+          expires_at: string
+          id?: string
+          promo_code_id: string
+          redeemed_at?: string
+          tts_responses_remaining?: number
+          user_id: string
+          voice_call_seconds_remaining?: number
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          promo_code_id?: string
+          redeemed_at?: string
+          tts_responses_remaining?: number
+          user_id?: string
+          voice_call_seconds_remaining?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_promo_redemptions_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

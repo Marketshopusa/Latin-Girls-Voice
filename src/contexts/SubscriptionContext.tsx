@@ -4,6 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type PlanType = 'free' | 'basic' | 'premium' | 'ultra';
 
+interface PromoBonus {
+  ttsResponses: number;
+  voiceCallSeconds: number;
+}
+
 interface PlanLimits {
   maxCharacters: number; // personajes para conversar (free=2)
   maxCharactersCreated: number; // creación mensual
@@ -75,6 +80,7 @@ interface SubscriptionContextType {
   subscriptionEnd: string | null;
   isLoading: boolean;
   isAdmin: boolean;
+  promoBonus: PromoBonus | null;
   refreshSubscription: () => Promise<void>;
   checkout: (priceId: string) => Promise<void>;
   openCustomerPortal: () => Promise<void>;
@@ -96,6 +102,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [promoBonus, setPromoBonus] = useState<PromoBonus | null>(null);
 
   const checkAdminStatus = useCallback(async () => {
     if (!user) {
@@ -156,9 +163,35 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, session, checkAdminStatus]);
 
+  // Fetch promo bonus
+  const fetchPromoBonus = useCallback(async () => {
+    if (!user) {
+      setPromoBonus(null);
+      return;
+    }
+    const { data } = await supabase
+      .from('user_promo_redemptions')
+      .select('tts_responses_remaining, voice_call_seconds_remaining, expires_at')
+      .eq('user_id', user.id)
+      .gt('expires_at', new Date().toISOString())
+      .order('redeemed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (data && (data.tts_responses_remaining > 0 || data.voice_call_seconds_remaining > 0)) {
+      setPromoBonus({
+        ttsResponses: data.tts_responses_remaining,
+        voiceCallSeconds: data.voice_call_seconds_remaining,
+      });
+    } else {
+      setPromoBonus(null);
+    }
+  }, [user]);
+
   useEffect(() => {
     refreshSubscription();
-  }, [refreshSubscription]);
+    fetchPromoBonus();
+  }, [refreshSubscription, fetchPromoBonus]);
 
   // Auto-refresh every minute
   useEffect(() => {
@@ -204,6 +237,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         subscriptionEnd,
         isLoading,
         isAdmin,
+        promoBonus,
         refreshSubscription,
         checkout,
         openCustomerPortal,
