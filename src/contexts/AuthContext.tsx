@@ -88,13 +88,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signInWithGoogle = async () => {
-    // Use full origin URL for mobile compatibility
-    const redirectUrl = window.location.origin + '/';
+    // Use origin without trailing slash for maximum compatibility
+    const redirectUrl = window.location.origin;
     console.log('Starting Google OAuth with redirect:', redirectUrl);
     console.log('Current location:', window.location.href);
-    console.log('Is in iframe:', window.self !== window.top);
+    
+    // Detect Capacitor environment
+    const isCapacitor = !!(window as any).Capacitor;
+    console.log('Is Capacitor:', isCapacitor);
     
     try {
+      // Force unregister stale service workers before OAuth to prevent SW intercepting /~oauth
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.update().catch(() => {});
+        }
+      }
+
       const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: redirectUrl,
       });

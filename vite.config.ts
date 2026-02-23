@@ -126,11 +126,16 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        // Clean old caches on activate to ensure updates appear immediately
+        cleanupOutdatedCaches: true,
+        // Skip waiting so new SW takes control immediately
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
         globIgnores: ["**/characters/**", "**/intro/**"],
         // CRITICAL: Exclude OAuth broker paths from service worker navigation fallback
         // so the server can handle /~oauth/initiate redirects for Google login
-        navigateFallbackDenylist: [/^\/~oauth/, /^\/~/, /^\/api/],
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/~/, /^\/api/, /^\/auth/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
