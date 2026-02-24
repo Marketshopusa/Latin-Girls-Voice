@@ -28,10 +28,9 @@ interface AuthProviderProps {
 
 const isCapacitor = !!(window as any).Capacitor;
 
-// The published URL is used as the OAuth redirect target for Capacitor.
-// After auth, the broker redirects here, and Capacitor's allowNavigation
-// lets us capture the tokens within the WebView.
-const PUBLISHED_URL = 'https://persona-virtual-chat.lovable.app';
+// For Capacitor native builds, OAuth must redirect to the custom deep-link
+// scheme so Android routes the callback back into the app via intent-filter.
+const NATIVE_REDIRECT = 'com.marketshopusa.latingirlsvoice://google-auth';
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
@@ -140,10 +139,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signInWithGoogle = async () => {
-    // For Capacitor (local files), redirect to the published URL
-    // so the OAuth broker can redirect back to a valid web URL,
-    // which Capacitor's allowNavigation will intercept in the WebView.
-    const redirectUrl = isCapacitor ? PUBLISHED_URL : window.location.origin;
+    // For Capacitor native builds, redirect to the custom scheme so
+    // the OS routes the callback back into the app via deep link.
+    const redirectUrl = isCapacitor ? NATIVE_REDIRECT : window.location.origin;
     
     console.log('Starting Google OAuth — redirect:', redirectUrl, '| Capacitor:', isCapacitor);
 
