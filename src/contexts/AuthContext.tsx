@@ -26,6 +26,13 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const isCapacitor = !!(window as any).Capacitor;
+
+// The published URL is used as the OAuth redirect target for Capacitor.
+// After auth, the broker redirects here, and Capacitor's allowNavigation
+// lets us capture the tokens within the WebView.
+const PUBLISHED_URL = 'https://persona-virtual-chat.lovable.app';
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -42,82 +49,105 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     );
 
-    // Check if there are auth tokens in the URL hash (from OAuth redirect)
-    const hash = window.location.hash;
-    const search = window.location.search;
-    const hasTokensInHash = hash && (hash.includes('access_token') || hash.includes('refresh_token'));
-    const hasCodeInQuery = search && search.includes('code=');
+    // Check for tokens from Capacitor deep link handler
+    const capAccessToken = sessionStorage.getItem('__cap_oauth_access_token');
+    const capRefreshToken = sessionStorage.getItem('__cap_oauth_refresh_token');
+    const capCode = sessionStorage.getItem('__cap_oauth_code');
 
-    if (hasTokensInHash) {
-      console.log('Auth tokens detected in URL hash, processing...');
-      const params = new URLSearchParams(hash.substring(1));
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      
-      if (accessToken && refreshToken) {
-        supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        }).then(({ data, error }) => {
-          if (error) {
-            console.error('Error setting session from URL tokens:', error);
-          } else {
-            console.log('Session set from URL tokens successfully');
-            setSession(data.session);
-            setUser(data.session?.user ?? null);
-          }
+    if (capAccessToken && capRefreshToken) {
+      console.log('[Auth] Restoring session from Capacitor deep link tokens');
+      sessionStorage.removeItem('__cap_oauth_access_token');
+      sessionStorage.removeItem('__cap_oauth_refresh_token');
+      supabase.auth.setSession({
+        access_token: capAccessToken,
+        refresh_token: capRefreshToken,
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error('Error setting session from deep link:', error);
+        } else {
+          console.log('Session restored from deep link successfully');
+          setSession(data.session);
+          setUser(data.session?.user ?? null);
+        }
+        setIsLoading(false);
+      });
+    } else if (capCode) {
+      console.log('[Auth] Auth code from Capacitor deep link, exchanging...');
+      sessionStorage.removeItem('__cap_oauth_code');
+      setTimeout(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setSession(session);
+          setUser(session?.user ?? null);
           setIsLoading(false);
-          // Clean the URL
-          window.history.replaceState(null, '', window.location.pathname);
         });
+      }, 1000);
+    } else {
+      // Check if there are auth tokens in the URL hash (from OAuth redirect)
+      const hash = window.location.hash;
+      const search = window.location.search;
+      const hasTokensInHash = hash && (hash.includes('access_token') || hash.includes('refresh_token'));
+      const hasCodeInQuery = search && search.includes('code=');
+
+      if (hasTokensInHash) {
+        console.log('Auth tokens detected in URL hash, processing...');
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        
+        if (accessToken && refreshToken) {
+          supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          }).then(({ data, error }) => {
+            if (error) {
+              console.error('Error setting session from URL tokens:', error);
+            } else {
+              console.log('Session set from URL tokens successfully');
+              setSession(data.session);
+              setUser(data.session?.user ?? null);
+            }
+            setIsLoading(false);
+            window.history.replaceState(null, '', window.location.pathname);
+          });
+        } else {
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            setUser(session?.user ?? null);
+            setIsLoading(false);
+          });
+        }
+      } else if (hasCodeInQuery) {
+        console.log('Auth code detected in URL query, letting process...');
+        setTimeout(() => {
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            setUser(session?.user ?? null);
+            setIsLoading(false);
+            window.history.replaceState(null, '', window.location.pathname);
+          });
+        }, 1000);
       } else {
+        // No tokens — check for existing session
         supabase.auth.getSession().then(({ data: { session } }) => {
           setSession(session);
           setUser(session?.user ?? null);
           setIsLoading(false);
         });
       }
-    } else if (hasCodeInQuery) {
-      // Authorization code flow — Supabase client handles exchange automatically
-      console.log('Auth code detected in URL query, letting Supabase process...');
-      // Give the Supabase client time to exchange the code for tokens
-      setTimeout(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          console.log('Session after code exchange:', session?.user?.email ?? 'none');
-          setSession(session);
-          setUser(session?.user ?? null);
-          setIsLoading(false);
-          window.history.replaceState(null, '', window.location.pathname);
-        });
-      }, 1000);
-    } else {
-      // No tokens in URL — check for existing session
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
-      });
     }
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
-    const redirectUrl = window.location.origin;
-    const isCapacitor = !!(window as any).Capacitor;
+    // For Capacitor (local files), redirect to the published URL
+    // so the OAuth broker can redirect back to a valid web URL,
+    // which Capacitor's allowNavigation will intercept in the WebView.
+    const redirectUrl = isCapacitor ? PUBLISHED_URL : window.location.origin;
+    
     console.log('Starting Google OAuth — redirect:', redirectUrl, '| Capacitor:', isCapacitor);
 
     try {
-      // In Capacitor, ensure SWs are fully removed before redirect
-      // (belt-and-suspenders with main.tsx unregistration)
-      if (isCapacitor && 'serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const reg of registrations) {
-          await reg.unregister();
-          console.log('[Capacitor] Pre-OAuth SW unregistered:', reg.scope);
-        }
-      }
-
       const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: redirectUrl,
       } as any);
@@ -125,7 +155,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log('OAuth result:', { 
         error: result.error?.message, 
         redirected: (result as any).redirected,
-        hasTokens: !!(result as any).tokens 
       });
       
       if (result.error) {
@@ -153,7 +182,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    // Clear any stale session data from localStorage to prevent token conflicts
+    // Clear all stale session data from localStorage
     try {
       const keysToRemove = Object.keys(localStorage).filter(
         (key) => key.startsWith('sb-') || key.startsWith('supabase.')
