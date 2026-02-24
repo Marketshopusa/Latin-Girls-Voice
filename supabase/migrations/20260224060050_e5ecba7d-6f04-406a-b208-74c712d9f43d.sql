@@ -1,0 +1,1 @@
+UPDATE characters SET voice = 'es-US-Chirp3-HD-Leda' WHERE voice != 'es-US-Chirp3-HD-Leda';
