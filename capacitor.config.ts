@@ -14,6 +14,7 @@ const config: CapacitorConfig = {
     allowNavigation: [
       'accounts.google.com',
       '*.google.com',
+      '*.googleapis.com',
       '*.supabase.co'
     ]
   }
