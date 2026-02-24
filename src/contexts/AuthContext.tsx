@@ -140,29 +140,54 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signInWithGoogle = async () => {
-    // For Capacitor native builds, redirect to the custom scheme so
-    // the OS routes the callback back into the app via deep link.
-    const redirectUrl = isCapacitor ? NATIVE_REDIRECT : window.location.origin;
-    
-    console.log('Starting Google OAuth — redirect:', redirectUrl, '| Capacitor:', isCapacitor);
+    if (isCapacitor) {
+      // For Capacitor native: use supabase.auth directly with skipBrowserRedirect
+      // to get the OAuth URL, then open it in the SYSTEM BROWSER (not WebView).
+      // This way, when Google redirects to the callback and then to our custom scheme,
+      // Android's intent-filter catches it and fires the appUrlOpen event.
+      console.log('[Auth] Capacitor detected — opening Google OAuth in system browser');
 
-    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: NATIVE_REDIRECT,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) {
+        console.error('[Auth] OAuth URL error:', error);
+        throw error;
+      }
+
+      if (data?.url) {
+        console.log('[Auth] Opening OAuth URL in system browser:', data.url.substring(0, 80) + '...');
+        try {
+          const { Browser } = await import('@capacitor/browser');
+          await Browser.open({ url: data.url, windowName: '_system' });
+        } catch (browserErr) {
+          console.error('[Auth] Browser plugin failed, falling back to window.open:', browserErr);
+          window.open(data.url, '_system');
+        }
+      }
+    } else {
+      // For web: use Lovable managed auth (handles redirect automatically)
+      const redirectUrl = window.location.origin;
+      console.log('Starting Google OAuth — redirect:', redirectUrl);
+
       const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: redirectUrl,
       } as any);
-      
-      console.log('OAuth result:', { 
-        error: result.error?.message, 
+
+      console.log('OAuth result:', {
+        error: result.error?.message,
         redirected: (result as any).redirected,
       });
-      
+
       if (result.error) {
         console.error('OAuth error:', result.error);
         throw result.error;
       }
-    } catch (error) {
-      console.error('OAuth exception:', error);
-      throw error;
     }
   };
 
