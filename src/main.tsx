@@ -35,8 +35,17 @@ if ('serviceWorker' in navigator) {
 // Deep link handling for native OAuth callback
 if (isCapacitor) {
   import('@capacitor/app').then(({ App: CapApp }) => {
-    CapApp.addListener('appUrlOpen', (event) => {
+    CapApp.addListener('appUrlOpen', async (event) => {
       console.log('[Capacitor] Deep link received:', event.url);
+
+      // Close the system browser that was opened for OAuth
+      try {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.close();
+        console.log('[Capacitor] System browser closed after OAuth callback');
+      } catch (e) {
+        console.warn('[Capacitor] Could not close browser (may not have been open):', e);
+      }
 
       try {
         // The URL may arrive as:
