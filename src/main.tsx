@@ -39,26 +39,31 @@ if (isCapacitor) {
       console.log('[Capacitor] Deep link received:', event.url);
 
       try {
-        const url = new URL(event.url);
-        const params = new URLSearchParams(url.hash.substring(1));
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
+        // The URL may arrive as:
+        //   com.marketshopusa.latingirlsvoice://google-auth#access_token=...&refresh_token=...
+        //   com.marketshopusa.latingirlsvoice://google-auth?code=...
+        const hashPart = event.url.split('#')[1] || '';
+        const queryPart = (event.url.split('?')[1] || '').split('#')[0];
+
+        const hashParams = new URLSearchParams(hashPart);
+        const queryParams = new URLSearchParams(queryPart);
+
+        const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+        const code = queryParams.get('code') || hashParams.get('code');
 
         if (accessToken && refreshToken) {
-          // Store tokens temporarily for AuthContext to pick up
+          console.log('[Capacitor] Tokens found in deep link, restoring session...');
           sessionStorage.setItem('__cap_oauth_access_token', accessToken);
           sessionStorage.setItem('__cap_oauth_refresh_token', refreshToken);
-          // Navigate to root to trigger session restoration
           window.location.hash = '';
-          window.location.pathname = '/';
+          window.location.reload();
+        } else if (code) {
+          console.log('[Capacitor] Auth code found in deep link, exchanging...');
+          sessionStorage.setItem('__cap_oauth_code', code);
           window.location.reload();
         } else {
-          // Check for code in query params
-          const code = url.searchParams.get('code');
-          if (code) {
-            sessionStorage.setItem('__cap_oauth_code', code);
-            window.location.reload();
-          }
+          console.warn('[Capacitor] Deep link received but no tokens or code found:', event.url);
         }
       } catch (e) {
         console.error('[Capacitor] Error processing deep link:', e);
