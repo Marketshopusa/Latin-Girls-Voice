@@ -141,53 +141,67 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signInWithGoogle = async () => {
     if (isCapacitor) {
-      // For Capacitor native: use supabase.auth directly with skipBrowserRedirect
-      // to get the OAuth URL, then open it in the SYSTEM BROWSER (not WebView).
-      // This way, when Google redirects to the callback and then to our custom scheme,
-      // Android's intent-filter catches it and fires the appUrlOpen event.
-      console.log('[Auth] Capacitor detected — opening Google OAuth in system browser');
+      console.log('[Auth] Capacitor detected — requesting Google OAuth URL');
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: NATIVE_REDIRECT,
-          skipBrowserRedirect: true,
-        },
-      });
+      const oauthResult = await Promise.race([
+        supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: NATIVE_REDIRECT,
+            skipBrowserRedirect: true,
+            queryParams: {
+              prompt: 'select_account',
+            },
+          },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout obteniendo URL OAuth')), 12000)
+        ),
+      ]);
+
+      const { data, error } = oauthResult as Awaited<
+        ReturnType<typeof supabase.auth.signInWithOAuth>
+      >;
 
       if (error) {
         console.error('[Auth] OAuth URL error:', error);
         throw error;
       }
 
-      if (data?.url) {
-        console.log('[Auth] Opening OAuth URL in system browser:', data.url.substring(0, 80) + '...');
-        try {
-          const { Browser } = await import('@capacitor/browser');
-          await Browser.open({ url: data.url, windowName: '_system' });
-        } catch (browserErr) {
-          console.error('[Auth] Browser plugin failed, falling back to window.open:', browserErr);
-          window.open(data.url, '_system');
+      if (!data?.url) {
+        throw new Error('[Auth] Google OAuth no devolvió URL de redirección');
+      }
+
+      console.log('[Auth] Opening OAuth URL in system browser:', data.url.substring(0, 80) + '...');
+      try {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: data.url });
+      } catch (browserErr) {
+        console.error('[Auth] Browser plugin failed, fallback to window.open:', browserErr);
+        const popup = window.open(data.url, '_blank');
+        if (!popup) {
+          window.location.href = data.url;
         }
       }
-    } else {
-      // For web: use Lovable managed auth (handles redirect automatically)
-      const redirectUrl = window.location.origin;
-      console.log('Starting Google OAuth — redirect:', redirectUrl);
+      return;
+    }
 
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: redirectUrl,
-      } as any);
+    // For web: use Lovable managed auth (handles redirect automatically)
+    const redirectUrl = window.location.origin;
+    console.log('Starting Google OAuth — redirect:', redirectUrl);
 
-      console.log('OAuth result:', {
-        error: result.error?.message,
-        redirected: (result as any).redirected,
-      });
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: redirectUrl,
+    } as any);
 
-      if (result.error) {
-        console.error('OAuth error:', result.error);
-        throw result.error;
-      }
+    console.log('OAuth result:', {
+      error: result.error?.message,
+      redirected: (result as any).redirected,
+    });
+
+    if (result.error) {
+      console.error('OAuth error:', result.error);
+      throw result.error;
     }
   };
 
