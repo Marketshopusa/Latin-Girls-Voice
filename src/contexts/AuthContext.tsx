@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable';
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -27,7 +26,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const isCapacitor = !!(window as any).Capacitor;
+const isCapacitor = Capacitor.isNativePlatform();
 
 // For Capacitor native builds, OAuth must redirect to the custom deep-link
 // scheme so Android routes the callback back into the app via intent-filter.
@@ -186,22 +185,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
-    // For web: use Lovable managed auth (handles redirect automatically)
+    // For web: standard OAuth redirect back to current origin
     const redirectUrl = window.location.origin;
-    console.log('Starting Google OAuth — redirect:', redirectUrl);
+    console.log('Starting Google OAuth (web) — redirect:', redirectUrl);
 
-    const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: redirectUrl,
-    } as any);
-
-    console.log('OAuth result:', {
-      error: result.error?.message,
-      redirected: (result as any).redirected,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          prompt: 'select_account',
+        },
+      },
     });
 
-    if (result.error) {
-      console.error('OAuth error:', result.error);
-      throw result.error;
+    if (error) {
+      console.error('OAuth error:', error);
+      throw error;
     }
   };
 
