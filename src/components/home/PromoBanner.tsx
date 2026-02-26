@@ -120,7 +120,7 @@ export const PromoBanner = ({ onCtaClick }: PromoBannerProps) => {
             </button>
 
             {/* CTA Button */}
-            <div className="mt-3">
+            <div className="mt-3 flex flex-col items-center gap-2">
               <button
                 onClick={onCtaClick}
                 className={cn(
@@ -136,6 +136,14 @@ export const PromoBanner = ({ onCtaClick }: PromoBannerProps) => {
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                 </div>
               </button>
+              <a
+                href="https://marketshopusa.github.io/Latin-Girls-Voice/privacy.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-muted-foreground/60 hover:text-amber-400/80 transition-colors"
+              >
+                Política de Privacidad
+              </a>
             </div>
           </div>
 
