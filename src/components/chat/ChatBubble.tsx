@@ -23,7 +23,7 @@ export const ChatBubble = ({
 }: ChatBubbleProps) => {
   const isUser = message.role === 'user';
   const { playAudio, isLoading, isPlaying, error } = useTTS({ voiceType });
-  const { playPreset } = useSoundEffects();
+  const { playPreset } = useSoundEffects({ voiceType });
   const { limits } = useSubscription();
   const { user } = useAuth();
   const hasAutoPlayed = useRef(false);

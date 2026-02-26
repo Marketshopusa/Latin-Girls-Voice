@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { VoiceType, DEFAULT_VOICE } from '@/types';
  
  // Presets de efectos de sonido disponibles
  export const SFX_PRESETS = {
@@ -25,9 +26,24 @@ import { supabase } from '@/integrations/supabase/client';
  } as const;
  
  export type SfxPreset = keyof typeof SFX_PRESETS;
- 
+
+// Mapeo de presets a textos expresivos cortos para Google Cloud TTS
+const PRESET_TO_VOICE_TEXT: Record<SfxPreset, string> = {
+  "moan-soft": "¡Ay!... mmm...",
+  "moan-intense": "¡Ay, Dios!... ¡Ay!...",
+  "sigh-pleasure": "Mmm... ay...",
+  "gasp-surprise": "¡Oh!...",
+  "breath-heavy": "Ah... ah... ah...",
+  "giggle-playful": "¡Ja ja ja!",
+  "laugh-seductive": "Mmm... ja ja...",
+  "whimper-soft": "Ay... mmm...",
+  "cry-pleasure": "¡Ay, Dios mío!...",
+  "hmm-thinking": "Mmm... a ver...",
+  "mmm-approval": "Mmm... sí...",
+  "oh-realization": "¡Oh!... ya veo...",
+};
+
  // Mapeo de expresiones de texto a presets de sonido
- // Las expresiones pueden estar entre paréntesis () o asteriscos *
  const EXPRESSION_TO_SFX: Array<{ patterns: RegExp[]; preset: SfxPreset }> = [
    // Gemidos
    {
@@ -146,8 +162,9 @@ import { supabase } from '@/integrations/supabase/client';
    }
    return null;
  };
- 
+
  interface UseSoundEffectsOptions {
+   voiceType?: VoiceType;
    onPlay?: () => void;
    onEnd?: () => void;
    onError?: (error: string) => void;
@@ -171,7 +188,10 @@ import { supabase } from '@/integrations/supabase/client';
      }
      setIsPlaying(false);
    }, []);
- 
+
+   /**
+    * Genera y reproduce una expresión vocal usando Google Cloud TTS
+    */
    const playPreset = useCallback(async (preset: SfxPreset) => {
      if (isLoading || isPlaying) {
        stopSound();
@@ -185,11 +205,16 @@ import { supabase } from '@/integrations/supabase/client';
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
         if (!token) {
-          throw new Error('Debes iniciar sesión para usar efectos de sonido');
+          throw new Error('Debes iniciar sesión');
         }
 
+        const voiceText = PRESET_TO_VOICE_TEXT[preset] || "¡Oh!...";
+        const voiceType = options.voiceType || DEFAULT_VOICE;
+
+        console.log(`[SFX] Generando con Google TTS: "${voiceText}" | Voz: ${voiceType}`);
+
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
           {
             method: "POST",
             headers: {
@@ -197,7 +222,7 @@ import { supabase } from '@/integrations/supabase/client';
               apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ preset }),
+            body: JSON.stringify({ text: voiceText, voiceType }),
           }
         );
  
@@ -208,7 +233,6 @@ import { supabase } from '@/integrations/supabase/client';
  
        const audioBlob = await response.blob();
        
-       // Limpiar URL anterior
        if (audioUrlRef.current) {
          URL.revokeObjectURL(audioUrlRef.current);
        }
@@ -237,10 +261,10 @@ import { supabase } from '@/integrations/supabase/client';
  
        await audio.play();
      } catch (err) {
-      const errMessage = err instanceof Error ? err.message : "Error desconocido";
-        console.warn('[SFX] Error silenciado:', errMessage);
-        setError(errMessage);
-        options.onError?.(errMessage);
+       const errMessage = err instanceof Error ? err.message : "Error desconocido";
+       console.warn('[SFX] Error silenciado:', errMessage);
+       setError(errMessage);
+       options.onError?.(errMessage);
      } finally {
        setIsLoading(false);
      }
@@ -259,11 +283,14 @@ import { supabase } from '@/integrations/supabase/client';
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
         if (!token) {
-          throw new Error('Debes iniciar sesión para usar efectos de sonido');
+          throw new Error('Debes iniciar sesión');
         }
 
+        const voiceType = options.voiceType || DEFAULT_VOICE;
+
+        // Usar Google Cloud TTS con el prompt como texto expresivo
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
           {
             method: "POST",
             headers: {
@@ -271,7 +298,7 @@ import { supabase } from '@/integrations/supabase/client';
               apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ customPrompt: prompt, duration }),
+            body: JSON.stringify({ text: prompt, voiceType }),
           }
         );
  
@@ -310,6 +337,7 @@ import { supabase } from '@/integrations/supabase/client';
        await audio.play();
      } catch (err) {
        const errMessage = err instanceof Error ? err.message : "Error desconocido";
+       console.warn('[SFX] Error silenciado:', errMessage);
        setError(errMessage);
      } finally {
        setIsLoading(false);
