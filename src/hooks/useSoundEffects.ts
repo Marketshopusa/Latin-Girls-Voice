@@ -237,9 +237,10 @@ import { supabase } from '@/integrations/supabase/client';
  
        await audio.play();
      } catch (err) {
-       const errMessage = err instanceof Error ? err.message : "Error desconocido";
-       setError(errMessage);
-       options.onError?.(errMessage);
+      const errMessage = err instanceof Error ? err.message : "Error desconocido";
+        console.warn('[SFX] Error silenciado:', errMessage);
+        setError(errMessage);
+        options.onError?.(errMessage);
      } finally {
        setIsLoading(false);
      }
