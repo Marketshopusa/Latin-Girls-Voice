@@ -14,33 +14,51 @@
     <meta name="application-name" content="Latin Girls Voice" />
     <meta name="msapplication-TileColor" content="#d4af37" />
     <meta name="msapplication-tap-highlight" content="no" />
-
-    <!-- PWA -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <script src="/registerSW.js" defer></script>
-
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
     <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-192x192.png" />
-    
-    <!-- Open Graph -->
+
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Latin Girls Voice - Chat con Compañeras Virtuales">
     <meta property="og:description" content="Chat con personajes virtuales de IA. Compañeras latinas virtuales con inteligencia artificial.">
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/mhf2EH9j37ewLnbLbRZN6t6gR8k2/social-images/social-1770259721320-ChatGPT_Image_2_feb_2026,_09_19_24_p.m..png">
-    
-    <!-- Twitter Card -->
+
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Latin Girls Voice - Chat con Compañeras Virtuales">
     <meta name="twitter:description" content="Chat con personajes virtuales de IA. Compañeras latinas virtuales con inteligencia artificial.">
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/mhf2EH9j37ewLnbLbRZN6t6gR8k2/social-images/social-1770259721320-ChatGPT_Image_2_feb_2026,_09_19_24_p.m..png">
+    <style>
+      .footer-google-verify {
+        position: relative;
+        padding: 20px;
+        text-align: center;
+        background: #0a0a0a;
+        color: #444;
+        font-size: 11px;
+        border-top: 1px solid #1a1a1a;
+        z-index: 50;
+        width: 100%;
+      }
+      .footer-google-verify a {
+        color: #888;
+        text-decoration: none;
+        margin: 0 8px;
+      }
+    </style>
   </head>
-
   <body>
     <div id="root"></div>
+
+    <footer class="footer-google-verify">
+      <p>© 2026 Latin Girls Voice</p>
+      <a href="/privacy.html">Política de Privacidad</a> | 
+      <a href="/privacy.html">Términos del Servicio</a>
+    </footer>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
