@@ -93,7 +93,7 @@ export const Sidebar = () => {
         <div className="hidden lg:flex flex-col items-center justify-center flex-1 px-4 py-6">
           <div className="bg-white p-3 rounded-xl shadow-lg">
             <QRCodeSVG
-              value="https://persona-virtual-chat.lovable.app"
+              value="https://latingirlsvoice.com"
               size={120}
               level="H"
               includeMargin={false}

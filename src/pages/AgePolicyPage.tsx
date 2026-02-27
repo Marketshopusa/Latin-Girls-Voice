@@ -231,7 +231,7 @@ const AgePolicyPage = () => {
               accedido a nuestra plataforma:
             </p>
             <ul className="space-y-2 text-sm">
-              <li>• Contáctenos inmediatamente a <strong>safety@latingirlsvoice.com</strong></li>
+              <li>• Contáctenos inmediatamente a <strong>info@latingirlsvoice.com</strong></li>
               <li>• Proporcione el correo electrónico o identificador de la cuenta</li>
               <li>• Tomaremos medidas inmediatas para investigar y eliminar la cuenta</li>
               <li>• Todos los datos asociados serán eliminados permanentemente</li>
@@ -272,7 +272,7 @@ const AgePolicyPage = () => {
               Para reportar violaciones de la política de edad o preocupaciones de seguridad:
             </p>
             <ul className="text-sm">
-              <li>• <strong>Correo prioritario:</strong> safety@latingirlsvoice.com</li>
+              <li>• <strong>Correo prioritario:</strong> info@latingirlsvoice.com</li>
               <li>• <strong>Tiempo de respuesta:</strong> Menos de 24 horas para casos de menores</li>
             </ul>
           </CardContent>
