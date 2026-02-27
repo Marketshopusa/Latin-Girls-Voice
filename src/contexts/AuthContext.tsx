@@ -30,7 +30,7 @@ const isCapacitor = Capacitor.isNativePlatform();
 
 // For Capacitor native builds, OAuth must redirect to the custom deep-link
 // scheme so Android routes the callback back into the app via intent-filter.
-const NATIVE_REDIRECT = 'com.marketshopusa.latingirlsvoice://google-auth';
+const NATIVE_REDIRECT = 'com.syntheticdigitallabs.latingirlsvoice://google-auth';
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);

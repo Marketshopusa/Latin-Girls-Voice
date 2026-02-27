@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.marketshopusa.latingirlsvoice',
+  appId: 'com.syntheticdigitallabs.latingirlsvoice',
   appName: 'Latin Girls Voice',
   webDir: 'dist',
   server: {
