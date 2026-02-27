@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,10 +23,31 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // --- Auth check ---
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  const _sb = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const _tk = authHeader.replace('Bearer ', '');
+  const { data: _cl, error: _clErr } = await _sb.auth.getClaims(_tk);
+  if (_clErr || !_cl?.claims) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  // --- End auth check ---
+
   try {
     const { text, voiceType } = await req.json();
 
-    if (!text) {
+    if (!text || typeof text !== 'string') {
       return new Response(
         JSON.stringify({ error: "Text is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -33,11 +55,9 @@ serve(async (req) => {
     }
 
     const lang = VOICE_LANG_MAP[voiceType] || "es";
-    // Split text into smaller chunks for smoother audio (Google has ~200 char limit per request)
     const maxChunkSize = 180;
-    const cleanText = text.slice(0, 500); // Total limit
+    const cleanText = text.slice(0, 500);
     
-    // For shorter texts, use single request
     if (cleanText.length <= maxChunkSize) {
       const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(cleanText)}&ttsspeed=0.9`;
       
@@ -64,7 +84,6 @@ serve(async (req) => {
       });
     }
 
-    // For longer texts, split into sentences and concatenate audio
     const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
     const audioChunks: ArrayBuffer[] = [];
     
@@ -73,7 +92,6 @@ serve(async (req) => {
       if (!trimmed) continue;
       
       const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(trimmed)}&ttsspeed=0.9`;
-      console.log(`Generating TTS chunk: ${trimmed.length} chars`);
 
       const response = await fetch(url, {
         headers: {
@@ -98,7 +116,6 @@ serve(async (req) => {
       );
     }
 
-    // Concatenate all audio chunks
     const totalLength = audioChunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
     const combined = new Uint8Array(totalLength);
     let offset = 0;
@@ -113,7 +130,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("TTS error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "Error en el servicio de TTS" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

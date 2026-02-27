@@ -68,16 +68,39 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { message, character, conversationHistory, historySummary } = await req.json();
+    const body = await req.json();
+    const message = typeof body.message === 'string' ? body.message.slice(0, 5000) : '';
+    const character = body.character;
+    const conversationHistory = Array.isArray(body.conversationHistory) ? body.conversationHistory.slice(-50) : [];
+    const historySummary = typeof body.historySummary === 'string' ? body.historySummary : '';
+
+    if (!message) {
+      return new Response(JSON.stringify({ error: "Mensaje requerido" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    if (!character || typeof character.name !== 'string' || typeof character.age !== 'number' || character.age < 18) {
+      return new Response(JSON.stringify({ error: "Datos de personaje inválidos" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const char = character as CharacterContext;
-    const isNsfw = !!char?.nsfw;
-    const histSummary = typeof historySummary === "string" ? historySummary : "";
+    const char: CharacterContext = {
+      name: String(character.name).slice(0, 100),
+      age: Math.min(Math.max(Number(character.age), 18), 150),
+      history: String(character.history || '').slice(0, 5000),
+      tagline: String(character.tagline || '').slice(0, 200),
+      voice: String(character.voice || ''),
+      nsfw: !!character.nsfw,
+    };
+    const isNsfw = char.nsfw;
+    const histSummary = historySummary.slice(0, 3000);
 
     // Build accent/personality instructions based on voice type
     const voicePersonality = getVoicePersonality(char.voice);

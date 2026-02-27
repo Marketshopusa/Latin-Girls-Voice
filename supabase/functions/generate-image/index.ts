@@ -46,7 +46,17 @@ serve(async (req) => {
   // --- End auth check ---
 
   try {
-    const { conversationContext, characterDescription, action, nsfw } = await req.json() as ImageRequest;
+    const body = await req.json();
+    
+    // Validate and sanitize inputs
+    const conversationContext = typeof body.conversationContext === 'string' ? body.conversationContext.slice(0, 5000) : '';
+    const characterDescription = {
+      name: typeof body.characterDescription?.name === 'string' ? body.characterDescription.name.slice(0, 100) : 'character',
+      appearance: typeof body.characterDescription?.appearance === 'string' ? body.characterDescription.appearance.slice(0, 500) : undefined,
+      style: typeof body.characterDescription?.style === 'string' ? body.characterDescription.style.slice(0, 500) : undefined,
+    };
+    const action = typeof body.action === 'string' ? body.action.slice(0, 500) : undefined;
+    const nsfw = !!body.nsfw;
 
     const FAL_API_KEY = Deno.env.get("FAL_API_KEY");
 
