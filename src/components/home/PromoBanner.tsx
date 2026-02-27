@@ -137,9 +137,7 @@ export const PromoBanner = ({ onCtaClick }: PromoBannerProps) => {
                 </div>
               </button>
               <a
-                href="/privacy.html"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/privacy"
                 className="inline-flex items-center px-4 py-1.5 rounded-full text-[11px] font-medium border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
               >
                 Política de Privacidad
