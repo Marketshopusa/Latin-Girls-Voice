@@ -13,19 +13,109 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
-  // Preparar texto para TTS - SOLO diálogo directo, SIN narraciones entre paréntesis
+  // Mapeo de expresiones a texto vocal expresivo para integrar en TTS
+  const EXPRESSION_TO_VOCAL: Record<string, string> = {
+    // Gemidos y suspiros
+    'gime': '¡Ay!... mmm...',
+    'gimes': '¡Ay!... mmm...',
+    'gimiendo': '¡Ay!... mmm...',
+    'gime suavemente': 'Mmm... ay...',
+    'gime fuerte': '¡Ay, Dios!... ¡Ay!...',
+    'gime con fuerza': '¡Ay, Dios!... ¡Ay!...',
+    'gime intensamente': '¡Ayyy!... ¡Dios!...',
+    'suelta un gemido': '¡Ay!... mmm...',
+    // Suspiros
+    'suspira': 'Mmm... ay...',
+    'suspiro': 'Mmm... ay...',
+    'suelta un suspiro': 'Mmm... ay...',
+    'suspira profundamente': 'Ahhh... mmm...',
+    // Jadeos
+    'jadea': 'Ah... ah...',
+    'jadeando': 'Ah... ah... ah...',
+    'jadeo': 'Ah... ah...',
+    // Respiración
+    'respira agitadamente': 'Ah... ah... ah...',
+    'respiración pesada': 'Ah... ah...',
+    'sin aliento': 'Ah... ah...',
+    // Risas
+    'ríe': '¡Ja ja ja!',
+    'se ríe': '¡Ja ja ja!',
+    'risita': 'Ji ji ji...',
+    'riendo': '¡Ja ja ja!',
+    'ríe seductoramente': 'Mmm... ja ja...',
+    'risa traviesa': 'Ji ji ji...',
+    'carcajada': '¡Ja ja ja ja!',
+    // Sorpresa
+    'sorprendida': '¡Oh!...',
+    'asombrada': '¡Oh!... ¡Wow!...',
+    'grita': '¡Ayyy!...',
+    'grito de placer': '¡Ay, Dios mío!...',
+    // Llanto
+    'llora': 'Snif... snif...',
+    'llorando': 'Snif... snif...',
+    'solloza': 'Mmm... snif...',
+    // Besos
+    'besa': 'Mwah...',
+    'te besa': 'Mwah...',
+    // Otros
+    'ronronea': 'Mrrr... mmm...',
+    'muerde su labio': 'Mmm...',
+    'se estremece': '¡Oh!... mmm...',
+    'tiembla': 'Ah... mmm...',
+    'se viene': '¡Ayyy!... ¡Dios!... ¡Ay!...',
+  };
+
+  // Convertir expresiones entre *...* o (...) a texto vocal expresivo
+  const convertExpressionsToVocal = useCallback((text: string): string => {
+    // Reemplazar expresiones entre *...* con texto vocal
+    let result = text.replace(/\*([^*]+)\*/g, (_match, expression: string) => {
+      const expr = expression.trim().toLowerCase();
+      // Buscar coincidencia exacta primero
+      if (EXPRESSION_TO_VOCAL[expr]) {
+        return ` ${EXPRESSION_TO_VOCAL[expr]} `;
+      }
+      // Buscar coincidencia parcial
+      for (const [key, vocal] of Object.entries(EXPRESSION_TO_VOCAL)) {
+        if (expr.includes(key)) {
+          return ` ${vocal} `;
+        }
+      }
+      // Si es una acción narrativa larga (más de 5 palabras), eliminar
+      if (expr.split(' ').length > 5) {
+        return ' ';
+      }
+      // Acciones cortas desconocidas, eliminar
+      return ' ';
+    });
+
+    // Reemplazar expresiones entre (...) con texto vocal
+    result = result.replace(/\(([^)]+)\)/g, (_match, expression: string) => {
+      const expr = expression.trim().toLowerCase();
+      if (EXPRESSION_TO_VOCAL[expr]) {
+        return ` ${EXPRESSION_TO_VOCAL[expr]} `;
+      }
+      for (const [key, vocal] of Object.entries(EXPRESSION_TO_VOCAL)) {
+        if (expr.includes(key)) {
+          return ` ${vocal} `;
+        }
+      }
+      // Narraciones entre paréntesis: eliminar
+      return ' ';
+    });
+
+    return result;
+  }, []);
+
+  // Preparar texto para TTS - integra expresiones vocales directamente
   const prepareTextForTTS = useCallback((raw: string): string => {
-    // PASO 1: Eliminar TODAS las narraciones entre paréntesis
-    // Esto incluye: (suspira), (Tu voz se quiebra...), etc.
-    let text = raw.replace(/\([^)]*\)/g, '');
+    // PASO 1: Convertir expresiones a texto vocal expresivo (en vez de eliminarlas)
+    let text = convertExpressionsToVocal(raw);
     
-    // PASO 2: Eliminar formatos markdown
+    // PASO 2: Eliminar formatos markdown restantes
     // **_texto_** -> texto
     text = text.replace(/\*\*_(.+?)_\*\*/gs, '$1');
     // **texto** -> texto
     text = text.replace(/\*\*([^*]+?)\*\*/g, '$1');
-    // *texto* -> texto (acciones en cursiva)
-    text = text.replace(/\*[^*]+\*/g, '');
     // _texto_ -> texto
     text = text.replace(/_([^_]+)_/g, '$1');
     
