@@ -256,7 +256,7 @@ const TermsOfServicePage = () => {
           <CardContent className="prose prose-invert max-w-none">
             <p className="text-sm">
               Para preguntas sobre estos Términos de Servicio, contáctenos en:{' '}
-              <strong>legal@latingirlsvoice.com</strong>
+              <strong>info@latingirlsvoice.com</strong>
             </p>
           </CardContent>
         </Card>

@@ -260,7 +260,7 @@ const PrivacyPolicyPage = () => {
               puede contactarnos a través de:
             </p>
             <ul className="text-sm">
-              <li>• <strong>Correo electrónico:</strong> privacy@latingirlsvoice.com</li>
+              <li>• <strong>Correo electrónico:</strong> info@latingirlsvoice.com</li>
               <li>• <strong>Formulario de contacto:</strong> Disponible en la aplicación</li>
             </ul>
           </CardContent>
