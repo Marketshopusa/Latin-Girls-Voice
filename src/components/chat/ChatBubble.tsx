@@ -4,7 +4,6 @@ import { Message, VoiceType, DEFAULT_VOICE } from '@/types';
 import { cn } from '@/lib/utils';
 import { useTTS } from '@/hooks/useTTS';
 import { ChatMessageContent } from '@/components/chat/ChatMessageContent';
-import { useSoundEffects, detectSfxFromText } from '@/hooks/useSoundEffects';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -23,41 +22,20 @@ export const ChatBubble = ({
 }: ChatBubbleProps) => {
   const isUser = message.role === 'user';
   const { playAudio, isLoading, isPlaying, error } = useTTS({ voiceType });
-  const { playPreset } = useSoundEffects({ voiceType });
   const { limits } = useSubscription();
   const { user } = useAuth();
   const hasAutoPlayed = useRef(false);
-  const hasSfxPlayed = useRef(false);
 
   // Check if TTS is allowed (user logged in AND has TTS access)
   const canUseTTS = user && limits.hasTTS;
 
-  // Auto-play SFX for expressions in AI messages (only if TTS allowed)
-  useEffect(() => {
-    if (!isUser && !hasSfxPlayed.current && message.text && canUseTTS) {
-      const sfxPreset = detectSfxFromText(message.text);
-      if (sfxPreset) {
-        hasSfxPlayed.current = true;
-        const timer = setTimeout(() => {
-          playPreset(sfxPreset).catch(() => {
-            // Silently ignore SFX errors (e.g. quota exceeded)
-          });
-        }, 200);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [isUser, message.text, playPreset, canUseTTS]);
-
-  // Auto-play TTS for new AI messages (only if TTS allowed)
+  // Auto-play TTS for new AI messages (expressions are now embedded in TTS text)
   useEffect(() => {
     if (autoPlay && !isUser && !hasAutoPlayed.current && message.text && canUseTTS) {
       hasAutoPlayed.current = true;
-      const sfxPreset = detectSfxFromText(message.text);
-      const delay = sfxPreset ? 2500 : 500;
-      
       const timer = setTimeout(() => {
         playAudio(message.text);
-      }, delay);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [autoPlay, isUser, message.text, playAudio, canUseTTS]);
