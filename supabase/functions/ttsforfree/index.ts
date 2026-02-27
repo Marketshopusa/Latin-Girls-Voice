@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,9 +22,7 @@ const DEFAULT_VOICE = { voice: "es-AR-ElenaNeural", lang: "es-AR" };
 async function createTTSJob(text: string, voiceConfig: { voice: string; lang: string }): Promise<string> {
   const response = await fetch("https://ttsforfree.com/api/tts/createby", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       text: text,
       voice: voiceConfig.voice,
@@ -39,12 +38,9 @@ async function createTTSJob(text: string, voiceConfig: { voice: string; lang: st
   }
 
   const data = await response.json();
-  console.log("TTSForFree job created:", data);
-  
   if (!data.jobId && !data.job_id && !data.id) {
     throw new Error("No job ID returned from TTSForFree");
   }
-  
   return data.jobId || data.job_id || data.id;
 }
 
@@ -52,9 +48,7 @@ async function pollForResult(jobId: string, maxAttempts = 30): Promise<ArrayBuff
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const response = await fetch(`https://ttsforfree.com/api/tts/status/${jobId}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
 
     if (!response.ok) {
@@ -64,19 +58,14 @@ async function pollForResult(jobId: string, maxAttempts = 30): Promise<ArrayBuff
     }
 
     const data = await response.json();
-    console.log("TTSForFree status:", data);
 
     if (data.status === "completed" || data.status === "done" || data.ready) {
       const audioUrl = data.url || data.audioUrl || data.download_url;
       if (audioUrl) {
         const audioResponse = await fetch(audioUrl);
-        if (!audioResponse.ok) {
-          throw new Error("Failed to download audio");
-        }
+        if (!audioResponse.ok) throw new Error("Failed to download audio");
         return await audioResponse.arrayBuffer();
       }
-      
-      // If audio is embedded in response
       if (data.audio) {
         const binaryString = atob(data.audio);
         const bytes = new Uint8Array(binaryString.length);
@@ -91,10 +80,8 @@ async function pollForResult(jobId: string, maxAttempts = 30): Promise<ArrayBuff
       throw new Error(data.error || "TTS generation failed");
     }
 
-    // Wait before next poll
     await new Promise(resolve => setTimeout(resolve, 500));
   }
-
   throw new Error("TTS generation timed out");
 }
 
@@ -103,39 +90,52 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // --- Auth check ---
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  const _sb = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const _tk = authHeader.replace('Bearer ', '');
+  const { data: _cl, error: _clErr } = await _sb.auth.getClaims(_tk);
+  if (_clErr || !_cl?.claims) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  // --- End auth check ---
+
   try {
     const { text, voiceType } = await req.json();
 
-    if (!text) {
+    if (!text || typeof text !== 'string') {
       return new Response(
         JSON.stringify({ error: "Text is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Limit text length
     const trimmedText = text.slice(0, 5000);
     const voiceConfig = VOICE_MAP[voiceType] || DEFAULT_VOICE;
 
     console.log(`Generating TTS for voice ${voiceConfig.voice} with ${trimmedText.length} chars`);
 
-    // Create job and poll for result
     const jobId = await createTTSJob(trimmedText, voiceConfig);
     const audioBuffer = await pollForResult(jobId);
 
     return new Response(audioBuffer, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "audio/mpeg",
-      },
+      headers: { ...corsHeaders, "Content-Type": "audio/mpeg" },
     });
   } catch (error) {
     console.error("TTS error:", error);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error",
-        fallback: true 
-      }),
+      JSON.stringify({ error: "Error en el servicio de TTS", fallback: true }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

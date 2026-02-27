@@ -33,8 +33,11 @@ serve(async (req) => {
   // --- End auth check ---
 
   try {
-    const { imageBase64, name, age } = await req.json();
-    
+    const body = await req.json();
+    const imageBase64 = typeof body.imageBase64 === 'string' ? body.imageBase64 : '';
+    const name = typeof body.name === 'string' ? body.name.slice(0, 100) : '';
+    const age = typeof body.age === 'number' ? Math.min(Math.max(Math.floor(body.age), 18), 150) : undefined;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -42,6 +45,13 @@ serve(async (req) => {
 
     if (!imageBase64) {
       throw new Error("Se requiere una imagen para generar la historia");
+    }
+
+    // Validate image size (max ~10MB base64)
+    if (imageBase64.length > 14_000_000) {
+      return new Response(JSON.stringify({ error: "Imagen demasiado grande (máx 10MB)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     const systemPrompt = `Eres un escritor creativo especializado en crear personajes para roleplay y chat interactivo para adultos (+18).

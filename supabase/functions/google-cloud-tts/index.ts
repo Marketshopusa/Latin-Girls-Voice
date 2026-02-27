@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,7 +8,6 @@ const corsHeaders = {
 };
 
 const VOICE_MAP: Record<string, { name: string; languageCode: string; gender: string }> = {
-  // Chirp3-HD — es-US (acento latino) FEMENINAS
   "es-US-Chirp3-HD-Achernar": { name: "es-US-Chirp3-HD-Achernar", languageCode: "es-US", gender: "FEMALE" },
   "es-US-Chirp3-HD-Aoede":    { name: "es-US-Chirp3-HD-Aoede",    languageCode: "es-US", gender: "FEMALE" },
   "es-US-Chirp3-HD-Leda":     { name: "es-US-Chirp3-HD-Leda",     languageCode: "es-US", gender: "FEMALE" },
@@ -16,30 +16,25 @@ const VOICE_MAP: Record<string, { name: string; languageCode: string; gender: st
   "es-US-Chirp3-HD-Zephyr":   { name: "es-US-Chirp3-HD-Zephyr",   languageCode: "es-US", gender: "FEMALE" },
   "es-US-Chirp3-HD-Gacrux":   { name: "es-US-Chirp3-HD-Gacrux",   languageCode: "es-US", gender: "FEMALE" },
   "es-US-Chirp3-HD-Callirrhoe": { name: "es-US-Chirp3-HD-Callirrhoe", languageCode: "es-US", gender: "FEMALE" },
-  // Chirp3-HD — es-US (acento latino) MASCULINAS
   "es-US-Chirp3-HD-Achird":   { name: "es-US-Chirp3-HD-Achird",   languageCode: "es-US", gender: "MALE" },
   "es-US-Chirp3-HD-Charon":   { name: "es-US-Chirp3-HD-Charon",   languageCode: "es-US", gender: "MALE" },
   "es-US-Chirp3-HD-Fenrir":   { name: "es-US-Chirp3-HD-Fenrir",   languageCode: "es-US", gender: "MALE" },
   "es-US-Chirp3-HD-Orus":     { name: "es-US-Chirp3-HD-Orus",     languageCode: "es-US", gender: "MALE" },
   "es-US-Chirp3-HD-Puck":     { name: "es-US-Chirp3-HD-Puck",     languageCode: "es-US", gender: "MALE" },
   "es-US-Chirp3-HD-Schedar":  { name: "es-US-Chirp3-HD-Schedar",  languageCode: "es-US", gender: "MALE" },
-  // Chirp3-HD — es-ES (acento España) FEMENINAS
   "es-ES-Chirp3-HD-Achernar": { name: "es-ES-Chirp3-HD-Achernar", languageCode: "es-ES", gender: "FEMALE" },
   "es-ES-Chirp3-HD-Aoede":    { name: "es-ES-Chirp3-HD-Aoede",    languageCode: "es-ES", gender: "FEMALE" },
   "es-ES-Chirp3-HD-Leda":     { name: "es-ES-Chirp3-HD-Leda",     languageCode: "es-ES", gender: "FEMALE" },
   "es-ES-Chirp3-HD-Kore":     { name: "es-ES-Chirp3-HD-Kore",     languageCode: "es-ES", gender: "FEMALE" },
-  // Chirp3-HD — es-ES (acento España) MASCULINAS
   "es-ES-Chirp3-HD-Achird":   { name: "es-ES-Chirp3-HD-Achird",   languageCode: "es-ES", gender: "MALE" },
   "es-ES-Chirp3-HD-Charon":   { name: "es-ES-Chirp3-HD-Charon",   languageCode: "es-ES", gender: "MALE" },
   "es-ES-Chirp3-HD-Fenrir":   { name: "es-ES-Chirp3-HD-Fenrir",   languageCode: "es-ES", gender: "MALE" },
   "es-ES-Chirp3-HD-Puck":     { name: "es-ES-Chirp3-HD-Puck",     languageCode: "es-ES", gender: "MALE" },
-  // Legacy Neural2 (fallback)
   "es-US-Neural2-A": { name: "es-US-Neural2-A", languageCode: "es-US", gender: "FEMALE" },
   "es-US-Neural2-B": { name: "es-US-Neural2-B", languageCode: "es-US", gender: "MALE" },
   "es-US-Neural2-C": { name: "es-US-Neural2-C", languageCode: "es-US", gender: "MALE" },
   "es-ES-Neural2-A": { name: "es-ES-Neural2-A", languageCode: "es-ES", gender: "FEMALE" },
   "es-ES-Neural2-B": { name: "es-ES-Neural2-B", languageCode: "es-ES", gender: "MALE" },
-  // Legacy aliases
   "LATINA_CALIDA": { name: "es-US-Chirp3-HD-Kore", languageCode: "es-US", gender: "FEMALE" },
   "LATINA_COQUETA": { name: "es-US-Chirp3-HD-Aoede", languageCode: "es-US", gender: "FEMALE" },
   "MEXICANA_DULCE": { name: "es-US-Chirp3-HD-Sulafat", languageCode: "es-US", gender: "FEMALE" },
@@ -69,10 +64,31 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // --- Auth check ---
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  const _sb = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const _tk = authHeader.replace('Bearer ', '');
+  const { data: _cl, error: _clErr } = await _sb.auth.getClaims(_tk);
+  if (_clErr || !_cl?.claims) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  // --- End auth check ---
+
   try {
     const { text, voiceType } = await req.json();
 
-    if (!text || text.trim().length === 0) {
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "No text provided" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -92,7 +108,6 @@ serve(async (req) => {
     const languageCode = voiceConfig?.languageCode || DEFAULT_LANG;
     const ssmlGender = voiceConfig?.gender || "FEMALE";
 
-    // Limpiar texto para TTS
     let cleanText = text
       .replace(/\([^)]*\)/g, '')
       .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -139,7 +154,6 @@ serve(async (req) => {
     const audioContent = data.audioContent;
     if (!audioContent) throw new Error("No audio content in response");
 
-    // Decodificar base64 a binario
     const binaryString = atob(audioContent);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
@@ -154,7 +168,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Google Cloud TTS error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown TTS error" }),
+      JSON.stringify({ error: "Error en el servicio de TTS" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
