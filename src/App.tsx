@@ -123,10 +123,10 @@ const App = () => {
                     <Route path="/create" element={<CreateCharacterPage />} />
                     <Route path="/subscription" element={<SubscriptionPage />} />
                   </Route>
-                  <Route path="/chat/:id" element={<ChatPage />} />
                   <Route path="/privacy" element={<PrivacyPolicyPage />} />
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/age-policy" element={<AgePolicyPage />} />
+                  <Route path="/chat/:id" element={<ChatPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

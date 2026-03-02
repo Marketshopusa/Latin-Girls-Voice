@@ -190,6 +190,11 @@ export const Sidebar = () => {
               <span className="text-[10px] text-muted-foreground">Políticas</span>
             </Link>
           </div>
+
+          {/* Google Auth purpose */}
+          <p className="hidden lg:block text-[10px] text-muted-foreground/60 text-center px-2 leading-tight">
+            Latin Girls Voice utiliza la autenticación de Google para permitir a los usuarios gestionar sus perfiles y voces de IA de forma segura.
+          </p>
         </div>
       </aside>
 
