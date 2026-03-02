@@ -89,20 +89,25 @@ export const PromoBanner = ({ onCtaClick }: PromoBannerProps) => {
               <Sparkles className="h-3 w-3" />
             </div>
 
-            <h2 className={cn(
+            <h1 className={cn(
               "font-display font-bold leading-tight",
-              isMobile ? "text-xl" : "text-3xl xl:text-4xl"
+              isMobile ? "text-2xl" : "text-4xl xl:text-5xl"
             )}>
               <span className="bg-gradient-to-r from-primary via-cyan-400 to-teal-300 bg-clip-text text-transparent">
-                Vive la Experiencia
+                LATIN GIRLS VOICE
               </span>
-              <br />
-              <span className="text-foreground">Sin Límites</span>
-            </h2>
+            </h1>
 
             <p className={cn(
-              "text-muted-foreground mt-2",
-              isMobile ? "text-sm" : "text-base"
+              "text-foreground font-semibold mt-2",
+              isMobile ? "text-sm" : "text-lg"
+            )}>
+              Vive la experiencia sin límites con nuestra IA de generación de voz
+            </p>
+
+            <p className={cn(
+              "text-muted-foreground mt-1",
+              isMobile ? "text-xs" : "text-sm"
             )}>
               Desbloquea todas las funciones premium
             </p>
