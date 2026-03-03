@@ -19,7 +19,7 @@ const navigation = [
 
 export const Sidebar = () => {
   const location = useLocation();
-  const { nsfwEnabled, toggleNsfw, hasConfirmedAge, confirmAge } = useNsfw();
+  const { nsfwEnabled, toggleNsfw, hasConfirmedAge, confirmAge, featureVisible } = useNsfw();
   const { user, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -108,36 +108,38 @@ export const Sidebar = () => {
 
         {/* Footer */}
         <div className="p-2 lg:p-4 border-t border-sidebar-border space-y-1">
-          {/* NSFW Toggle */}
-          <div className="p-2 lg:p-3 rounded-lg bg-muted/50 border border-border">
-            <button 
-              onClick={handleNsfwToggle}
-              className="w-full flex items-center gap-2 justify-center lg:justify-between"
-            >
-              <div className="flex items-center gap-2">
-                <Shield className={cn(
-                  "h-5 w-5 transition-colors",
-                  nsfwEnabled ? "text-destructive" : "text-muted-foreground"
-                )} />
-                <span className={cn(
-                  "hidden lg:block text-sm font-medium",
-                  nsfwEnabled ? "text-destructive" : "text-muted-foreground"
-                )}>
-                  NSFW +18
-                </span>
-              </div>
-              <Switch
-                checked={nsfwEnabled}
-                onCheckedChange={handleNsfwToggle}
-                className="hidden lg:flex"
-              />
-            </button>
-            {nsfwEnabled && (
-              <p className="hidden lg:block text-xs text-destructive/70 mt-1.5">
-                Contenido adulto activado
-              </p>
-            )}
-          </div>
+          {/* NSFW Toggle - only visible when feature is enabled */}
+          {featureVisible && (
+            <div className="p-2 lg:p-3 rounded-lg bg-muted/50 border border-border">
+              <button 
+                onClick={handleNsfwToggle}
+                className="w-full flex items-center gap-2 justify-center lg:justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <Shield className={cn(
+                    "h-5 w-5 transition-colors",
+                    nsfwEnabled ? "text-destructive" : "text-muted-foreground"
+                  )} />
+                  <span className={cn(
+                    "hidden lg:block text-sm font-medium",
+                    nsfwEnabled ? "text-destructive" : "text-muted-foreground"
+                  )}>
+                    NSFW +18
+                  </span>
+                </div>
+                <Switch
+                  checked={nsfwEnabled}
+                  onCheckedChange={handleNsfwToggle}
+                  className="hidden lg:flex"
+                />
+              </button>
+              {nsfwEnabled && (
+                <p className="hidden lg:block text-xs text-destructive/70 mt-1.5">
+                  Contenido adulto activado
+                </p>
+              )}
+            </div>
+          )}
 
           <button 
             onClick={handleAuth}

@@ -1,11 +1,19 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// ============================================================
+// KILL SWITCH: Set to false to completely hide all NSFW features
+// Toggle this to true when ready to re-enable NSFW content
+// ============================================================
+const NSFW_FEATURE_ENABLED = false;
+
 interface NsfwContextType {
   nsfwEnabled: boolean;
   toggleNsfw: () => void;
   confirmAge: () => Promise<void>;
   hasConfirmedAge: boolean;
+  /** Whether the NSFW feature is available at all (kill switch) */
+  featureVisible: boolean;
 }
 
 const NsfwContext = createContext<NsfwContextType | undefined>(undefined);
@@ -14,13 +22,14 @@ export const NsfwProvider = ({ children }: { children: ReactNode }) => {
   const [nsfwEnabled, setNsfwEnabled] = useState(false);
   const [hasConfirmedAge, setHasConfirmedAge] = useState(false);
 
-  // Check age verification from database on mount
+  // If kill switch is OFF, everything stays disabled — skip all checks
   useEffect(() => {
+    if (!NSFW_FEATURE_ENABLED) return;
+
     const checkAgeVerification = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Check server-side age verification
           const { data } = await supabase
             .from('user_age_verifications' as any)
             .select('id')
@@ -29,7 +38,6 @@ export const NsfwProvider = ({ children }: { children: ReactNode }) => {
 
           if (data) {
             setHasConfirmedAge(true);
-            // Restore NSFW toggle state from localStorage
             const stored = localStorage.getItem('nsfw_enabled');
             if (stored === 'true') {
               setNsfwEnabled(true);
@@ -38,7 +46,6 @@ export const NsfwProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
-        // Fallback: check localStorage (for backward compatibility)
         const stored = localStorage.getItem('nsfw_enabled');
         const ageConfirmed = localStorage.getItem('age_confirmed');
         if (stored === 'true' && ageConfirmed === 'true') {
@@ -47,7 +54,6 @@ export const NsfwProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (err) {
         console.error('Error checking age verification:', err);
-        // Fallback to localStorage
         const stored = localStorage.getItem('nsfw_enabled');
         const ageConfirmed = localStorage.getItem('age_confirmed');
         if (stored === 'true' && ageConfirmed === 'true') {
@@ -59,7 +65,6 @@ export const NsfwProvider = ({ children }: { children: ReactNode }) => {
 
     checkAgeVerification();
 
-    // Also listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
       checkAgeVerification();
     });
@@ -68,10 +73,10 @@ export const NsfwProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const confirmAge = useCallback(async () => {
+    if (!NSFW_FEATURE_ENABLED) return;
     setHasConfirmedAge(true);
     localStorage.setItem('age_confirmed', 'true');
 
-    // Store server-side
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -88,13 +93,20 @@ export const NsfwProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const toggleNsfw = () => {
+    if (!NSFW_FEATURE_ENABLED) return;
     const newValue = !nsfwEnabled;
     setNsfwEnabled(newValue);
     localStorage.setItem('nsfw_enabled', String(newValue));
   };
 
   return (
-    <NsfwContext.Provider value={{ nsfwEnabled, toggleNsfw, confirmAge, hasConfirmedAge }}>
+    <NsfwContext.Provider value={{
+      nsfwEnabled: NSFW_FEATURE_ENABLED ? nsfwEnabled : false,
+      toggleNsfw,
+      confirmAge,
+      hasConfirmedAge: NSFW_FEATURE_ENABLED ? hasConfirmedAge : false,
+      featureVisible: NSFW_FEATURE_ENABLED,
+    }}>
       {children}
     </NsfwContext.Provider>
   );
