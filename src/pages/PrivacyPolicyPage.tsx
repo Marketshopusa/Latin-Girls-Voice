@@ -246,6 +246,23 @@ const PrivacyPolicyPage = () => {
           </CardContent>
         </Card>
 
+        {/* Cláusula de Uso Responsable de IA */}
+        <Card className="border-primary/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Cláusula de Uso Responsable de IA
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-invert max-w-none">
+            <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
+              <p className="font-bold text-foreground text-sm leading-relaxed">
+                Todo el contenido en Latin Girls Voice es generado 100% de forma sintética mediante inteligencia artificial. No utilizamos rostros ni voces de personas reales. Queda estrictamente prohibido el uso de esta plataforma para crear "deepfakes", suplantar identidades o generar contenido sexual no consensuado. Esta herramienta utiliza APIs de voces comerciales pre-entrenadas y no permite la clonación de voces humanas. El incumplimiento resultará en la baja inmediata del servicio.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Contacto */}
         <Card>
           <CardHeader>

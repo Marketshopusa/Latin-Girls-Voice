@@ -29,7 +29,7 @@ const mapDbToCharacter = (db: DbCharacter): Character => ({
   history: db.history,
   welcomeMessage: db.welcome_message,
   image: db.image_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop',
-  tags: db.nsfw ? ['NSFW', '+18'] : ['SFW'],
+  tags: db.nsfw ? ['Exclusivo', 'Premium'] : ['SFW'],
   voice: normalizeVoiceType(db.voice),
   nsfw: db.nsfw,
   style: 'Realistic',

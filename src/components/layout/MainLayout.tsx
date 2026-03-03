@@ -23,6 +23,9 @@ const SiteFooter = () => (
       <p className="text-xs text-muted-foreground leading-snug max-w-md">
         Latin Girls Voice utiliza la autenticación de Google para permitir a los usuarios gestionar sus perfiles y voces de IA de forma segura.
       </p>
+      <p className="text-xs text-muted-foreground leading-snug max-w-lg mt-1">
+        Latin Girls Voice es una aplicación de entretenimiento sintético de uso individual. No existe interacción, chat ni intercambio de información entre usuarios. Los datos de generación son privados y aislados.
+      </p>
       <p className="text-[10px] text-muted-foreground/60">
         © {new Date().getFullYear()} Synthetic Digital Labs · info@latingirlsvoice.com
       </p>
