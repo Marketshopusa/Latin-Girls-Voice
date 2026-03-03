@@ -51,7 +51,7 @@ const DiscoverPage = () => {
           <div className="flex flex-col items-center justify-center py-20 text-center px-4">
             <p className="text-muted-foreground">No hay personajes disponibles</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Crea tu primer personaje o activa el modo NSFW
+              Crea tu primer personaje o inicia sesión para ver más
             </p>
           </div>
         ) : (
