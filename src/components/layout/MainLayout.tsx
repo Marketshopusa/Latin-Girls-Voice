@@ -1,7 +1,34 @@
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileTopNav } from '@/components/layout/MobileTopNav';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+const SiteFooter = () => (
+  <footer className="w-full border-t border-border bg-muted/30 py-4 px-4">
+    <div className="max-w-4xl mx-auto flex flex-col items-center gap-2 text-center">
+      <div className="flex items-center gap-4">
+        <Link
+          to="/privacy"
+          className="text-sm font-semibold text-cyan-400 hover:text-cyan-300 underline underline-offset-4 transition-colors"
+        >
+          Política de Privacidad
+        </Link>
+        <Link
+          to="/terms"
+          className="text-sm font-semibold text-cyan-400 hover:text-cyan-300 underline underline-offset-4 transition-colors"
+        >
+          Términos de Servicio
+        </Link>
+      </div>
+      <p className="text-xs text-muted-foreground leading-snug max-w-md">
+        Latin Girls Voice utiliza la autenticación de Google para permitir a los usuarios gestionar sus perfiles y voces de IA de forma segura.
+      </p>
+      <p className="text-[10px] text-muted-foreground/60">
+        © {new Date().getFullYear()} Synthetic Digital Labs · info@latingirlsvoice.com
+      </p>
+    </div>
+  </footer>
+);
 
 export const MainLayout = () => {
   const isMobile = useIsMobile();
@@ -11,10 +38,10 @@ export const MainLayout = () => {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <MobileTopNav />
-        {/* pt-14 to account for fixed header height */}
         <main className="flex-1 pt-14">
           <Outlet />
         </main>
+        <SiteFooter />
       </div>
     );
   }
@@ -23,9 +50,12 @@ export const MainLayout = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 ml-16 lg:ml-56">
-        <Outlet />
-      </main>
+      <div className="flex-1 ml-16 lg:ml-56 flex flex-col min-h-screen">
+        <main className="flex-1">
+          <Outlet />
+        </main>
+        <SiteFooter />
+      </div>
     </div>
   );
 };
