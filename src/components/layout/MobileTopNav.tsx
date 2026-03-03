@@ -17,7 +17,7 @@ const navigation = [
 
 export const MobileTopNav = () => {
   const location = useLocation();
-  const { nsfwEnabled, toggleNsfw, hasConfirmedAge, confirmAge } = useNsfw();
+  const { nsfwEnabled, toggleNsfw, hasConfirmedAge, confirmAge, featureVisible } = useNsfw();
   const { user, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -99,19 +99,21 @@ export const MobileTopNav = () => {
 
           {/* Right side controls */}
           <div className="flex items-center gap-1">
-            {/* NSFW Toggle */}
-            <button
-              onClick={handleNsfwToggle}
-              className={cn(
-                'flex items-center justify-center w-10 h-10 rounded-lg transition-colors',
-                nsfwEnabled 
-                  ? 'bg-destructive/20 text-destructive' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-              )}
-              title={nsfwEnabled ? 'NSFW activo' : 'Activar NSFW'}
-            >
-              <Shield className="h-5 w-5" />
-            </button>
+            {/* NSFW Toggle - only visible when feature is enabled */}
+            {featureVisible && (
+              <button
+                onClick={handleNsfwToggle}
+                className={cn(
+                  'flex items-center justify-center w-10 h-10 rounded-lg transition-colors',
+                  nsfwEnabled 
+                    ? 'bg-destructive/20 text-destructive' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                )}
+                title={nsfwEnabled ? 'NSFW activo' : 'Activar NSFW'}
+              >
+                <Shield className="h-5 w-5" />
+              </button>
+            )}
 
             {/* Auth button */}
             <button

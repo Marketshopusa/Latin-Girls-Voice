@@ -55,13 +55,7 @@ export const CharacterCard = forwardRef<HTMLDivElement, CharacterCardProps>(
           {/* Dark gradient for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
           
-          {/* NSFW Badge */}
-          {character.nsfw && (
-            <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-medium backdrop-blur-sm">
-              <Shield className="h-3 w-3" />
-              +18
-            </div>
-          )}
+          {/* NSFW Badge - hidden when kill switch is off */}
 
           {/* Content overlay at bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-4">
