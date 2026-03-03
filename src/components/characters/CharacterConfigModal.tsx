@@ -302,19 +302,7 @@ export const CharacterConfigModal = ({
             </div>
           </div>
 
-          {/* NSFW Toggle */}
-          <div className="flex items-center justify-between p-4 rounded-lg bg-muted border border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-destructive" />
-              </div>
-              <div>
-                <h4 className="font-medium text-sm text-destructive">Modo NSFW (+18)</h4>
-                <p className="text-xs text-muted-foreground">Permitir contenido explícito y sin censura.</p>
-              </div>
-            </div>
-            <Switch checked={nsfw} onCheckedChange={setNsfw} />
-          </div>
+          {/* NSFW Toggle - hidden by kill switch */}
         </div>
 
         {/* Footer */}
