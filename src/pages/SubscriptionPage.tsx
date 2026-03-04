@@ -18,8 +18,8 @@ interface PlanFeature {
 }
 
 const PLAN_FEATURES: PlanFeature[] = [
-  { name: 'Personajes SFW', free: true, basic: true, premium: true, ultra: true },
-  { name: 'Personajes NSFW', free: false, basic: true, premium: true, ultra: true },
+  { name: 'Personajes estándar', free: true, basic: true, premium: true, ultra: true },
+  { name: 'Personajes Plus', free: false, basic: true, premium: true, ultra: true },
   { name: 'Límite de conversaciones', free: '2', basic: 'Ilimitado', premium: 'Ilimitado', ultra: 'Ilimitado' },
   { name: 'Creación de personajes', free: '2', basic: '20/mes', premium: '50/mes', ultra: 'Ilimitado' },
   { name: 'Texto a voz (TTS)', free: false, basic: true, premium: true, ultra: true },

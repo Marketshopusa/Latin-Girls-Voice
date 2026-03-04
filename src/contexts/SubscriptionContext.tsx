@@ -13,7 +13,7 @@ interface PlanLimits {
   maxCharacters: number; // personajes para conversar (free=2)
   maxCharactersCreated: number; // creación mensual
   maxImagesGenerated: number;
-  hasNsfwAccess: boolean;
+  hasPlusAccess: boolean;
   hasTTS: boolean;
   hasPersistentMemory: boolean;
   hasUltraMemory: boolean;
@@ -26,7 +26,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxCharacters: 2,
     maxCharactersCreated: 0,
     maxImagesGenerated: 0,
-    hasNsfwAccess: false,
+    hasPlusAccess: false,
     hasTTS: false,
     hasPersistentMemory: false,
     hasUltraMemory: false,
@@ -37,7 +37,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxCharacters: Infinity,
     maxCharactersCreated: 20,
     maxImagesGenerated: 40,
-    hasNsfwAccess: true,
+    hasPlusAccess: true,
     hasTTS: true,
     hasPersistentMemory: true,
     hasUltraMemory: false,
@@ -48,7 +48,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxCharacters: Infinity,
     maxCharactersCreated: 50,
     maxImagesGenerated: 100,
-    hasNsfwAccess: true,
+    hasPlusAccess: true,
     hasTTS: true,
     hasPersistentMemory: true,
     hasUltraMemory: false,
@@ -59,7 +59,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxCharacters: Infinity,
     maxCharactersCreated: Infinity,
     maxImagesGenerated: Infinity,
-    hasNsfwAccess: true,
+    hasPlusAccess: true,
     hasTTS: true,
     hasPersistentMemory: true,
     hasUltraMemory: true,
