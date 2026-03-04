@@ -187,6 +187,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_log: {
+        Row: {
+          created_at: string
+          function_name: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          function_name: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          function_name?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_age_verifications: {
         Row: {
           id: string
@@ -346,6 +367,15 @@ export type Database = {
       }
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          _function_name: string
+          _max_requests: number
+          _user_id: string
+          _window_seconds?: number
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

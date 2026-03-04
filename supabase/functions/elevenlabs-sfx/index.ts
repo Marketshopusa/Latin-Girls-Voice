@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,6 +98,16 @@ serve(async (req) => {
     });
   }
   // --- End auth check ---
+
+  // --- Rate limit check ---
+  const _userId = _cl.claims.sub as string;
+  const allowedRL = await checkRateLimit(_userId, "elevenlabs-sfx");
+  if (!allowedRL) {
+    return new Response(JSON.stringify({ error: "Límite de efectos de sonido alcanzado." }), {
+      status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  // --- End rate limit ---
 
   try {
      const apiKey = Deno.env.get("ELEVENLABS_API_KEY_OVERRIDE") || Deno.env.get("ELEVENLABS_API_KEY");
