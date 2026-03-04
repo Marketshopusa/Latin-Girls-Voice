@@ -16,6 +16,25 @@ export const IntroVideoScreen = ({ onComplete }: IntroVideoScreenProps) => {
       setCanSkip(true);
     }, 2000);
 
+    // Try to unmute after autoplay starts (muted autoplay is allowed)
+    const video = videoRef.current;
+    if (video) {
+      const tryUnmute = () => {
+        video.muted = false;
+        // If browser pauses because of unmute, re-mute and keep playing
+        video.play().catch(() => {
+          video.muted = true;
+          video.play().catch(() => {});
+        });
+      };
+      // Attempt unmute after a short delay to let autoplay settle
+      const unmuteTimer = setTimeout(tryUnmute, 300);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(unmuteTimer);
+      };
+    }
+
     return () => clearTimeout(timer);
   }, []);
 
