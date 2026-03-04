@@ -119,7 +119,7 @@ const App = () => {
               <BrowserRouter>
                 <Routes>
                   <Route element={<MainLayout />}>
-                    <Route path="/" element={<RequireAuth pageName="Descubrir"><DiscoverPage /></RequireAuth>} />
+                    <Route path="/" element={<DiscoverPage />} />
                     <Route path="/messages" element={<RequireAuth pageName="Mensajes"><MessagesPage /></RequireAuth>} />
                     <Route path="/create" element={<RequireAuth pageName="Crear Personaje"><CreateCharacterPage /></RequireAuth>} />
                     <Route path="/subscription" element={<RequireAuth pageName="Suscripción"><SubscriptionPage /></RequireAuth>} />
