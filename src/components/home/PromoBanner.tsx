@@ -112,6 +112,15 @@ export const PromoBanner = ({ onCtaClick }: PromoBannerProps) => {
               Desbloquea todas las funciones premium
             </p>
 
+            <p className={cn(
+              "text-muted-foreground/80 mt-3 leading-relaxed",
+              isMobile ? "text-[10px]" : "text-xs max-w-lg"
+            )}>
+              Esta es una plataforma de procesamiento de lenguaje natural y generación de audio sintético. 
+              El servicio está diseñado para la interacción individual con modelos de inteligencia artificial personalizados. 
+              No se permite la comunicación de red entre usuarios finales.
+            </p>
+
             {/* Promo Code Link */}
             <button
               onClick={() => setShowPromoModal(true)}
