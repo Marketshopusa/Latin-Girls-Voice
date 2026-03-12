@@ -17,7 +17,7 @@ import ChatPage from "./pages/ChatPage";
 import CreateCharacterPage from "./pages/CreateCharacterPage";
 import MessagesPage from "./pages/MessagesPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
-import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import PrivacyPolicyStandalone from "./pages/PrivacyPolicyStandalone";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import AgePolicyPage from "./pages/AgePolicyPage";
 import NotFound from "./pages/NotFound";
@@ -124,7 +124,7 @@ const App = () => {
                     <Route path="/create" element={<RequireAuth pageName="Crear Personaje"><CreateCharacterPage /></RequireAuth>} />
                     <Route path="/subscription" element={<RequireAuth pageName="Suscripción"><SubscriptionPage /></RequireAuth>} />
                   </Route>
-                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicyStandalone />} />
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/age-policy" element={<AgePolicyPage />} />
                   <Route path="/chat/:id" element={<RequireAuth pageName="Chat"><ChatPage /></RequireAuth>} />
