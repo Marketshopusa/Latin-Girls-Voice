@@ -17,7 +17,7 @@ import ChatPage from "./pages/ChatPage";
 import CreateCharacterPage from "./pages/CreateCharacterPage";
 import MessagesPage from "./pages/MessagesPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
-import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import PrivacyPolicyStandalone from "./pages/PrivacyPolicyStandalone";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import AgePolicyPage from "./pages/AgePolicyPage";
 import NotFound from "./pages/NotFound";
