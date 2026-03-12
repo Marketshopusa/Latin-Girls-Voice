@@ -124,7 +124,7 @@ const App = () => {
                     <Route path="/create" element={<RequireAuth pageName="Crear Personaje"><CreateCharacterPage /></RequireAuth>} />
                     <Route path="/subscription" element={<RequireAuth pageName="Suscripción"><SubscriptionPage /></RequireAuth>} />
                   </Route>
-                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicyStandalone />} />
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/age-policy" element={<AgePolicyPage />} />
                   <Route path="/chat/:id" element={<RequireAuth pageName="Chat"><ChatPage /></RequireAuth>} />
