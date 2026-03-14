@@ -35,6 +35,12 @@ const DiscoverPage = () => {
               </h1>
               <p className="text-sm text-muted-foreground">Encuentra tu compañero perfecto</p>
             </div>
+            <a
+              href="/privacy"
+              className="text-xs text-cyan-400 hover:text-cyan-300 underline underline-offset-4 transition-colors"
+            >
+              Política de Privacidad
+            </a>
           </div>
         </header>
       )}

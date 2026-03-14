@@ -7,18 +7,18 @@ const SiteFooter = () => (
   <footer className="w-full border-t border-border bg-muted/30 py-4 px-4">
     <div className="max-w-4xl mx-auto flex flex-col items-center gap-2 text-center">
       <div className="flex items-center gap-4">
-        <Link
-          to="/privacy"
+        <a
+          href="/privacy"
           className="text-sm font-semibold text-cyan-400 hover:text-cyan-300 underline underline-offset-4 transition-colors"
         >
           Política de Privacidad
-        </Link>
-        <Link
-          to="/terms"
+        </a>
+        <a
+          href="/terms"
           className="text-sm font-semibold text-cyan-400 hover:text-cyan-300 underline underline-offset-4 transition-colors"
         >
           Términos de Servicio
-        </Link>
+        </a>
       </div>
       <p className="text-xs text-muted-foreground leading-snug max-w-md">
         Latin Girls Voice utiliza la autenticación de Google para permitir a los usuarios gestionar sus perfiles y voces de IA de forma segura.
