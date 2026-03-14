@@ -70,10 +70,18 @@ export const MobileTopNav = () => {
     <>
       <header className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between h-14 px-3">
-          {/* Logo */}
-          <h1 className="text-lg font-display font-bold logo-3d-gold">
-            Latin Girls Voice
-          </h1>
+          {/* Logo + Privacy link */}
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-display font-bold logo-3d-gold">
+              Latin Girls Voice
+            </h1>
+            <a
+              href="/privacy"
+              className="text-[10px] text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
+            >
+              Privacidad
+            </a>
+          </div>
 
           {/* Navigation */}
           <nav className="flex items-center gap-1">
