@@ -34,9 +34,8 @@ export const CharacterPanel = ({ character, onOpenDetails }: CharacterPanelProps
           <img
             src={character.image}
             alt={character.name}
-            className="w-full h-full object-contain object-top"
+            className="w-full h-full object-cover"
             loading="eager"
-            decoding="async"
             style={{ imageRendering: 'auto' }}
           />
         )}
