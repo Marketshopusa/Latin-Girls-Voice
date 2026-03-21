@@ -24,8 +24,7 @@ export const CharacterPanel = ({ character, onOpenDetails }: CharacterPanelProps
         {isVideo ? (
           <video
             src={character.image}
-            className="w-full h-full object-contain object-top"
-            autoPlay
+            className="w-full h-full object-cover"
             loop
             muted
             playsInline
