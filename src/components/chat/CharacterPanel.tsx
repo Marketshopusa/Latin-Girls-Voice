@@ -18,14 +18,13 @@ export const CharacterPanel = ({ character, onOpenDetails }: CharacterPanelProps
   const isVideo = isVideoUrl(character.image);
 
   return (
-    <div className="w-[360px] bg-card flex flex-col h-screen relative">
+    <div className="w-[640px] bg-card flex flex-col h-screen relative">
       {/* Full-height character image or video */}
       <div className="absolute inset-0 flex items-start justify-center bg-card">
         {isVideo ? (
           <video
             src={character.image}
-            className="w-full h-full object-contain object-top"
-            autoPlay
+            className="w-full h-full object-cover"
             loop
             muted
             playsInline
@@ -35,9 +34,8 @@ export const CharacterPanel = ({ character, onOpenDetails }: CharacterPanelProps
           <img
             src={character.image}
             alt={character.name}
-            className="w-full h-full object-contain object-top"
+            className="w-full h-full object-cover"
             loading="eager"
-            decoding="async"
             style={{ imageRendering: 'auto' }}
           />
         )}
