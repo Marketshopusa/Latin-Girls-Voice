@@ -20,6 +20,7 @@ import SubscriptionPage from "./pages/SubscriptionPage";
 import PrivacyPolicyStandalone from "./pages/PrivacyPolicyStandalone";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import AgePolicyPage from "./pages/AgePolicyPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -127,6 +128,7 @@ const App = () => {
                   <Route path="/privacy" element={<PrivacyPolicyStandalone />} />
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/age-policy" element={<AgePolicyPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/chat/:id" element={<RequireAuth pageName="Chat"><ChatPage /></RequireAuth>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
