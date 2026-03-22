@@ -128,6 +128,7 @@ const App = () => {
                   <Route path="/privacy" element={<PrivacyPolicyStandalone />} />
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/age-policy" element={<AgePolicyPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/chat/:id" element={<RequireAuth pageName="Chat"><ChatPage /></RequireAuth>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
