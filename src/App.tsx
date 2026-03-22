@@ -20,6 +20,7 @@ import SubscriptionPage from "./pages/SubscriptionPage";
 import PrivacyPolicyStandalone from "./pages/PrivacyPolicyStandalone";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import AgePolicyPage from "./pages/AgePolicyPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
