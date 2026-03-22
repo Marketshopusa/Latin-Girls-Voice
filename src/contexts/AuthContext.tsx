@@ -222,10 +222,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return { needsConfirmation: false };
   };
 
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    // Clear all stale session data from localStorage
     try {
       const keysToRemove = Object.keys(localStorage).filter(
         (key) => key.startsWith('sb-') || key.startsWith('supabase.')
