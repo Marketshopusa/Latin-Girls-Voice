@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import { Home, MessageCircle, Plus, Crown, Shield, LogIn, LogOut, Loader2, FileText } from 'lucide-react';
+import { Home, MessageCircle, Plus, Crown, Shield } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import { useNsfw } from '@/contexts/NsfwContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { AgeConfirmModal } from '@/components/modals/AgeConfirmModal';
 import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from 'sonner';
+import { AuthButton } from '@/components/auth/AuthButton';
 
 const navigation = [
   { name: 'Descubrir', href: '/', icon: Home },
@@ -20,9 +18,7 @@ const navigation = [
 export const Sidebar = () => {
   const location = useLocation();
   const { nsfwEnabled, toggleNsfw, hasConfirmedAge, confirmAge, featureVisible } = useNsfw();
-  const { user, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
   const [showAgeModal, setShowAgeModal] = useState(false);
-  const [isSigningIn, setIsSigningIn] = useState(false);
 
   const handleNsfwToggle = () => {
     if (!nsfwEnabled && !hasConfirmedAge) {
@@ -36,26 +32,6 @@ export const Sidebar = () => {
     confirmAge();
     toggleNsfw();
     setShowAgeModal(false);
-  };
-
-  const handleAuth = async () => {
-    if (user) {
-      try {
-        await signOut();
-        toast.success('Sesión cerrada');
-      } catch {
-        toast.error('Error al cerrar sesión');
-      }
-    } else {
-      try {
-        setIsSigningIn(true);
-        await signInWithGoogle();
-      } catch {
-        toast.error('Error al iniciar sesión');
-      } finally {
-        setIsSigningIn(false);
-      }
-    }
   };
 
   return (
@@ -141,35 +117,11 @@ export const Sidebar = () => {
             </div>
           )}
 
-          <button 
-            onClick={handleAuth}
-            disabled={authLoading || isSigningIn}
+          <AuthButton
+            buttonVariant="ghost"
             className="sidebar-item w-full justify-center lg:justify-start"
-          >
-            {authLoading || isSigningIn ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span className="hidden lg:block">Cargando...</span>
-              </>
-            ) : user ? (
-              <>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.user_metadata?.avatar_url} />
-                  <AvatarFallback className="bg-primary/20 text-primary text-sm">
-                    {user.user_metadata?.full_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden lg:block truncate max-w-[100px]">
-                  {user.user_metadata?.full_name || user.email?.split('@')[0]}
-                </span>
-              </>
-            ) : (
-              <>
-                <LogIn className="h-5 w-5" />
-                <span className="hidden lg:block">Iniciar sesión</span>
-              </>
-            )}
-          </button>
+            title="Iniciar sesión"
+          />
           
 
           {/* Google Auth purpose */}

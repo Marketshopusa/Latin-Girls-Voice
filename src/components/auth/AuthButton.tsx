@@ -13,11 +13,27 @@ import {
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import type { ButtonProps } from '@/components/ui/button';
 
 type ViewMode = 'login' | 'register';
 
-export const AuthButton = () => {
+interface AuthButtonProps {
+  className?: string;
+  showLabel?: boolean;
+  buttonVariant?: ButtonProps['variant'];
+  buttonSize?: ButtonProps['size'];
+  title?: string;
+}
+
+export const AuthButton = ({
+  className,
+  showLabel = true,
+  buttonVariant = 'outline',
+  buttonSize = 'default',
+  title,
+}: AuthButtonProps) => {
   const { user, isLoading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
@@ -115,8 +131,9 @@ export const AuthButton = () => {
 
   if (isLoading) {
     return (
-      <Button variant="ghost" size="icon" disabled>
+      <Button variant={buttonVariant} size={buttonSize} className={className} disabled>
         <Loader2 className="h-5 w-5 animate-spin" />
+        {showLabel && <span className="hidden sm:inline">Cargando...</span>}
       </Button>
     );
   }
@@ -126,11 +143,13 @@ export const AuthButton = () => {
       <>
         <Button
           onClick={() => { setViewMode('login'); setShowDialog(true); }}
-          variant="outline"
-          className="gap-2"
+          variant={buttonVariant}
+          size={buttonSize}
+          className={cn('gap-2', className)}
+          title={title}
         >
           <LogIn className="h-4 w-4" />
-          <span className="hidden sm:inline">Iniciar sesión</span>
+          {showLabel && <span className="hidden sm:inline">Iniciar sesión</span>}
         </Button>
 
         <Dialog open={showDialog} onOpenChange={(open) => { setShowDialog(open); if (!open) resetForm(); }}>
@@ -256,16 +275,18 @@ export const AuthButton = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="gap-2 px-2">
+        <Button variant={buttonVariant} size={buttonSize} className={cn('gap-2 px-2', className)} title={title}>
           <Avatar className="h-7 w-7">
             <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.full_name} />
             <AvatarFallback>
               <User className="h-4 w-4" />
             </AvatarFallback>
           </Avatar>
-          <span className="hidden sm:inline max-w-[120px] truncate">
-            {user.user_metadata?.full_name || user.email?.split('@')[0]}
-          </span>
+          {showLabel && (
+            <span className="hidden sm:inline max-w-[120px] truncate">
+              {user.user_metadata?.full_name || user.email?.split('@')[0]}
+            </span>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
