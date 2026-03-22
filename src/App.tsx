@@ -115,7 +115,7 @@ const App = () => {
           <SubscriptionProvider>
             <NsfwProvider>
               <Toaster />
-              <Sonner />
+              <Sonner position="bottom-center" />
               <InstallPrompt />
               <BrowserRouter>
                 <Routes>
