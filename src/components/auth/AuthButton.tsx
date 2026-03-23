@@ -90,15 +90,10 @@ export const AuthButton = ({
     if (!validate()) return;
     try {
       setIsSigningIn(true);
-      const result = await signUpWithEmail(email, password);
-      if (result.needsConfirmation) {
-        toast.success('¡Cuenta creada! Revisa tu email para confirmar.');
-        switchView('login');
-      } else {
-        toast.success('¡Cuenta creada exitosamente!');
-        setShowDialog(false);
-        resetForm();
-      }
+      await signUpWithEmail(email, password);
+      toast.success('¡Bienvenido! Tu cuenta ha sido creada.');
+      setShowDialog(false);
+      resetForm();
     } catch (err: any) {
       toast.error(err?.message || 'Error al crear la cuenta');
     } finally {
