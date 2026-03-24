@@ -192,6 +192,16 @@ serve(async (req) => {
   }
   // --- End auth check ---
 
+  // --- Plan check (server-side enforcement) ---
+  const { getUserPlan } = await import("../_shared/check-plan.ts");
+  const planInfo = await getUserPlan(_authUser.id, _authUser.email);
+  if (!planInfo.hasTTS && !planInfo.isAdmin) {
+    return new Response(JSON.stringify({ error: "TTS no disponible en tu plan actual", fallback: true }), {
+      status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  // --- End plan check ---
+
   // --- Rate limit check ---
   const allowed = await checkRateLimit(_authUser.id, "elevenlabs-tts");
   if (!allowed) {
