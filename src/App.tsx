@@ -25,9 +25,22 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 const isCapacitor = Capacitor.isNativePlatform();
+const INTRO_BLOCKED_PATHS = new Set(["/", "/privacy", "/terms", "/age-policy", "/reset-password"]);
+
+const getInitialIntroState = () => {
+  if (typeof window === "undefined") return false;
+
+  const currentPath = window.location.pathname;
+
+  if (!isCapacitor && INTRO_BLOCKED_PATHS.has(currentPath)) {
+    return false;
+  }
+
+  return localStorage.getItem("intro_video_seen") !== "true";
+};
 
 const App = () => {
-  const [showIntro, setShowIntro] = useState<boolean | null>(null);
+  const [showIntro, setShowIntro] = useState(getInitialIntroState);
 
   useEffect(() => {
     if (!isCapacitor) return;
@@ -91,17 +104,6 @@ const App = () => {
       if (listenerHandle) void listenerHandle.remove();
     };
   }, []);
-
-  useEffect(() => {
-    // Check if user has seen intro before
-    const hasSeenIntro = localStorage.getItem('intro_video_seen') === 'true';
-    setShowIntro(!hasSeenIntro);
-  }, []);
-
-  // Show nothing while checking localStorage
-  if (showIntro === null) {
-    return null;
-  }
 
   // Show intro video if first visit
   if (showIntro) {
