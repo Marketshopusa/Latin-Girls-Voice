@@ -27,21 +27,8 @@ const queryClient = new QueryClient();
 const isCapacitor = Capacitor.isNativePlatform();
 const INTRO_BLOCKED_PATHS = new Set(["/", "/privacy", "/terms", "/age-policy", "/reset-password"]);
 
-const getInitialIntroState = () => {
-  if (typeof window === "undefined") return false;
-
-  if (!isCapacitor) {
-    return false;
-  }
-
-  const currentPath = window.location.pathname;
-
-  if (INTRO_BLOCKED_PATHS.has(currentPath)) {
-    return false;
-  }
-
-  return localStorage.getItem("intro_video_seen") !== "true";
-};
+// TEMPORALMENTE DESACTIVADO — reactivar cuando Google apruebe la verificación
+const getInitialIntroState = () => false;
 
 const App = () => {
   const [showIntro, setShowIntro] = useState(getInitialIntroState);
