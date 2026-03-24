@@ -166,6 +166,13 @@ const PrivacyPolicyStandalone = () => {
       </section>
 
       <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 20, marginBottom: 12 }}>Autenticación y Google OAuth</h2>
+        <p style={{ fontSize: 13, lineHeight: 1.7, color: '#ccc' }}>
+          Utilizamos Google OAuth para la autenticación segura de usuarios, permitiendo la gestión de perfiles y voces de IA de forma privada. Al iniciar sesión con Google, solo accedemos a su nombre, correo electrónico y foto de perfil. No accedemos a ningún otro dato de su cuenta de Google.
+        </p>
+      </section>
+
+      <section style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 20, marginBottom: 12 }}>Contacto</h2>
         <p style={{ fontSize: 13, lineHeight: 1.7, color: '#ccc' }}>
           Si tiene preguntas sobre esta Política de Privacidad o desea ejercer sus derechos, puede contactarnos:
