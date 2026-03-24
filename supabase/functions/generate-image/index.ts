@@ -56,6 +56,17 @@ serve(async (req) => {
   }
   // --- End rate limit ---
 
+  // --- Plan check (server-side enforcement) ---
+  const { getUserPlan } = await import("../_shared/check-plan.ts");
+  const _userEmail = (_cl.claims as Record<string, unknown>).email as string | undefined;
+  const planInfo = await getUserPlan(_userId, _userEmail);
+  if (planInfo.maxImagesGenerated <= 0 && !planInfo.isAdmin) {
+    return new Response(JSON.stringify({ success: false, error: "IMAGE_NOT_IN_PLAN", message: "La generación de imágenes no está disponible en tu plan actual." }), {
+      status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+  // --- End plan check ---
+
   try {
     const body = await req.json();
     

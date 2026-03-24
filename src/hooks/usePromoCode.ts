@@ -48,53 +48,25 @@ export const usePromoCode = () => {
 
     setIsRedeeming(true);
     try {
-      // Find the promo code
-      const { data: promoCode, error: promoError } = await supabase
-        .from('promo_codes')
-        .select('*')
-        .eq('code', code.trim().toUpperCase())
-        .eq('is_active', true)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
+      // Validate promo code server-side via edge function
+      const { data, error: fnError } = await supabase.functions.invoke('validate-promo-code', {
+        body: { code: code.trim() },
+      });
 
-      if (promoError || !promoCode) {
-        toast.error('Código inválido o expirado');
+      if (fnError) {
+        // Parse error message from response
+        const errMsg = fnError.message || 'Error al canjear el código';
+        toast.error(errMsg);
         return false;
       }
 
-      // Check if user already redeemed this code
-      const { data: existing } = await supabase
-        .from('user_promo_redemptions')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('promo_code_id', promoCode.id)
-        .maybeSingle();
-
-      if (existing) {
-        toast.error('Ya has utilizado este código promocional');
-        return false;
-      }
-
-      // Redeem
-      const expiresAt = new Date(promoCode.expires_at);
-      const { error: insertError } = await supabase
-        .from('user_promo_redemptions')
-        .insert({
-          user_id: user.id,
-          promo_code_id: promoCode.id,
-          tts_responses_remaining: promoCode.tts_responses,
-          voice_call_seconds_remaining: promoCode.voice_call_minutes * 60,
-          expires_at: expiresAt.toISOString(),
-        });
-
-      if (insertError) {
-        console.error('Error redeeming promo:', insertError);
-        toast.error('Error al canjear el código');
+      if (!data?.success) {
+        toast.error(data?.error || 'Código inválido o expirado');
         return false;
       }
 
       toast.success('¡Código canjeado exitosamente!', {
-        description: `Tienes ${promoCode.voice_call_minutes} min de llamadas y ${promoCode.tts_responses} respuestas con voz.`,
+        description: `Tienes ${data.voice_call_minutes} min de llamadas y ${data.tts_responses} respuestas con voz.`,
       });
 
       await fetchActivePromo();
