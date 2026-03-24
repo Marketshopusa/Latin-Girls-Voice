@@ -28,7 +28,9 @@ const isCapacitor = Capacitor.isNativePlatform();
 const INTRO_BLOCKED_PATHS = new Set(["/", "/privacy", "/terms", "/age-policy", "/reset-password"]);
 
 // TEMPORALMENTE DESACTIVADO — reactivar cuando Google apruebe la verificación
-const getInitialIntroState = () => false;
+function getInitialIntroState() {
+  return false;
+}
 
 const App = () => {
   const [showIntro, setShowIntro] = useState(getInitialIntroState);
