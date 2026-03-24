@@ -30,9 +30,13 @@ const INTRO_BLOCKED_PATHS = new Set(["/", "/privacy", "/terms", "/age-policy", "
 const getInitialIntroState = () => {
   if (typeof window === "undefined") return false;
 
+  if (!isCapacitor) {
+    return false;
+  }
+
   const currentPath = window.location.pathname;
 
-  if (!isCapacitor && INTRO_BLOCKED_PATHS.has(currentPath)) {
+  if (INTRO_BLOCKED_PATHS.has(currentPath)) {
     return false;
   }
 
