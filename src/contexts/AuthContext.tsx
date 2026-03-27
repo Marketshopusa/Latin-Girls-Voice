@@ -50,8 +50,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const hasInitialized = useRef(false);
+  const latestSessionRef = useRef<Session | null>(null);
 
   const applySessionState = (nextSession: Session | null) => {
+    latestSessionRef.current = nextSession;
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
     setIsLoading(false);
@@ -66,7 +68,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         if (!isMounted) return;
 
-        if (!hasInitialized.current && event === 'INITIAL_SESSION') {
+        if (!hasInitialized.current && event === 'INITIAL_SESSION' && !session) {
           return;
         }
 
@@ -80,14 +82,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (!isMounted) return;
 
         hasInitialized.current = true;
-        applySessionState(restoredSession);
+        applySessionState(restoredSession ?? latestSessionRef.current);
       } catch (error) {
         console.error('[Auth] Failed to restore session:', error);
 
         if (!isMounted) return;
 
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+
         hasInitialized.current = true;
-        applySessionState(null);
+        applySessionState(currentSession ?? latestSessionRef.current ?? null);
       }
     };
 

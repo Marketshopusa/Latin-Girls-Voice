@@ -23,6 +23,23 @@ const cleanAuthUrl = () => {
   window.history.replaceState(null, '', nextUrl || '/');
 };
 
+const getExistingSession = async (): Promise<Session | null> => {
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+};
+
+const isRecoverableExchangeError = (error: unknown) => {
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+
+  return [
+    'auth code and code verifier should be non-empty',
+    'code verifier',
+    'invalid flow state',
+    'already been used',
+    'flow state not found',
+  ].some((fragment) => message.includes(fragment));
+};
+
 const restoreNativeSession = async (): Promise<Session | null> => {
   const accessToken = sessionStorage.getItem(CAP_ACCESS_TOKEN_KEY);
   const refreshToken = sessionStorage.getItem(CAP_REFRESH_TOKEN_KEY);
@@ -42,7 +59,13 @@ const restoreNativeSession = async (): Promise<Session | null> => {
   if (authCode) {
     clearStoredNativeAuth();
     const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
-    if (error) throw error;
+
+    if (error) {
+      const fallbackSession = await getExistingSession();
+      if (fallbackSession || isRecoverableExchangeError(error)) return fallbackSession;
+      throw error;
+    }
+
     return data.session;
   }
 
@@ -54,6 +77,15 @@ const restoreBrowserSession = async (): Promise<Session | null> => {
   const search = window.location.search;
   const hasTokensInHash = hash.includes('access_token') || hash.includes('refresh_token');
   const authCode = new URLSearchParams(search).get('code');
+  const existingSession = await getExistingSession();
+
+  if (existingSession) {
+    if (hasTokensInHash || authCode) {
+      cleanAuthUrl();
+    }
+
+    return existingSession;
+  }
 
   if (hasTokensInHash) {
     const params = new URLSearchParams(hash.slice(1));
@@ -75,12 +107,17 @@ const restoreBrowserSession = async (): Promise<Session | null> => {
   if (authCode) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
     cleanAuthUrl();
-    if (error) throw error;
+
+    if (error) {
+      const fallbackSession = await getExistingSession();
+      if (fallbackSession || isRecoverableExchangeError(error)) return fallbackSession;
+      throw error;
+    }
+
     return data.session;
   }
 
-  const { data } = await supabase.auth.getSession();
-  return data.session;
+  return existingSession;
 };
 
 export const restorePersistedSession = async () => {
