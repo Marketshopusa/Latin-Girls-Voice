@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
 import { clearPersistedAuthArtifacts, restorePersistedSession } from './auth/sessionPersistence';
 interface AuthContextType {
   user: User | null;
@@ -151,17 +152,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
-    const redirectTo = getWebOAuthRedirectUrl();
+    // Web: use Lovable Cloud managed OAuth (handles credentials automatically)
+    console.log('Starting Google OAuth (web) via Lovable Cloud Auth');
 
-    console.log('Starting Google OAuth (web) via custom Supabase Auth');
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        queryParams: {
-          prompt: 'select_account',
-        },
+    const { error } = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+      extraParams: {
+        prompt: 'select_account',
       },
     });
 
