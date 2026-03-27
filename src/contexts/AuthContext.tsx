@@ -152,17 +152,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
-    const redirectTo = getWebOAuthRedirectUrl();
+    // Web: use Lovable Cloud managed OAuth (handles credentials automatically)
+    console.log('Starting Google OAuth (web) via Lovable Cloud Auth');
 
-    console.log('Starting Google OAuth (web) via custom Supabase Auth');
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        queryParams: {
-          prompt: 'select_account',
-        },
+    const { error } = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+      extraParams: {
+        prompt: 'select_account',
       },
     });
 
