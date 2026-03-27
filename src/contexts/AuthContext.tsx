@@ -35,6 +35,16 @@ const isCapacitor = Capacitor.isNativePlatform();
 // scheme so Android routes the callback back into the app via intent-filter.
 const NATIVE_REDIRECT = 'com.syntheticdigitallabs.latingirlsvoice://google-auth';
 
+const getWebOAuthRedirectUrl = () => {
+  const url = new URL(window.location.href);
+  url.hash = '';
+  ['code', 'type', 'error', 'error_code', 'error_description'].forEach((key) => {
+    url.searchParams.delete(key);
+  });
+
+  return `${url.origin}${url.pathname}${url.search}`;
+};
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -136,12 +146,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
+    const redirectTo = getWebOAuthRedirectUrl();
+
     console.log('Starting Google OAuth (web) via custom Supabase Auth');
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'https://latingirlsvoice.com',
+        redirectTo,
         queryParams: {
           prompt: 'select_account',
         },
