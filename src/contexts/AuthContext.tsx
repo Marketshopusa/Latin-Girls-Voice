@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
+import { clearPersistedAuthArtifacts, restorePersistedSession } from './auth/sessionPersistence';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -38,106 +39,54 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hasInitialized = useRef(false);
+
+  const applySessionState = (nextSession: Session | null) => {
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let isMounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
+
+        if (!isMounted) return;
+
+        if (!hasInitialized.current && event === 'INITIAL_SESSION') {
+          return;
+        }
+
+        applySessionState(session);
       }
     );
 
-    // Check for tokens from Capacitor deep link handler
-    const capAccessToken = sessionStorage.getItem('__cap_oauth_access_token');
-    const capRefreshToken = sessionStorage.getItem('__cap_oauth_refresh_token');
-    const capCode = sessionStorage.getItem('__cap_oauth_code');
+    const initializeAuth = async () => {
+      try {
+        const restoredSession = await restorePersistedSession();
+        if (!isMounted) return;
 
-    if (capAccessToken && capRefreshToken) {
-      console.log('[Auth] Restoring session from Capacitor deep link tokens');
-      sessionStorage.removeItem('__cap_oauth_access_token');
-      sessionStorage.removeItem('__cap_oauth_refresh_token');
-      supabase.auth.setSession({
-        access_token: capAccessToken,
-        refresh_token: capRefreshToken,
-      }).then(({ data, error }) => {
-        if (error) {
-          console.error('Error setting session from deep link:', error);
-        } else {
-          console.log('Session restored from deep link successfully');
-          setSession(data.session);
-          setUser(data.session?.user ?? null);
-        }
-        setIsLoading(false);
-      });
-    } else if (capCode) {
-      console.log('[Auth] Auth code from Capacitor deep link, exchanging...');
-      sessionStorage.removeItem('__cap_oauth_code');
-      setTimeout(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setIsLoading(false);
-        });
-      }, 1000);
-    } else {
-      // Check if there are auth tokens in the URL hash (from OAuth redirect)
-      const hash = window.location.hash;
-      const search = window.location.search;
-      const hasTokensInHash = hash && (hash.includes('access_token') || hash.includes('refresh_token'));
-      const hasCodeInQuery = search && search.includes('code=');
+        hasInitialized.current = true;
+        applySessionState(restoredSession);
+      } catch (error) {
+        console.error('[Auth] Failed to restore session:', error);
 
-      if (hasTokensInHash) {
-        console.log('Auth tokens detected in URL hash, processing...');
-        const params = new URLSearchParams(hash.substring(1));
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        
-        if (accessToken && refreshToken) {
-          supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          }).then(({ data, error }) => {
-            if (error) {
-              console.error('Error setting session from URL tokens:', error);
-            } else {
-              console.log('Session set from URL tokens successfully');
-              setSession(data.session);
-              setUser(data.session?.user ?? null);
-            }
-            setIsLoading(false);
-            window.history.replaceState(null, '', window.location.pathname);
-          });
-        } else {
-          supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setIsLoading(false);
-          });
-        }
-      } else if (hasCodeInQuery) {
-        console.log('Auth code detected in URL query, letting process...');
-        setTimeout(() => {
-          supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setIsLoading(false);
-            window.history.replaceState(null, '', window.location.pathname);
-          });
-        }, 1000);
-      } else {
-        // No tokens — check for existing session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setIsLoading(false);
-        });
+        if (!isMounted) return;
+
+        hasInitialized.current = true;
+        applySessionState(null);
       }
-    }
+    };
 
-    return () => subscription.unsubscribe();
+    void initializeAuth();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = async () => {
@@ -187,7 +136,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
-    // For web: use custom Supabase Auth with our own Google credentials
     console.log('Starting Google OAuth (web) via custom Supabase Auth');
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -236,6 +184,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    clearPersistedAuthArtifacts();
     try {
       const keysToRemove = Object.keys(localStorage).filter(
         (key) => key.startsWith('sb-') || key.startsWith('supabase.')
