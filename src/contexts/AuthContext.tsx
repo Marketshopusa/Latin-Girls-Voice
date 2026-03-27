@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
-import { clearPersistedAuthArtifacts, restorePersistedSession } from './auth/sessionPersistence';
+import { clearPersistedAuthArtifacts, hasPendingAuthCallback, restorePersistedSession } from './auth/sessionPersistence';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -62,28 +62,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     let isMounted = true;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-
-        if (!isMounted) return;
-
-        if (!hasInitialized.current && event === 'INITIAL_SESSION' && !session) {
-          return;
-        }
-
-        applySessionState(session);
-      }
-    );
+    let subscription: { unsubscribe: () => void } | null = null;
 
     const initializeAuth = async () => {
       try {
+        const pendingCallback = hasPendingAuthCallback();
+
+        if (pendingCallback) {
+          setIsLoading(true);
+        }
+
         const restoredSession = await restorePersistedSession();
         if (!isMounted) return;
 
         hasInitialized.current = true;
-        applySessionState(restoredSession ?? latestSessionRef.current);
+        applySessionState(restoredSession ?? latestSessionRef.current ?? null);
+
+        const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
+          console.log('Auth state changed:', event, session?.user?.email);
+
+          if (!isMounted) return;
+
+          applySessionState(session);
+        });
+
+        subscription = authSubscription.data.subscription;
       } catch (error) {
         console.error('[Auth] Failed to restore session:', error);
 
@@ -94,6 +97,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         hasInitialized.current = true;
         applySessionState(currentSession ?? latestSessionRef.current ?? null);
+
+        const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
+          console.log('Auth state changed:', event, session?.user?.email);
+
+          if (!isMounted) return;
+
+          applySessionState(session);
+        });
+
+        subscription = authSubscription.data.subscription;
       }
     };
 
@@ -101,7 +114,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
