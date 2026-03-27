@@ -28,6 +28,19 @@ const getExistingSession = async (): Promise<Session | null> => {
   return data.session;
 };
 
+export const hasPendingAuthCallback = () => {
+  if (typeof window === 'undefined') return false;
+
+  const hash = window.location.hash;
+  const search = window.location.search;
+
+  return (
+    hash.includes('access_token') ||
+    hash.includes('refresh_token') ||
+    new URLSearchParams(search).has('code')
+  );
+};
+
 const isRecoverableExchangeError = (error: unknown) => {
   const message = error instanceof Error ? error.message.toLowerCase() : '';
 
