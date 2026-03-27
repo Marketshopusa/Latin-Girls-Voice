@@ -20,6 +20,29 @@ function buildHistorySummary(characterId: string, conversationHistory: Message[]
   }).join('\n');
 }
 
+function buildRequestHistory(userMessage: string, conversationHistory: Message[]): Message[] {
+  const recentHistory = conversationHistory.slice(-18);
+  const normalizedUserMessage = userMessage.trim();
+  const lastMessage = recentHistory[recentHistory.length - 1];
+
+  if (
+    lastMessage?.role === 'user' &&
+    lastMessage.text.trim() === normalizedUserMessage
+  ) {
+    return recentHistory;
+  }
+
+  return [
+    ...recentHistory,
+    {
+      id: `pending-${Date.now()}`,
+      role: 'user',
+      text: userMessage,
+      timestamp: new Date(),
+    },
+  ];
+}
+
 export const useChatAI = ({ character, onResponse }: UseChatAIOptions) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,10 +61,12 @@ export const useChatAI = ({ character, onResponse }: UseChatAIOptions) => {
         throw new Error('Debes iniciar sesión para chatear');
       }
 
+      const requestHistory = buildRequestHistory(userMessage, conversationHistory);
+
       // Build history summary only for NSFW characters
       const isNsfw = character.nsfw || false;
       const historySummary = isNsfw
-        ? buildHistorySummary(character.id, conversationHistory)
+        ? buildHistorySummary(character.id, requestHistory)
         : undefined;
 
       const response = await fetch(
@@ -63,7 +88,7 @@ export const useChatAI = ({ character, onResponse }: UseChatAIOptions) => {
               voice: character.voice,
               nsfw: isNsfw,
             },
-            conversationHistory: conversationHistory.map(m => ({
+            conversationHistory: requestHistory.map(m => ({
               role: m.role,
               text: m.text,
             })),

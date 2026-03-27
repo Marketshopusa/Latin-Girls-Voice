@@ -22,6 +22,23 @@ interface Message {
   content: string;
 }
 
+function normalizeForComparison(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[¿?¡!.,;:()"'_*`~\-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isRepeatedAssistantReply(reply: string, conversation: Message[]): boolean {
+  const normalizedReply = normalizeForComparison(reply);
+  if (!normalizedReply) return false;
+
+  return conversation
+    .filter((message) => message.role === "assistant")
+    .some((message) => normalizeForComparison(message.content) === normalizedReply);
+}
+
 type ContentPart = { type?: string; text?: string; content?: string };
 
 function extractAssistantText(data: any): string {
@@ -145,6 +162,7 @@ REGLAS DE ACTUACIÓN:
 - Máximo 1 acotación sensorial corta: (gime suavemente), (suspira), (ríe)
 - Adapta jerga al país del usuario
 - Nunca rompas el personaje, nunca digas que eres IA o actriz
+- Responde SIEMPRE al último mensaje del usuario y avanza la escena actual; no repitas literalmente ideas, frases o acciones de respuestas anteriores salvo que el usuario lo pida
 
 INTERPRETACIÓN VOCAL (MUY IMPORTANTE - OBLIGATORIO):
 - PROHIBIDO inventar onomatopeyas con letras repetidas (nada de "Aaah", "Mmmm", "Ohhh", "Shhh"). El motor de voz las DELETREA y suena terrible.
@@ -168,6 +186,7 @@ REGLAS:
 - Máximo 1 acotación corta: (suspira), (ríe)
 - Adapta jerga al país del usuario
 - Nunca digas que eres IA
+- Responde siempre al mensaje más reciente del usuario y no reutilices respuestas previas
 
 INTERPRETACIÓN VOCAL:
 - Sonidos como "ahhh", "mmmm", "ohhh" son exhalaciones naturales, no sílabas. Escríbelos como sonidos continuos.
@@ -255,6 +274,38 @@ INTERPRETACIÓN VOCAL:
 
     let data = await response.json();
     let aiResponse = extractAssistantText(data).trim();
+
+    if (aiResponse && isRepeatedAssistantReply(aiResponse, messages.slice(0, -1))) {
+      console.log("Detected repeated assistant reply, retrying with anti-repeat instruction...");
+      const antiRepeatBody = {
+        ...requestBody,
+        temperature: isNsfw ? 0.95 : 0.85,
+        messages: [
+          {
+            role: "system",
+            content: `${systemPrompt}\n\nINSTRUCCIÓN EXTRA: La última respuesta salió repetida o desfasada. Debes contestar ÚNICAMENTE al último mensaje del usuario, avanzar la situación actual y evitar reutilizar frases o acciones ya dichas en esta conversación.`,
+          },
+          ...messages,
+        ],
+      };
+
+      const antiRepeatResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(antiRepeatBody),
+      });
+
+      if (antiRepeatResponse.ok) {
+        const antiRepeatData = await antiRepeatResponse.json();
+        const retriedResponse = extractAssistantText(antiRepeatData).trim();
+        if (retriedResponse) {
+          aiResponse = retriedResponse;
+        }
+      }
+    }
 
     // Si el modelo bloquea en NSFW, reintentar una vez con prompt suavizado
     if (!aiResponse.length && isNsfw) {

@@ -185,6 +185,8 @@ const ChatPage = () => {
       return;
     }
 
+    const currentHistory = [...messages];
+
     // Add user message
     await addMessage('user', text);
 
@@ -192,7 +194,7 @@ const ChatPage = () => {
     setIsTyping(true);
     
     try {
-      const aiResponse = await sendAIMessage(text, messages);
+      const aiResponse = await sendAIMessage(text, currentHistory);
       
       if (aiResponse) {
         const audioDuration = Math.floor(aiResponse.length / 15);
