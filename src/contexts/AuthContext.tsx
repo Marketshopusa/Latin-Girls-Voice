@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -188,19 +187,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
-    // For web: use Lovable Cloud managed OAuth
-    console.log('Starting Google OAuth (web) via Lovable Cloud');
+    // For web: use custom Supabase Auth with our own Google credentials
+    console.log('Starting Google OAuth (web) via custom Supabase Auth');
 
-    const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin,
-      extraParams: {
-        prompt: 'select_account',
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://latingirlsvoice.com',
+        queryParams: {
+          prompt: 'select_account',
+        },
       },
     });
 
-    if (result?.error) {
-      console.error('OAuth error:', result.error);
-      throw result.error;
+    if (error) {
+      console.error('OAuth error:', error);
+      throw error;
     }
   };
 
