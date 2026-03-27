@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
 import { clearPersistedAuthArtifacts, restorePersistedSession } from './auth/sessionPersistence';
 interface AuthContextType {
   user: User | null;
