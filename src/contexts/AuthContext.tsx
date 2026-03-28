@@ -181,7 +181,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       throw result.error;
     }
   };
-  const signInWithGoogle = async () => {
+
     if (isCapacitor) {
       console.log('[Auth] Capacitor detected — requesting Google OAuth URL');
 
