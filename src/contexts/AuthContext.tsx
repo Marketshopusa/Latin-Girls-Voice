@@ -2,8 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
-import { clearPersistedAuthArtifacts } from './auth/sessionPersistence';
-import { lovable } from '@/integrations/lovable';
+import { clearPersistedAuthArtifacts, restorePersistedSession } from './auth/sessionPersistence';
 
 interface AuthContextType {
   user: User | null;
@@ -62,7 +61,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const initializeAuth = async () => {
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const currentSession = await restorePersistedSession();
         if (!isMounted || hasAuthEvent) return;
         applySessionState(currentSession ?? null);
       } catch (error) {
@@ -117,18 +116,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
-    // Web: use Lovable Cloud managed OAuth which correctly handles
-    // redirect URIs for custom domains (latingirlsvoice.com)
-    console.log('Starting Google OAuth (web) via Lovable Cloud managed auth');
+    const redirectTo = new URL(WEB_OAUTH_CALLBACK_PATH, window.location.origin).toString();
+    console.log('[Auth] Starting Google OAuth (web) with direct callback:', redirectTo);
 
-    const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: new URL(WEB_OAUTH_CALLBACK_PATH, window.location.origin).toString(),
-      extraParams: { prompt: 'select_account' },
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        skipBrowserRedirect: false,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
     });
 
-    if (result.error) {
-      console.error('OAuth error:', result.error);
-      throw result.error;
+    if (error) {
+      console.error('[Auth] OAuth error:', error);
+      throw error;
     }
   };
 
