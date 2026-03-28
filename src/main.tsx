@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { restorePersistedSession } from "./contexts/auth/sessionPersistence";
 
 // Detect Capacitor native environment
 const isCapacitor = !!(window as any).Capacitor;
@@ -32,4 +33,16 @@ if ('serviceWorker' in navigator) {
   }
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+const bootstrapApplication = async () => {
+  if (!isCapacitor) {
+    try {
+      await restorePersistedSession();
+    } catch (error) {
+      console.error('[Auth bootstrap] Failed to restore session before render:', error);
+    }
+  }
+
+  createRoot(document.getElementById("root")!).render(<App />);
+};
+
+void bootstrapApplication();
