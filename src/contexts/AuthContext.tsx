@@ -3,6 +3,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { clearPersistedAuthArtifacts } from './auth/sessionPersistence';
+import { lovable } from '@/integrations/lovable';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -31,19 +33,7 @@ interface AuthProviderProps {
 
 const isCapacitor = Capacitor.isNativePlatform();
 
-// For Capacitor native builds, OAuth must redirect to the custom deep-link
-// scheme so Android routes the callback back into the app via intent-filter.
 const NATIVE_REDIRECT = 'com.syntheticdigitallabs.latingirlsvoice://google-auth';
-
-const getWebOAuthRedirectUrl = () => {
-  const url = new URL(window.location.href);
-  url.hash = '';
-  ['code', 'type', 'error', 'error_code', 'error_description'].forEach((key) => {
-    url.searchParams.delete(key);
-  });
-
-  return `${url.origin}${url.pathname}${url.search}`;
-};
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
@@ -62,11 +52,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
-
       hasAuthEvent = true;
-
       if (!isMounted) return;
-
       applySessionState(session);
     });
 
@@ -74,18 +61,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const initializeAuth = async () => {
       try {
-        const {
-          data: { session: currentSession },
-        } = await supabase.auth.getSession();
-
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (!isMounted || hasAuthEvent) return;
-
         applySessionState(currentSession ?? null);
       } catch (error) {
         console.error('[Auth] Failed to restore session:', error);
-
         if (!isMounted) return;
-
         applySessionState(null);
       }
     };
@@ -108,9 +89,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           options: {
             redirectTo: NATIVE_REDIRECT,
             skipBrowserRedirect: true,
-            queryParams: {
-              prompt: 'select_account',
-            },
+            queryParams: { prompt: 'select_account' },
           },
         }),
         new Promise<never>((_, reject) =>
@@ -122,14 +101,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         ReturnType<typeof supabase.auth.signInWithOAuth>
       >;
 
-      if (error) {
-        console.error('[Auth] OAuth URL error:', error);
-        throw error;
-      }
-
-      if (!data?.url) {
-        throw new Error('[Auth] Google OAuth no devolvió URL de redirección');
-      }
+      if (error) { console.error('[Auth] OAuth URL error:', error); throw error; }
+      if (!data?.url) { throw new Error('[Auth] Google OAuth no devolvió URL de redirección'); }
 
       console.log('[Auth] Opening OAuth URL in system browser:', data.url.substring(0, 80) + '...');
       try {
@@ -138,28 +111,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       } catch (browserErr) {
         console.error('[Auth] Browser plugin failed, fallback to window.open:', browserErr);
         const popup = window.open(data.url, '_blank');
-        if (!popup) {
-          window.location.href = data.url;
-        }
+        if (!popup) { window.location.href = data.url; }
       }
       return;
     }
 
-    console.log('Starting Google OAuth (web) via direct auth client');
+    // Web: use Lovable Cloud managed OAuth which correctly handles
+    // redirect URIs for custom domains (latingirlsvoice.com)
+    console.log('Starting Google OAuth (web) via Lovable Cloud managed auth');
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: getWebOAuthRedirectUrl(),
-        queryParams: {
-          prompt: 'select_account',
-        },
-      },
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+      extraParams: { prompt: 'select_account' },
     });
 
-    if (error) {
-      console.error('OAuth error:', error);
-      throw error;
+    if (result.error) {
+      console.error('OAuth error:', result.error);
+      throw result.error;
     }
   };
 
@@ -172,12 +140,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
+      options: { emailRedirectTo: window.location.origin },
     });
     if (error) throw error;
-    // If email confirmation is required, data.user will exist but session may be null
     if (data.user && !data.session) {
       return { needsConfirmation: true };
     }
