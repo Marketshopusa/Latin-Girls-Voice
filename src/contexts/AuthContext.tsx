@@ -162,53 +162,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('OAuth error:', error);
       throw error;
     }
-  const signInWithGoogle = async () => {
-    if (isCapacitor) {
-      console.log('[Auth] Capacitor detected — requesting Google OAuth URL');
+  };
 
-      const oauthResult = await Promise.race([
-        supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: NATIVE_REDIRECT,
-            skipBrowserRedirect: true,
-            queryParams: {
-              prompt: 'select_account',
-            },
-          },
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout obteniendo URL OAuth')), 12000)
-        ),
-      ]);
-
-      const { data, error } = oauthResult as Awaited<
-        ReturnType<typeof supabase.auth.signInWithOAuth>
-      >;
-
-      if (error) {
-        console.error('[Auth] OAuth URL error:', error);
-        throw error;
-      }
-
-      if (!data?.url) {
-        throw new Error('[Auth] Google OAuth no devolvió URL de redirección');
-      }
-
-      console.log('[Auth] Opening OAuth URL in system browser:', data.url.substring(0, 80) + '...');
-      try {
-        const { Browser } = await import('@capacitor/browser');
-        await Browser.open({ url: data.url });
-      } catch (browserErr) {
-        console.error('[Auth] Browser plugin failed, fallback to window.open:', browserErr);
-        const popup = window.open(data.url, '_blank');
-        if (!popup) {
-          window.location.href = data.url;
-        }
-      }
-      return;
-    }
-
+  const signInWithGoogleWeb = async () => {
     // Web: use Lovable Cloud managed OAuth which correctly handles
     // redirect URIs for custom domains (latingirlsvoice.com)
     console.log('Starting Google OAuth (web) via Lovable Cloud managed auth');
