@@ -184,9 +184,32 @@ const restoreBrowserSession = async (): Promise<Session | null> => {
   }
 
   if (authCode) {
-    const restoredSession = await waitForBrowserSession();
-    cleanAuthUrl();
-    return restoredSession;
+    try {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
+
+      if (error) {
+        if (!isRecoverableExchangeError(error)) {
+          throw error;
+        }
+
+        const restoredSession = await waitForBrowserSession();
+        cleanAuthUrl();
+        return restoredSession;
+      }
+
+      cleanAuthUrl();
+      return data.session ?? (await waitForBrowserSession());
+    } catch (error) {
+      const fallbackSession = await getExistingSession();
+
+      if (fallbackSession || isRecoverableExchangeError(error)) {
+        cleanAuthUrl();
+        return fallbackSession;
+      }
+
+      cleanAuthUrl();
+      throw error;
+    }
   }
 
   return getExistingSession();
