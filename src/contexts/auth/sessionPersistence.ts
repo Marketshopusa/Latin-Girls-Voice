@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 const CAP_ACCESS_TOKEN_KEY = '__cap_oauth_access_token';
 const CAP_REFRESH_TOKEN_KEY = '__cap_oauth_refresh_token';
 const CAP_CODE_KEY = '__cap_oauth_code';
+const AUTH_CALLBACK_TIMEOUT_MS = 8000;
+const AUTH_CALLBACK_POLL_MS = 250;
 
 const clearStoredNativeAuth = () => {
   sessionStorage.removeItem(CAP_ACCESS_TOKEN_KEY);
@@ -28,17 +30,32 @@ const getExistingSession = async (): Promise<Session | null> => {
   return data.session;
 };
 
-export const hasPendingAuthCallback = () => {
-  if (typeof window === 'undefined') return false;
+const getBrowserAuthCallbackState = () => {
+  if (typeof window === 'undefined') {
+    return {
+      authCode: null,
+      hasAuthError: false,
+      hasTokensInHash: false,
+      isAuthReturn: false,
+    };
+  }
 
   const hash = window.location.hash;
-  const search = window.location.search;
+  const searchParams = new URLSearchParams(window.location.search);
+  const hasTokensInHash = hash.includes('access_token') || hash.includes('refresh_token');
+  const authCode = searchParams.get('code');
+  const hasAuthError = searchParams.has('error') || hash.includes('error=');
 
-  return (
-    hash.includes('access_token') ||
-    hash.includes('refresh_token') ||
-    new URLSearchParams(search).has('code')
-  );
+  return {
+    authCode,
+    hasAuthError,
+    hasTokensInHash,
+    isAuthReturn: hasTokensInHash || Boolean(authCode) || hasAuthError,
+  };
+};
+
+export const hasPendingAuthCallback = () => {
+  return getBrowserAuthCallbackState().isAuthReturn;
 };
 
 const isRecoverableExchangeError = (error: unknown) => {
@@ -85,23 +102,67 @@ const restoreNativeSession = async (): Promise<Session | null> => {
   return null;
 };
 
-const restoreBrowserSession = async (): Promise<Session | null> => {
-  const hash = window.location.hash;
-  const search = window.location.search;
-  const hasTokensInHash = hash.includes('access_token') || hash.includes('refresh_token');
-  const authCode = new URLSearchParams(search).get('code');
+const waitForBrowserSession = async (): Promise<Session | null> => {
   const existingSession = await getExistingSession();
+  if (existingSession) return existingSession;
 
-  if (existingSession) {
-    if (hasTokensInHash || authCode) {
-      cleanAuthUrl();
-    }
+  return await new Promise<Session | null>((resolve) => {
+    let settled = false;
 
-    return existingSession;
+    const cleanup = (
+      subscription?: { unsubscribe: () => void },
+      intervalId?: number,
+      timeoutId?: number,
+    ) => {
+      subscription?.unsubscribe();
+      if (intervalId) window.clearInterval(intervalId);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+
+    const settle = (
+      session: Session | null,
+      subscription?: { unsubscribe: () => void },
+      intervalId?: number,
+      timeoutId?: number,
+    ) => {
+      if (settled) return;
+      settled = true;
+      cleanup(subscription, intervalId, timeoutId);
+      resolve(session);
+    };
+
+    const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        session &&
+        (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')
+      ) {
+        settle(session, authSubscription.data.subscription, intervalId, timeoutId);
+      }
+    });
+
+    const intervalId = window.setInterval(async () => {
+      const session = await getExistingSession();
+      if (session) {
+        settle(session, authSubscription.data.subscription, intervalId, timeoutId);
+      }
+    }, AUTH_CALLBACK_POLL_MS);
+
+    const timeoutId = window.setTimeout(async () => {
+      const session = await getExistingSession();
+      settle(session, authSubscription.data.subscription, intervalId, timeoutId);
+    }, AUTH_CALLBACK_TIMEOUT_MS);
+  });
+};
+
+const restoreBrowserSession = async (): Promise<Session | null> => {
+  const { authCode, hasAuthError, hasTokensInHash, isAuthReturn } = getBrowserAuthCallbackState();
+
+  if (!isAuthReturn) {
+    return getExistingSession();
   }
 
   if (hasTokensInHash) {
-    const params = new URLSearchParams(hash.slice(1));
+    const params = new URLSearchParams(window.location.hash.slice(1));
     const accessToken = params.get('access_token');
     const refreshToken = params.get('refresh_token');
 
@@ -117,20 +178,18 @@ const restoreBrowserSession = async (): Promise<Session | null> => {
     }
   }
 
-  if (authCode) {
-    const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
+  if (hasAuthError) {
     cleanAuthUrl();
-
-    if (error) {
-      const fallbackSession = await getExistingSession();
-      if (fallbackSession || isRecoverableExchangeError(error)) return fallbackSession;
-      throw error;
-    }
-
-    return data.session;
+    return getExistingSession();
   }
 
-  return existingSession;
+  if (authCode) {
+    const restoredSession = await waitForBrowserSession();
+    cleanAuthUrl();
+    return restoredSession;
+  }
+
+  return getExistingSession();
 };
 
 export const restorePersistedSession = async () => {
