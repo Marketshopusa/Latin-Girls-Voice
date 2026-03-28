@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { clearPersistedAuthArtifacts, hasPendingAuthCallback, restorePersistedSession } from './auth/sessionPersistence';
 interface AuthContextType {
   user: User | null;
@@ -155,13 +154,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
-    // Web: use Lovable Cloud managed OAuth (handles credentials automatically)
-    console.log('Starting Google OAuth (web) via Lovable Cloud Auth');
+    console.log('Starting Google OAuth (web) via direct auth client');
 
-    const { error } = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: getWebOAuthRedirectUrl(),
-      extraParams: {
-        prompt: 'select_account',
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: getWebOAuthRedirectUrl(),
+        queryParams: {
+          prompt: 'select_account',
+        },
       },
     });
 
@@ -177,7 +178,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
     if (error) throw error;
     // If email confirmation is required, data.user will exist but session may be null
     if (data.user && !data.session) {
