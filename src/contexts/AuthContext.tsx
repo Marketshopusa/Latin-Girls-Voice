@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
-import { clearPersistedAuthArtifacts, hasPendingAuthCallback, restorePersistedSession } from './auth/sessionPersistence';
+import { clearPersistedAuthArtifacts } from './auth/sessionPersistence';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -49,11 +49,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const hasInitialized = useRef(false);
-  const latestSessionRef = useRef<Session | null>(null);
 
   const applySessionState = (nextSession: Session | null) => {
-    latestSessionRef.current = nextSession;
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
     setIsLoading(false);
@@ -61,12 +58,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     let isMounted = true;
+    let hasAuthEvent = false;
+
     const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
 
-      latestSessionRef.current = session;
+      hasAuthEvent = true;
 
-      if (!isMounted || !hasInitialized.current) return;
+      if (!isMounted) return;
 
       applySessionState(session);
     });
@@ -75,27 +74,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const initializeAuth = async () => {
       try {
-        const pendingCallback = hasPendingAuthCallback();
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
 
-        if (pendingCallback) {
-          setIsLoading(true);
-        }
+        if (!isMounted || hasAuthEvent) return;
 
-        const restoredSession = await restorePersistedSession();
-        if (!isMounted) return;
-
-        hasInitialized.current = true;
-        applySessionState(restoredSession ?? latestSessionRef.current ?? null);
+        applySessionState(currentSession ?? null);
       } catch (error) {
         console.error('[Auth] Failed to restore session:', error);
 
         if (!isMounted) return;
 
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (!isMounted) return;
-
-        hasInitialized.current = true;
-        applySessionState(currentSession ?? latestSessionRef.current ?? null);
+        applySessionState(null);
       }
     };
 
