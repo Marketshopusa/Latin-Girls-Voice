@@ -1,10 +1,11 @@
+import { Capacitor } from "@capacitor/core";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { restorePersistedSession } from "./contexts/auth/sessionPersistence";
 
 // Detect Capacitor native environment
-const isCapacitor = !!(window as any).Capacitor;
+const isCapacitor = Capacitor.isNativePlatform();
 
 if ('serviceWorker' in navigator) {
   if (isCapacitor) {
