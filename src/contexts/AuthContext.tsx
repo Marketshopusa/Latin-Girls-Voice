@@ -162,9 +162,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('OAuth error:', error);
       throw error;
     }
-  };
-
-  const signInWithGoogleWeb = async () => {
+    // Web: use Lovable Cloud managed OAuth which correctly handles
+    // redirect URIs for custom domains (latingirlsvoice.com)
+    console.log('Starting Google OAuth (web) via Lovable Cloud managed auth');
     // Web: use Lovable Cloud managed OAuth which correctly handles
     // redirect URIs for custom domains (latingirlsvoice.com)
     console.log('Starting Google OAuth (web) via Lovable Cloud managed auth');
