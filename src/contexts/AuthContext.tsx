@@ -35,6 +35,7 @@ const isCapacitor = Capacitor.isNativePlatform();
 // For Capacitor native builds, OAuth must redirect to the custom deep-link
 // scheme so Android routes the callback back into the app via intent-filter.
 const NATIVE_REDIRECT = 'com.syntheticdigitallabs.latingirlsvoice://google-auth';
+const WEB_OAUTH_REDIRECT = 'https://latingirlsvoice.com';
 
 const getWebOAuthRedirectUrl = () => {
   const url = new URL(window.location.href);
@@ -62,7 +63,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     let isMounted = true;
-    let subscription: { unsubscribe: () => void } | null = null;
+    const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+
+      latestSessionRef.current = session;
+
+      if (!isMounted || !hasInitialized.current) return;
+
+      applySessionState(session);
+    });
+
+    const subscription = authSubscription.data.subscription;
 
     const initializeAuth = async () => {
       try {
@@ -77,16 +88,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         hasInitialized.current = true;
         applySessionState(restoredSession ?? latestSessionRef.current ?? null);
-
-        const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
-          console.log('Auth state changed:', event, session?.user?.email);
-
-          if (!isMounted) return;
-
-          applySessionState(session);
-        });
-
-        subscription = authSubscription.data.subscription;
       } catch (error) {
         console.error('[Auth] Failed to restore session:', error);
 
@@ -97,16 +98,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         hasInitialized.current = true;
         applySessionState(currentSession ?? latestSessionRef.current ?? null);
-
-        const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
-          console.log('Auth state changed:', event, session?.user?.email);
-
-          if (!isMounted) return;
-
-          applySessionState(session);
-        });
-
-        subscription = authSubscription.data.subscription;
       }
     };
 
@@ -169,7 +160,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     console.log('Starting Google OAuth (web) via Lovable Cloud Auth');
 
     const { error } = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin,
+      redirect_uri: WEB_OAUTH_REDIRECT,
       extraParams: {
         prompt: 'select_account',
       },
