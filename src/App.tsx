@@ -21,6 +21,7 @@ import PrivacyPolicyStandalone from "./pages/PrivacyPolicyStandalone";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import AgePolicyPage from "./pages/AgePolicyPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -124,6 +125,7 @@ const App = () => {
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/age-policy" element={<AgePolicyPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/chat/:id" element={<RequireAuth pageName="Chat"><ChatPage /></RequireAuth>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

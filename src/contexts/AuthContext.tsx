@@ -34,6 +34,7 @@ interface AuthProviderProps {
 const isCapacitor = Capacitor.isNativePlatform();
 
 const NATIVE_REDIRECT = 'com.syntheticdigitallabs.latingirlsvoice://google-auth';
+const WEB_OAUTH_CALLBACK_PATH = '/auth/callback';
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
@@ -121,7 +122,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     console.log('Starting Google OAuth (web) via Lovable Cloud managed auth');
 
     const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin,
+      redirect_uri: new URL(WEB_OAUTH_CALLBACK_PATH, window.location.origin).toString(),
       extraParams: { prompt: 'select_account' },
     });
 
