@@ -1,0 +1,1 @@
+DELETE FROM public.characters WHERE id = '0c58fee3-8f2f-47f6-916b-0cfae90624c3';
