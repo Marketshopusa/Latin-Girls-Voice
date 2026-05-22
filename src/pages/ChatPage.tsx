@@ -165,6 +165,18 @@ const ChatPage = () => {
     }
   }, [character, isLoading, setInitialMessage]);
 
+  // Auto-play the welcome message (ice-breaker) when chat opens
+  useEffect(() => {
+    if (
+      !isLoading &&
+      messages.length === 1 &&
+      messages[0].role === 'assistant' &&
+      lastAIMessageId !== messages[0].id
+    ) {
+      setLastAIMessageId(messages[0].id);
+    }
+  }, [isLoading, messages, lastAIMessageId]);
+
   // Auto-scroll to bottom when messages change or typing state changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
