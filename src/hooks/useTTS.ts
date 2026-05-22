@@ -282,13 +282,18 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
              throw new Error('Voz no disponible temporalmente');
            }
          }
-       } else {
-         // Google Cloud es el principal — sin fallback necesario
-         if (!response.ok) {
-           throw new Error(`Error de voz: ${response.status}`);
-         }
-         audioBlob = await response.blob();
-       }
+        } else {
+          // Google Cloud principal — si falla, fallback automático a ElevenLabs
+          if (!response.ok) {
+            console.warn(`Google TTS error (${response.status}), falling back to ElevenLabs...`);
+            audioBlob = await callElevenLabsTTS(ttsText);
+            if (!audioBlob) {
+              throw new Error('Voz no disponible temporalmente');
+            }
+          } else {
+            audioBlob = await response.blob();
+          }
+        }
  
        if (!audioBlob) {
          throw new Error('No se pudo generar audio');
