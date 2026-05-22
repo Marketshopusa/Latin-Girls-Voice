@@ -377,7 +377,7 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
     } finally {
       setIsLoading(false);
     }
-   }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType, getTTSEndpoint, callGoogleTTS]);
+   }, [isLoading, isPlaying, prepareTextForTTS, stopAudio, voiceType, getTTSEndpoint, callGoogleTTS, callElevenLabsTTS]);
 
   return {
     playAudio,
