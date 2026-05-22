@@ -208,6 +208,38 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
      }
    }, [getTTSEndpoint]);
 
+  // Llamar a ElevenLabs TTS como fallback cuando Google falla
+  const callElevenLabsTTS = useCallback(async (ttsText: string): Promise<Blob | null> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const endpoint = getTTSEndpoint('elevenlabs');
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${authToken}`,
+        },
+        // No mandamos voiceType para que use la voz por defecto del backend
+        body: JSON.stringify({ text: ttsText }),
+      });
+      if (!response.ok) {
+        console.error("ElevenLabs fallback error:", response.status);
+        return null;
+      }
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const json = await response.json().catch(() => null);
+        if (json?.fallback) return null;
+      }
+      return await response.blob();
+    } catch (err) {
+      console.error("ElevenLabs fallback error:", err);
+      return null;
+    }
+  }, [getTTSEndpoint]);
+
   const playAudio = useCallback(async (text: string) => {
     if (isLoading) return;
 
