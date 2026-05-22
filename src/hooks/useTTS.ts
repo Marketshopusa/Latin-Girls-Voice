@@ -308,12 +308,10 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
            needsFallback = true;
          }
 
-         if (needsFallback) {
-           audioBlob = await callGoogleTTS(ttsText, 'es-US-Chirp3-HD-Kore');
-           if (!audioBlob) {
-             throw new Error('Voz no disponible temporalmente');
-           }
-         }
+          if (needsFallback) {
+            // Google Cloud está desactivado — no se usa como fallback
+            throw new Error('Voz no disponible temporalmente');
+          }
         } else {
           // Google Cloud principal — si falla, fallback automático a ElevenLabs
           if (!response.ok) {
