@@ -266,9 +266,9 @@ export const useTTS = ({ voiceType = DEFAULT_VOICE }: UseTTSOptions) => {
        const { data: { session } } = await supabase.auth.getSession();
        const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
        
-       // ORDEN: Google Cloud TTS es el principal, ElevenLabs solo si la voz es premium
-       const useElevenLabs = provider === 'elevenlabs';
-       const primaryProvider = useElevenLabs ? 'elevenlabs' : 'google';
+       // Forzar ElevenLabs como ÚNICO proveedor (Google Cloud está desactivado)
+       const useElevenLabs = true;
+       const primaryProvider: 'elevenlabs' | 'google' = 'elevenlabs';
        
        console.log(`Requesting TTS: voice=${normalizedVoice}, provider=${primaryProvider}, chars=${ttsText.length}`);
  
