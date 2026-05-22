@@ -28,9 +28,10 @@ const queryClient = new QueryClient();
 const isCapacitor = Capacitor.isNativePlatform();
 const INTRO_BLOCKED_PATHS = new Set(["/", "/privacy", "/terms", "/age-policy", "/reset-password"]);
 
-// TEMPORALMENTE DESACTIVADO — reactivar cuando Google apruebe la verificación
 function getInitialIntroState() {
-  return false;
+  if (typeof window === 'undefined') return false;
+  if (INTRO_BLOCKED_PATHS.has(window.location.pathname)) return false;
+  return localStorage.getItem('intro_video_seen') !== 'true';
 }
 
 const App = () => {
