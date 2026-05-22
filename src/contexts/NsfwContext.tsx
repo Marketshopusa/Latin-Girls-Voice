@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 // KILL SWITCH: Set to false to completely hide all NSFW features
 // Toggle this to true when ready to re-enable NSFW content
 // ============================================================
-const NSFW_FEATURE_ENABLED = false;
+const NSFW_FEATURE_ENABLED = true;
 
 interface NsfwContextType {
   nsfwEnabled: boolean;
