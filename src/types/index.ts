@@ -100,29 +100,6 @@ export interface VoiceConfig {
 
 // === ELEVENLABS PREMIUM VOICES - VOCES LATINAS DE TU BIBLIOTECA ===
 export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
-  // === VOCES VENEZOLANAS ===
-  {
-    id: 'el-venezolana-gocha',
-    label: 'Venezolana Gocha',
-    icon: '🇻🇪',
-    description: 'Acento gocho venezolano, expresiva y juvenil',
-    gender: 'FEMALE',
-    region: 'VENEZUELA',
-    quality: 'FLASH_V2_5',
-    provider: 'elevenlabs',
-    tier: 'premium',
-  },
-  {
-    id: 'el-caraqueña',
-    label: 'Caraqueña',
-    icon: '🌴',
-    description: 'Acento caraqueño, expresiva y femenina',
-    gender: 'FEMALE',
-    region: 'VENEZUELA',
-    quality: 'FLASH_V2_5',
-    provider: 'elevenlabs',
-    tier: 'premium',
-  },
   // === VOCES COLOMBIANAS ===
   {
     id: 'el-colombiana-paisa',
