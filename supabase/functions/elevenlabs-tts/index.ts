@@ -298,15 +298,15 @@ serve(async (req) => {
  
      // ElevenLabs devuelve audio directamente (no base64)
      const audioBuffer = await response.arrayBuffer();
- 
-     console.log(`ElevenLabs TTS Success: ${audioBuffer.byteLength} bytes | Voice: ${voiceConfig.name}`);
- 
+
+     console.log(`ElevenLabs TTS Success: ${audioBuffer.byteLength} bytes | Voice: ${usedVoice}`);
+
      return new Response(audioBuffer, {
        headers: {
          ...corsHeaders,
          "Content-Type": "audio/mpeg",
          "Access-Control-Expose-Headers": "x-tts-voice, x-tts-provider",
-         "x-tts-voice": voiceConfig.name,
+         "x-tts-voice": usedVoice,
          "x-tts-provider": "elevenlabs",
        },
      });
