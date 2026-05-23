@@ -242,40 +242,55 @@ serve(async (req) => {
        `ElevenLabs TTS: ${cleanText.length} chars | Voice: ${voiceConfig.name} (${voiceConfig.voiceId}) | Model: eleven_flash_v2_5`
      );
  
-     // Llamar a ElevenLabs API con modelo Flash v2.5 (0.5 créditos/char)
-     const response = await fetch(
-       `https://api.elevenlabs.io/v1/text-to-speech/${voiceConfig.voiceId}?output_format=mp3_44100_128`,
-       {
-         method: "POST",
-         headers: {
-           "xi-api-key": apiKey,
-           "Content-Type": "application/json",
-         },
-         body: JSON.stringify({
-           text: cleanText,
-           model_id: "eleven_flash_v2_5", // Modelo económico: 0.5 créditos por carácter
-           voice_settings: {
-             stability: 0.5,
-             similarity_boost: 0.75,
-             style: 0.4,
-             use_speaker_boost: true,
+     // Helper: llama a la API de ElevenLabs con un voiceId
+     const callEleven = async (voiceId: string) => {
+       return await fetch(
+         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+         {
+           method: "POST",
+           headers: {
+             "xi-api-key": apiKey,
+             "Content-Type": "application/json",
            },
-         }),
-       }
-     );
- 
+           body: JSON.stringify({
+             text: cleanText,
+             model_id: "eleven_flash_v2_5",
+             voice_settings: {
+               stability: 0.5,
+               similarity_boost: 0.75,
+               style: 0.4,
+               use_speaker_boost: true,
+             },
+           }),
+         }
+       );
+     };
+
+     // Intento principal con la voz solicitada
+     let response = await callEleven(voiceConfig.voiceId);
+     let usedVoice = voiceConfig.name;
+
+     // Si la voz solicitada no existe en la biblioteca (404 voice_not_found),
+     // reintentar con la voz por defecto para no dejar al usuario sin audio.
+     if (!response.ok && response.status === 404) {
+       const errorText = await response.text();
+       console.warn(
+         `Voice ${voiceConfig.voiceId} not found, retrying with default voice. Detail: ${errorText}`
+       );
+       const fallbackVoice = ELEVENLABS_VOICES[DEFAULT_VOICE];
+       response = await callEleven(fallbackVoice.voiceId);
+       usedVoice = `${fallbackVoice.name} (fallback de ${voiceConfig.name})`;
+     }
+
      if (!response.ok) {
        const errorText = await response.text();
-       // Use console.warn to avoid triggering Lovable error overlay
        console.warn("ElevenLabs TTS unavailable:", response.status, errorText);
-       
-       // CRITICAL: Return status 200 with fallback flag
-       // Returning non-200 triggers Lovable's runtime error overlay
+
        return new Response(
-         JSON.stringify({ 
-           error: `ElevenLabs TTS failed: ${response.status}`, 
+         JSON.stringify({
+           error: `ElevenLabs TTS failed: ${response.status}`,
            details: errorText,
-           fallback: true 
+           fallback: true,
          }),
          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
        );
@@ -283,15 +298,15 @@ serve(async (req) => {
  
      // ElevenLabs devuelve audio directamente (no base64)
      const audioBuffer = await response.arrayBuffer();
- 
-     console.log(`ElevenLabs TTS Success: ${audioBuffer.byteLength} bytes | Voice: ${voiceConfig.name}`);
- 
+
+     console.log(`ElevenLabs TTS Success: ${audioBuffer.byteLength} bytes | Voice: ${usedVoice}`);
+
      return new Response(audioBuffer, {
        headers: {
          ...corsHeaders,
          "Content-Type": "audio/mpeg",
          "Access-Control-Expose-Headers": "x-tts-voice, x-tts-provider",
-         "x-tts-voice": voiceConfig.name,
+         "x-tts-voice": usedVoice,
          "x-tts-provider": "elevenlabs",
        },
      });
