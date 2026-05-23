@@ -22,56 +22,21 @@ const corsHeaders = {
   */
  const ELEVENLABS_VOICES: Record<string, { voiceId: string; name: string; description: string }> = {
   // ========== VOCES VENEZOLANAS ==========
-  
-  // diominicana venezolana - Gocha accent
-  "el-venezolana-gocha": {
-    voiceId: "nR7TRcRXD2dbZqmJivg9",
-    name: "Venezolana Gocha",
-    description: "Acento gocho venezolano, expresiva y juvenil",
-  },
-  
-  // caraqueña loca - Caracas accent
-  "el-caraqueña": {
-    voiceId: "rBlWm6DvQsfBSgHaVzI0",
-    name: "Caraqueña",
-    description: "Acento caraqueño, expresiva y femenina",
-  },
-   
+
    // Caraqueña suave - Malandra dulce
    "el-caraqueña-suave": {
      voiceId: "oK1rPi7An5Ii9CAYjLdP",
      name: "Caraqueña Suave",
      description: "Malandra caraqueña dulce y suavecita, 18 años",
    },
-   
-   // Caraqueña Malandra - Expresiva y zumbada
-   "el-caraqueña-malandra": {
-     voiceId: "SrW0xDsRgzAnEsFZ9C2y",
-     name: "Malandra Caraqueña",
-     description: "Caraqueña zumbada y expresiva, 25 años",
-   },
-   
-   // la Pana vzla - Voz joven caraqueña con tono grave y rasposo
-   "el-pana-vzla": {
-     voiceId: "UkrE1PXKZzHbSDLWombK",
-     name: "La Pana Vzla",
-     description: "Joven caraqueña, tono grave rasposo y retador",
-   },
-   
+
    // DominicP - Voz caraqueña con acento dominicano
    "el-dominic-p": {
      voiceId: "MhqexLpDpHRhh5mFR7EE",
      name: "Dominic P",
      description: "Caraqueña con estilo dominicano, juguetona y desafiante",
    },
-   
-  // caracas01 - Voz ultra-natural caraqueña malandrosa
-   "el-caracas01": {
-     voiceId: "Na1MRhNLkzddf48WbAxW",
-     name: "Caracas 01",
-     description: "Ultra-natural caraqueña, malandrosa y expresiva",
-   },
-   
+
    // VZLA CANDY - Voz dulce venezolana de San Cristóbal
    "el-vzla-candy": {
      voiceId: "719dQR7QYslVxD6ZoaKH",
