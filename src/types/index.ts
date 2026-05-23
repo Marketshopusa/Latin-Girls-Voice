@@ -4,27 +4,22 @@
  export type TTSProvider = 'elevenlabs' | 'google';
  
  // Catálogo de voces disponibles
- export type VoiceType =
-   // === ELEVENLABS PREMIUM - VOCES VERIFICADAS EN LA BIBLIOTECA ===
-   | 'el-venezolana-gocha'  // diominicana venezolana - Gocha accent
-   | 'el-caraqueña'         // caraqueña loca - Caracas accent
-   | 'el-colombiana-paisa'  // Vanessa - Paisa accent
-   | 'el-colombiana-natural'// Jessica Natural - Colombian natural
-   | 'el-colombiana-linda'  // Linda Gómez - Enérgica
-   | 'el-lina'              // Lina - Soleada y amigable
-   | 'el-teylu'             // Teylu - Dramática y cálida
-   | 'el-maria'             // María - Radiante y melódica
-   | 'el-ana-maria'         // Ana María - Calma y natural
-   | 'el-daniela-valentina' // Daniela Valentina - Joven y optimista
-   | 'el-ligia-elena'       // Ligia Elena - Tranquila y neutral
-   | 'el-caraqueña-suave'   // Caraqueña suave - Malandra dulce
-  | 'el-caraqueña-malandra' // Caraqueña malandra - Expresiva y grosera
-   | 'el-pana-vzla'          // La Pana Vzla - Joven caraqueña grave
-   | 'el-dominic-p'          // Dominic P - Caraqueña con estilo dominicano
-   | 'el-caracas01'          // Caracas 01 - Ultra-natural malandrosa
-   | 'el-vzla-candy'         // VZLA Candy - Dulce venezolana de San Cristóbal
-   | 'el-paisa-dulce'        // Paisa Dulce - Colombiana paisa tierna
-   | 'el-arg-dulce'          // ARG Dulce - Argentina suave y soñadora
+export type VoiceType =
+  // === ELEVENLABS PREMIUM - VOCES VERIFICADAS EN LA BIBLIOTECA ===
+  | 'el-colombiana-paisa'  // Vanessa - Paisa accent
+  | 'el-colombiana-natural'// Jessica Natural - Colombian natural
+  | 'el-colombiana-linda'  // Linda Gómez - Enérgica
+  | 'el-lina'              // Lina - Soleada y amigable
+  | 'el-teylu'             // Teylu - Dramática y cálida
+  | 'el-maria'             // María - Radiante y melódica
+  | 'el-ana-maria'         // Ana María - Calma y natural
+  | 'el-daniela-valentina' // Daniela Valentina - Joven y optimista
+  | 'el-ligia-elena'       // Ligia Elena - Tranquila y neutral
+  | 'el-caraqueña-suave'   // Caraqueña suave - Malandra dulce
+  | 'el-dominic-p'          // Dominic P - Caraqueña con estilo dominicano
+  | 'el-vzla-candy'         // VZLA Candy - Dulce venezolana de San Cristóbal
+  | 'el-paisa-dulce'        // Paisa Dulce - Colombiana paisa tierna
+  | 'el-arg-dulce'          // ARG Dulce - Argentina suave y soñadora
  // === GOOGLE CLOUD TTS - Chirp 3: HD Latinas (es-US) ===
   | 'es-US-Chirp3-HD-Achernar'
   | 'es-US-Chirp3-HD-Aoede'
