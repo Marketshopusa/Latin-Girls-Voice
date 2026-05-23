@@ -223,17 +223,6 @@ export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
      provider: 'elevenlabs',
      tier: 'premium',
    },
-  {
-     id: 'el-caracas01',
-     label: 'Caracas 01',
-     icon: '🎤',
-     description: 'Ultra-natural caraqueña, malandrosa y expresiva',
-     gender: 'FEMALE',
-     region: 'VENEZUELA',
-     quality: 'FLASH_V2_5',
-     provider: 'elevenlabs',
-     tier: 'premium',
-   },
    {
      id: 'el-vzla-candy',
      label: 'Dulces VZLA',
