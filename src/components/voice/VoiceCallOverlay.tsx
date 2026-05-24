@@ -72,8 +72,18 @@ export const VoiceCallOverlay = ({
   const [callDuration, setCallDuration] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   
   const recognitionRef = useRef<any>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recorderStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recorderRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startRecordingSnippetRef = useRef<() => void>(() => undefined);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserFrameRef = useRef<number | null>(null);
+  const isRecordingSnippetRef = useRef(false);
+  const hasSpeechInSnippetRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const preWarmedAudioRef = useRef<HTMLAudioElement | null>(null);
   const callHistoryRef = useRef<Array<{ role: string; content: string }>>([]);
