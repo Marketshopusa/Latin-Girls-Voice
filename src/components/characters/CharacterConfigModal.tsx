@@ -7,6 +7,8 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
+import { useNsfw } from '@/contexts/NsfwContext';
+import { AgeConfirmModal } from '@/components/modals/AgeConfirmModal';
 
 interface CharacterConfigModalProps {
   character: Character;
@@ -30,7 +32,9 @@ export const CharacterConfigModal = ({
   const [voice, setVoice] = useState<VoiceType>(normalizeVoiceType(character.voice));
   const [nsfw, setNsfw] = useState(character.nsfw);
   const { limits } = useSubscription();
+  const { hasConfirmedAge, confirmAge } = useNsfw();
   const [showEspaña, setShowEspaña] = useState(false);
+  const [showAgeModal, setShowAgeModal] = useState(false);
   
   // Voice preview state
   const [previewingVoice, setPreviewingVoice] = useState<VoiceType | null>(null);
@@ -149,6 +153,20 @@ export const CharacterConfigModal = ({
   const handleSave = () => {
     onSave({ history, welcomeMessage, voice, nsfw });
     onClose();
+  };
+
+  const handlePlusToggle = (checked: boolean) => {
+    if (checked && !hasConfirmedAge) {
+      setShowAgeModal(true);
+      return;
+    }
+    setNsfw(checked);
+  };
+
+  const handleAgeConfirm = async () => {
+    await confirmAge();
+    setNsfw(true);
+    setShowAgeModal(false);
   };
 
   // Reusable voice card renderer
@@ -317,7 +335,7 @@ export const CharacterConfigModal = ({
                   <p className="text-xs text-muted-foreground">Activa o desactiva el estilo Plus para este personaje.</p>
                 </div>
               </div>
-              <Switch checked={nsfw} onCheckedChange={setNsfw} />
+              <Switch checked={nsfw} onCheckedChange={handlePlusToggle} />
             </div>
           </div>
         </div>
@@ -332,6 +350,11 @@ export const CharacterConfigModal = ({
           </button>
         </div>
       </div>
+      <AgeConfirmModal
+        isOpen={showAgeModal}
+        onConfirm={handleAgeConfirm}
+        onCancel={() => setShowAgeModal(false)}
+      />
     </div>
   );
 };
