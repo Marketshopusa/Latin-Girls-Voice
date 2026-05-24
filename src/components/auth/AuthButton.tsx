@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { ButtonProps } from '@/components/ui/button';
 
-type ViewMode = 'login' | 'register';
+type ViewMode = 'login' | 'register' | 'forgot';
 
 interface AuthButtonProps {
   className?: string;
