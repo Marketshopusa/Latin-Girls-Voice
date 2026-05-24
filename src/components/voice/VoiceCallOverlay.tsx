@@ -779,7 +779,7 @@ export const VoiceCallOverlay = ({
                 )}
                 style={{
                   height: (isListening && !isMuted)
-                    ? `${Math.random() * 30 + 10}px` 
+                    ? `${Math.max(8, 10 + audioLevel * 36 * (0.55 + ((i % 4) * 0.18)))}px` 
                     : '4px',
                   animationDelay: `${i * 80}ms`,
                 }}
