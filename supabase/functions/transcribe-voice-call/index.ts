@@ -130,14 +130,6 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("ELEVENLABS_API_KEY_OVERRIDE") || Deno.env.get("ELEVENLABS_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "Servicio de transcripción no configurado", text: "" }), {
-        status: 503,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const formData = await req.formData();
     const audio = formData.get("audio");
     if (!(audio instanceof File) || audio.size < 1000) {
@@ -146,31 +138,19 @@ serve(async (req) => {
       });
     }
 
-    const sttForm = new FormData();
-    sttForm.append("file", audio, audio.name || "voice-call.webm");
-    sttForm.append("model_id", "scribe_v2");
-    sttForm.append("language_code", "spa");
-    sttForm.append("tag_audio_events", "false");
-    sttForm.append("diarize", "false");
-
-    const sttResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-      method: "POST",
-      headers: { "xi-api-key": apiKey },
-      body: sttForm,
-    });
-
-    if (!sttResponse.ok) {
-      const errorText = await sttResponse.text();
-      console.warn("Voice call STT failed:", sttResponse.status, errorText);
-      return new Response(JSON.stringify({ error: "No se pudo transcribir", text: "" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let text = "";
+    try {
+      text = await transcribeWithGemini(audio);
+      console.log(`Voice call Gemini STT success: ${audio.size} bytes -> ${text.length} chars`);
+    } catch (geminiError) {
+      console.warn("Voice call Gemini STT failed, trying ElevenLabs fallback:", geminiError);
+      try {
+        text = await transcribeWithElevenLabs(audio);
+        console.log(`Voice call ElevenLabs STT fallback success: ${audio.size} bytes -> ${text.length} chars`);
+      } catch (elevenLabsError) {
+        console.warn("Voice call ElevenLabs STT fallback failed:", elevenLabsError);
+      }
     }
-
-    const data = await sttResponse.json();
-    const text = String(data?.text || "").trim();
-    console.log(`Voice call STT success: ${audio.size} bytes -> ${text.length} chars`);
 
     return new Response(JSON.stringify({ text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
