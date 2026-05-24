@@ -225,6 +225,9 @@ export const VoiceCallOverlay = ({
   const handleUserMessageRef = useRef<(text: string) => Promise<void>>();
   
   handleUserMessageRef.current = async (text: string) => {
+    const spokenText = text.trim();
+    if (!spokenText || spokenText.length < 2) return;
+
     // Use refs for guards - these are always current
     if (isProcessingRef.current || isSpeakingRef.current || !isCallActiveRef.current) {
       console.log('[VoiceCall] Skipping message - processing:', isProcessingRef.current, 'speaking:', isSpeakingRef.current, 'active:', isCallActiveRef.current);
@@ -235,19 +238,19 @@ export const VoiceCallOverlay = ({
     setIsProcessing(true);
     setCurrentTranscript('');
     
-    console.log('[VoiceCall] Processing user message:', text);
+    console.log('[VoiceCall] Processing user message:', spokenText);
     
     // Add user message to call history
-    callHistoryRef.current.push({ role: 'user', content: text });
+    callHistoryRef.current.push({ role: 'user', content: spokenText });
     
     // Save user message to chat
-    await addMessageRef.current('user', text);
+    await addMessageRef.current('user', spokenText);
 
     try {
       const char = characterRef.current;
       const response = await supabase.functions.invoke('chat-ai', {
         body: {
-          message: text,
+          message: spokenText,
           character: {
             name: char.name,
             age: char.age || 25,
