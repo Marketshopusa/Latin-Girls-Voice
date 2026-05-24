@@ -335,115 +335,228 @@ export const VoiceCallOverlay = ({
     }
   }, []);
 
-  // Initialize speech recognition
+  // Initialize microphone, browser speech recognition, and server transcription fallback
   useEffect(() => {
     if (!isOpen) return;
 
-    // Pre-warm an Audio element during user gesture context
-    // This allows future audio.play() calls to work on mobile without gesture
+    let recognition: any = null;
+    let cancelled = false;
+    isCallActiveRef.current = true;
+    setAudioLevel(0);
+
     const warmAudio = new Audio();
     warmAudio.volume = 1;
-    // Play a tiny silent audio to unlock the audio context on mobile
     warmAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
     warmAudio.play().then(() => {
       warmAudio.pause();
       warmAudio.currentTime = 0;
       warmAudio.src = '';
       console.log('[VoiceCall] Audio pre-warmed for mobile');
-    }).catch(() => {
-      console.warn('[VoiceCall] Could not pre-warm audio');
-    });
+    }).catch(() => console.warn('[VoiceCall] Could not pre-warm audio'));
     preWarmedAudioRef.current = warmAudio;
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast.error('Tu navegador no soporta reconocimiento de voz');
-      return;
-    }
+    callHistoryRef.current = conversationHistory.slice(-10).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content,
+    }));
 
-    let recognition: any = null;
-    
-    try {
-      recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'es-ES';
-
-      recognition.onstart = () => {
-        if (isCallActiveRef.current) {
-          setIsListening(true);
-          setIsConnected(true);
-          console.log('[VoiceCall] Speech recognition started');
-        }
-      };
-
-      recognition.onresult = (event: any) => {
-        if (!isCallActiveRef.current) return;
-        
-        let finalTranscript = '';
-        let interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        setCurrentTranscript(interimTranscript || finalTranscript);
-
-        // Use REFS for guards, not state (avoids stale closure)
-        if (finalTranscript && !isProcessingRef.current && !isSpeakingRef.current && isCallActiveRef.current) {
-          console.log('[VoiceCall] Final transcript detected:', finalTranscript);
-          handleUserMessageRef.current?.(finalTranscript);
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        if (event.error !== 'no-speech' && event.error !== 'aborted') {
-          console.warn('[VoiceCall] Speech recognition error:', event.error);
-        }
-        if (event.error === 'network' || event.error === 'service-not-allowed') {
-          toast.error('Error en el reconocimiento de voz');
-        }
-      };
-
-      recognition.onend = () => {
-        // Use REFS to check state (avoids stale closure)
-        if (isCallActiveRef.current && !isMutedRef.current && !isSpeakingRef.current) {
-          try {
-            recognition?.start();
-          } catch (e) {
-            // Silently ignore - recognition may already be started
-          }
-        }
-      };
-
-      recognitionRef.current = recognition;
-      isCallActiveRef.current = true;
-      
-      // Initialize call history with conversation context
-      callHistoryRef.current = conversationHistory.slice(-10).map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
-        content: msg.content
-      }));
-      
+    const startAudioMeter = (stream: MediaStream) => {
       try {
-        recognition.start();
-        console.log('[VoiceCall] Starting speech recognition...');
-      } catch (e) {
-        console.error('[VoiceCall] Failed to start recognition:', e);
-        toast.error('No se pudo iniciar el reconocimiento de voz');
+        const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextCtor) return;
+        const audioContext = new AudioContextCtor();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        audioContextRef.current = audioContext;
+        const samples = new Uint8Array(analyser.frequencyBinCount);
+
+        const tick = () => {
+          if (!isCallActiveRef.current) return;
+          analyser.getByteFrequencyData(samples);
+          const average = samples.reduce((sum, value) => sum + value, 0) / samples.length;
+          const level = Math.min(1, average / 90);
+          setAudioLevel(level);
+          if (level > 0.08 && !isSpeakingRef.current && !isMutedRef.current) {
+            hasSpeechInSnippetRef.current = true;
+          }
+          analyserFrameRef.current = requestAnimationFrame(tick);
+        };
+        tick();
+      } catch (error) {
+        console.warn('[VoiceCall] Audio meter unavailable:', error);
       }
-    } catch (e) {
-      console.error('[VoiceCall] Error initializing speech recognition:', e);
-      toast.error('Error al inicializar el reconocimiento de voz');
-    }
+    };
+
+    const startBrowserRecognition = () => {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn('[VoiceCall] Browser speech recognition unavailable; using server transcription');
+        return;
+      }
+
+      try {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'es-ES';
+
+        recognition.onstart = () => {
+          if (isCallActiveRef.current) {
+            setIsListening(true);
+            setIsConnected(true);
+            console.log('[VoiceCall] Speech recognition started');
+          }
+        };
+
+        recognition.onresult = (event: any) => {
+          if (!isCallActiveRef.current) return;
+          let finalTranscript = '';
+          let interimTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) finalTranscript += transcript;
+            else interimTranscript += transcript;
+          }
+
+          if (interimTranscript || finalTranscript) hasSpeechInSnippetRef.current = true;
+          setCurrentTranscript(interimTranscript || finalTranscript);
+
+          if (finalTranscript && !isProcessingRef.current && !isSpeakingRef.current && isCallActiveRef.current) {
+            console.log('[VoiceCall] Final transcript detected:', finalTranscript);
+            handleUserMessageRef.current?.(finalTranscript);
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          if (event.error !== 'no-speech' && event.error !== 'aborted') {
+            console.warn('[VoiceCall] Speech recognition error:', event.error);
+          }
+          if (event.error === 'network' || event.error === 'service-not-allowed') {
+            console.warn('[VoiceCall] Browser recognition failed; server transcription remains active');
+          }
+        };
+
+        recognition.onend = () => {
+          if (isCallActiveRef.current && !isMutedRef.current && !isSpeakingRef.current && !isProcessingRef.current) {
+            window.setTimeout(() => {
+              try { recognition?.start(); } catch (e) { /* already started */ }
+            }, 700);
+          }
+        };
+
+        recognitionRef.current = recognition;
+        try {
+          recognition.start();
+          console.log('[VoiceCall] Starting speech recognition...');
+        } catch (e) {
+          console.warn('[VoiceCall] Failed to start browser recognition; using server transcription:', e);
+        }
+      } catch (error) {
+        console.warn('[VoiceCall] Browser speech recognition init failed; using server transcription:', error);
+      }
+    };
+
+    const startServerRecording = (stream: MediaStream) => {
+      if (!window.MediaRecorder) {
+        console.warn('[VoiceCall] MediaRecorder unavailable');
+        return;
+      }
+
+      const preferredTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+      const mimeType = preferredTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
+
+      startRecordingSnippetRef.current = () => {
+        if (!isCallActiveRef.current || isMutedRef.current || isSpeakingRef.current || isProcessingRef.current || isRecordingSnippetRef.current) return;
+
+        const chunks: BlobPart[] = [];
+        hasSpeechInSnippetRef.current = false;
+
+        try {
+          const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+          mediaRecorderRef.current = recorder;
+          isRecordingSnippetRef.current = true;
+
+          recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) chunks.push(event.data);
+          };
+
+          recorder.onstop = async () => {
+            isRecordingSnippetRef.current = false;
+            if (recorderStopTimerRef.current) {
+              clearTimeout(recorderStopTimerRef.current);
+              recorderStopTimerRef.current = null;
+            }
+
+            if (isCallActiveRef.current && chunks.length && hasSpeechInSnippetRef.current && !isProcessingRef.current && !isSpeakingRef.current) {
+              const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
+              if (blob.size > 1200) {
+                const transcript = await transcribeAudioBlob(blob);
+                if (transcript) await handleUserMessageRef.current?.(transcript);
+              }
+            }
+
+            if (isCallActiveRef.current && !isMutedRef.current && !isSpeakingRef.current && !isProcessingRef.current) {
+              recorderRestartTimerRef.current = setTimeout(() => startRecordingSnippetRef.current(), 350);
+            }
+          };
+
+          recorder.start();
+          recorderStopTimerRef.current = setTimeout(() => {
+            if (recorder.state === 'recording') recorder.stop();
+          }, 4200);
+        } catch (error) {
+          isRecordingSnippetRef.current = false;
+          console.warn('[VoiceCall] Could not record microphone snippet:', error);
+        }
+      };
+
+      startRecordingSnippetRef.current();
+    };
+
+    const init = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
+        if (cancelled) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        mediaStreamRef.current = stream;
+        setIsConnected(true);
+        setIsListening(true);
+        startAudioMeter(stream);
+        startBrowserRecognition();
+        startServerRecording(stream);
+      } catch (error) {
+        console.error('[VoiceCall] Microphone permission/error:', error);
+        setIsConnected(false);
+        setIsListening(false);
+        toast.error('Permite el acceso al micrófono para usar llamadas de voz');
+      }
+    };
+
+    init();
 
     return () => {
+      cancelled = true;
       isCallActiveRef.current = false;
+      if (recorderStopTimerRef.current) clearTimeout(recorderStopTimerRef.current);
+      if (recorderRestartTimerRef.current) clearTimeout(recorderRestartTimerRef.current);
+      if (analyserFrameRef.current) cancelAnimationFrame(analyserFrameRef.current);
+      if (mediaRecorderRef.current?.state === 'recording') {
+        try { mediaRecorderRef.current.stop(); } catch (e) { /* ignore */ }
+      }
+      mediaRecorderRef.current = null;
+      isRecordingSnippetRef.current = false;
+      mediaStreamRef.current?.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+      audioContextRef.current?.close().catch(() => undefined);
+      audioContextRef.current = null;
       
       if (recognition) {
         try {
@@ -451,9 +564,7 @@ export const VoiceCallOverlay = ({
           recognition.onerror = null;
           recognition.onresult = null;
           recognition.abort();
-        } catch (e) {
-          // Ignore cleanup errors
-        }
+        } catch (e) { /* ignore */ }
       }
       recognitionRef.current = null;
       
@@ -461,13 +572,10 @@ export const VoiceCallOverlay = ({
         try {
           audioRef.current.pause();
           audioRef.current.src = '';
-        } catch (e) {
-          // Ignore audio cleanup errors
-        }
+        } catch (e) { /* ignore */ }
         audioRef.current = null;
       }
       
-      // Cleanup pre-warmed audio
       if (preWarmedAudioRef.current) {
         try {
           preWarmedAudioRef.current.pause();
@@ -478,8 +586,9 @@ export const VoiceCallOverlay = ({
       
       setIsConnected(false);
       setIsListening(false);
+      setAudioLevel(0);
     };
-  }, [isOpen]);
+  }, [isOpen, conversationHistory, transcribeAudioBlob]);
 
   // Call duration timer
   useEffect(() => {
