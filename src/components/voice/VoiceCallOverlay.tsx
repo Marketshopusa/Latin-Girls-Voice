@@ -624,6 +624,18 @@ export const VoiceCallOverlay = ({
 
   const endCall = useCallback(() => {
     isCallActiveRef.current = false;
+    if (recorderStopTimerRef.current) clearTimeout(recorderStopTimerRef.current);
+    if (recorderRestartTimerRef.current) clearTimeout(recorderRestartTimerRef.current);
+    if (analyserFrameRef.current) cancelAnimationFrame(analyserFrameRef.current);
+    if (mediaRecorderRef.current?.state === 'recording') {
+      try { mediaRecorderRef.current.stop(); } catch (e) { /* ignore */ }
+    }
+    mediaRecorderRef.current = null;
+    isRecordingSnippetRef.current = false;
+    mediaStreamRef.current?.getTracks().forEach(track => track.stop());
+    mediaStreamRef.current = null;
+    audioContextRef.current?.close().catch(() => undefined);
+    audioContextRef.current = null;
     
     if (recognitionRef.current) {
       try {
@@ -653,6 +665,7 @@ export const VoiceCallOverlay = ({
     setCallDuration(0);
     setCurrentTranscript('');
     setAgentResponse('');
+    setAudioLevel(0);
     isProcessingRef.current = false;
     isSpeakingRef.current = false;
     isMutedRef.current = false;
