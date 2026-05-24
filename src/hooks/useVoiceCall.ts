@@ -23,11 +23,9 @@ export const useVoiceCall = (options: UseVoiceCallOptions = {}) => {
       return false;
     }
 
-    // Check if browser supports speech recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast.error('Tu navegador no soporta llamadas de voz', {
-        description: 'Usa Chrome o Edge para esta función.',
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast.error('Tu dispositivo no permite acceder al micrófono', {
+        description: 'Activa permisos de micrófono e intenta nuevamente.',
       });
       return false;
     }
