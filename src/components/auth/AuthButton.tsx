@@ -215,7 +215,7 @@ export const AuthButton = ({
             </div>
 
             {/* Email form */}
-            <form onSubmit={viewMode === 'login' ? handleEmailLogin : handleRegister} className="flex flex-col gap-3">
+            <form onSubmit={viewMode === 'login' ? handleEmailLogin : viewMode === 'register' ? handleRegister : handleForgotPassword} className="flex flex-col gap-3">
               <div>
                 <input
                   type="email"
@@ -228,35 +228,39 @@ export const AuthButton = ({
                 {errors.email && <span className="text-xs text-destructive mt-1">{errors.email}</span>}
               </div>
 
-              <div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Contraseña"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2.5 pr-10 rounded-lg border border-border bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    autoComplete={viewMode === 'register' ? 'new-password' : 'current-password'}
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {errors.password && <span className="text-xs text-destructive mt-1">{errors.password}</span>}
-              </div>
+              {viewMode !== 'forgot' && (
+                <>
+                  <div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Contraseña"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full px-3 py-2.5 pr-10 rounded-lg border border-border bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        autoComplete={viewMode === 'register' ? 'new-password' : 'current-password'}
+                      />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {errors.password && <span className="text-xs text-destructive mt-1">{errors.password}</span>}
+                  </div>
 
-              {viewMode === 'register' && (
-                <div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Confirmar contraseña"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    autoComplete="new-password"
-                  />
-                  {errors.confirm && <span className="text-xs text-destructive mt-1">{errors.confirm}</span>}
-                </div>
+                  {viewMode === 'register' && (
+                    <div>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Confirmar contraseña"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-lg border border-border bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        autoComplete="new-password"
+                      />
+                      {errors.confirm && <span className="text-xs text-destructive mt-1">{errors.confirm}</span>}
+                    </div>
+                  )}
+                </>
               )}
 
               <button
@@ -274,6 +278,11 @@ export const AuthButton = ({
                     <UserPlus className="h-4 w-4" />
                     Crear cuenta
                   </>
+                ) : viewMode === 'forgot' ? (
+                  <>
+                    <KeyRound className="h-4 w-4" />
+                    Enviar enlace
+                  </>
                 ) : (
                   <>
                     <Mail className="h-4 w-4" />
@@ -283,13 +292,23 @@ export const AuthButton = ({
               </button>
             </form>
 
-            {/* Toggle */}
-            <div className="text-center mt-4">
+            {/* Toggle / forgot */}
+            <div className="text-center mt-4 flex flex-col gap-2">
+              {viewMode === 'login' && (
+                <button onClick={() => switchView('forgot')} className="text-sm text-muted-foreground">
+                  ¿Olvidaste tu contraseña? <span className="text-primary hover:underline">Recupérala</span>
+                </button>
+              )}
+              {viewMode === 'forgot' && (
+                <button onClick={() => switchView('login')} className="text-sm text-muted-foreground">
+                  ¿Ya te acordaste? <span className="text-primary hover:underline">Inicia sesión</span>
+                </button>
+              )}
               {viewMode === 'login' ? (
                 <button onClick={() => switchView('register')} className="text-sm text-muted-foreground">
                   ¿No tienes cuenta? <span className="text-primary hover:underline">Regístrate</span>
                 </button>
-              ) : (
+              ) : viewMode === 'register' && (
                 <button onClick={() => switchView('login')} className="text-sm text-muted-foreground">
                   ¿Ya tienes cuenta? <span className="text-primary hover:underline">Inicia sesión</span>
                 </button>
