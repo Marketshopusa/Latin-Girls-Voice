@@ -289,6 +289,40 @@ export const VoiceCallOverlay = ({
     }
   };
 
+  const transcribeAudioBlob = useCallback(async (audioBlob: Blob): Promise<string> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+      if (!authToken) return '';
+
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'voice-call.webm');
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-voice-call`, {
+        method: 'POST',
+        headers: {
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        console.warn('[VoiceCall] Server transcription failed:', response.status, errorText);
+        return '';
+      }
+
+      const data = await response.json().catch(() => null);
+      const transcript = String(data?.text || '').trim();
+      if (transcript) console.log('[VoiceCall] Server transcript detected:', transcript);
+      return transcript;
+    } catch (error) {
+      console.warn('[VoiceCall] Server transcription error:', error);
+      return '';
+    }
+  }, []);
+
   // Initialize speech recognition
   useEffect(() => {
     if (!isOpen) return;
