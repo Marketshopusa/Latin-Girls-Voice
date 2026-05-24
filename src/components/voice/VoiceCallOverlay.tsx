@@ -57,6 +57,9 @@ const isVideoUrl = (url: string): boolean => {
   return videoExtensions.some(ext => url.toLowerCase().includes(ext));
 };
 
+const normalizeSpeechText = (text: string): string =>
+  text.toLowerCase().replace(/[¿?¡!.,;:()"'_*`~\-]/g, ' ').replace(/\s+/g, ' ').trim();
+
 export const VoiceCallOverlay = ({ 
   character, 
   isOpen, 
@@ -93,6 +96,7 @@ export const VoiceCallOverlay = ({
   const isProcessingRef = useRef(false);
   const isSpeakingRef = useRef(false);
   const isMutedRef = useRef(false);
+  const lastUserSpeechRef = useRef<{ text: string; at: number } | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => { isProcessingRef.current = isProcessing; }, [isProcessing]);
@@ -228,12 +232,20 @@ export const VoiceCallOverlay = ({
     const spokenText = text.trim();
     if (!spokenText || spokenText.length < 2) return;
 
+    const normalizedText = normalizeSpeechText(spokenText);
+    const lastSpeech = lastUserSpeechRef.current;
+    if (lastSpeech && lastSpeech.text === normalizedText && Date.now() - lastSpeech.at < 12000) {
+      console.log('[VoiceCall] Skipping duplicate transcript:', spokenText);
+      return;
+    }
+
     // Use refs for guards - these are always current
     if (isProcessingRef.current || isSpeakingRef.current || !isCallActiveRef.current) {
       console.log('[VoiceCall] Skipping message - processing:', isProcessingRef.current, 'speaking:', isSpeakingRef.current, 'active:', isCallActiveRef.current);
       return;
     }
     
+    lastUserSpeechRef.current = { text: normalizedText, at: Date.now() };
     isProcessingRef.current = true;
     setIsProcessing(true);
     setCurrentTranscript('');
