@@ -50,8 +50,10 @@ export const AuthButton = ({
     const e: typeof errors = {};
     if (!email.trim()) e.email = 'El email es obligatorio';
     else if (!validateEmail(email)) e.email = 'Formato de email inválido';
-    if (!password) e.password = 'La contraseña es obligatoria';
-    else if (password.length < 6) e.password = 'Mínimo 6 caracteres';
+    if (viewMode !== 'forgot') {
+      if (!password) e.password = 'La contraseña es obligatoria';
+      else if (password.length < 6) e.password = 'Mínimo 6 caracteres';
+    }
     if (viewMode === 'register' && password !== confirmPassword) e.confirm = 'Las contraseñas no coinciden';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -90,10 +92,15 @@ export const AuthButton = ({
     if (!validate()) return;
     try {
       setIsSigningIn(true);
-      await signUpWithEmail(email, password);
-      toast.success('¡Bienvenido! Tu cuenta ha sido creada.');
-      setShowDialog(false);
-      resetForm();
+      const result = await signUpWithEmail(email, password);
+      if (result.needsConfirmation) {
+        toast.success('Cuenta creada. Revisa tu correo para activarla.');
+        setViewMode('login');
+      } else {
+        toast.success('¡Bienvenido! Tu cuenta ha sido creada.');
+        setShowDialog(false);
+        resetForm();
+      }
     } catch (err: any) {
       toast.error(err?.message || 'Error al crear la cuenta');
     } finally {
@@ -206,13 +213,6 @@ export const AuthButton = ({
                 </div>
               </>
             )}
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-xs text-muted-foreground">o</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
 
             {/* Email form */}
             <form onSubmit={viewMode === 'login' ? handleEmailLogin : viewMode === 'register' ? handleRegister : handleForgotPassword} className="flex flex-col gap-3">
