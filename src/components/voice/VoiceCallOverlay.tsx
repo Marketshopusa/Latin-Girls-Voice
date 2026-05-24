@@ -682,9 +682,17 @@ export const VoiceCallOverlay = ({
     if (recognitionRef.current) {
       if (newMuted) {
         try { recognitionRef.current.stop(); } catch (e) { /* ignore */ }
+        if (recorderStopTimerRef.current) clearTimeout(recorderStopTimerRef.current);
+        if (recorderRestartTimerRef.current) clearTimeout(recorderRestartTimerRef.current);
+        if (mediaRecorderRef.current?.state === 'recording') {
+          try { mediaRecorderRef.current.stop(); } catch (e) { /* ignore */ }
+        }
       } else {
         try { recognitionRef.current.start(); } catch (e) { /* already started */ }
+        window.setTimeout(() => startRecordingSnippetRef.current(), 300);
       }
+    } else if (!newMuted) {
+      window.setTimeout(() => startRecordingSnippetRef.current(), 300);
     }
   };
 
