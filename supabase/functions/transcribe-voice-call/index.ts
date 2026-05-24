@@ -34,6 +34,15 @@ serve(async (req) => {
     });
   }
 
+  const { getUserPlan } = await import("../_shared/check-plan.ts");
+  const planInfo = await getUserPlan(user.id, user.email);
+  if (!planInfo.hasVoiceCalls && !planInfo.isAdmin) {
+    return new Response(JSON.stringify({ error: "Llamadas no disponibles en tu plan actual", text: "" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const allowed = await checkRateLimit(user.id, "transcribe-voice-call");
   if (!allowed) {
     return new Response(JSON.stringify({ error: "Límite de transcripción alcanzado", text: "" }), {
