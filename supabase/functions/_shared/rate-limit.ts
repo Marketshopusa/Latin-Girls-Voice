@@ -8,6 +8,7 @@ const RATE_LIMITS: Record<string, { maxRequests: number; windowSeconds: number }
   "google-cloud-tts": { maxRequests: 100, windowSeconds: 3600 },
   "gemini-tts": { maxRequests: 100, windowSeconds: 3600 },
   "gemini-cloud-tts": { maxRequests: 100, windowSeconds: 3600 },
+  "transcribe-voice-call": { maxRequests: 180, windowSeconds: 3600 },
   "generate-character-story": { maxRequests: 10, windowSeconds: 3600 },
   "elevenlabs-sfx": { maxRequests: 30, windowSeconds: 3600 },
 };
