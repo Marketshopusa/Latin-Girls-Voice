@@ -11,6 +11,7 @@ interface VoiceCallOverlayProps {
   character: Character;
   isOpen: boolean;
   onClose: () => void;
+  initialStream?: MediaStream | null;
   conversationHistory: Array<{ role: string; content: string }>;
   addMessageToChat: (role: 'user' | 'assistant', text: string, audioDuration?: number) => Promise<Message | null>;
 }
@@ -64,6 +65,7 @@ export const VoiceCallOverlay = ({
   character, 
   isOpen, 
   onClose,
+  initialStream,
   conversationHistory,
   addMessageToChat
 }: VoiceCallOverlayProps) => {
@@ -518,9 +520,11 @@ export const VoiceCallOverlay = ({
 
     const init = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        });
+        const stream = initialStream && initialStream.getAudioTracks().some(track => track.readyState === 'live')
+          ? initialStream
+          : await navigator.mediaDevices.getUserMedia({
+              audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            });
         if (cancelled) {
           stream.getTracks().forEach(track => track.stop());
           return;
@@ -588,7 +592,7 @@ export const VoiceCallOverlay = ({
       setIsListening(false);
       setAudioLevel(0);
     };
-  }, [isOpen, transcribeAudioBlob]);
+  }, [isOpen, initialStream, transcribeAudioBlob]);
 
   // Call duration timer
   useEffect(() => {
