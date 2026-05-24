@@ -68,6 +68,10 @@ export const ChatLoginGate = ({ characterName, onBack }: ChatLoginGateProps) => 
     }
   };
 
+  const handleEmailChange = (value: string) => {
+    setEmail(value.trim().toLowerCase());
+  };
+
   const handleForgotPassword = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
@@ -125,7 +129,7 @@ export const ChatLoginGate = ({ characterName, onBack }: ChatLoginGateProps) => 
               type="email"
               placeholder="Email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               className="px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               autoComplete="email"
             />
