@@ -35,6 +35,23 @@ const isCapacitor = Capacitor.isNativePlatform();
 const NATIVE_REDIRECT = 'com.syntheticdigitallabs.latingirlsvoice://google-auth';
 const WEB_OAUTH_CALLBACK_PATH = '/auth/callback';
 
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+const getFriendlyAuthError = (error: { message?: string; code?: string }) => {
+  const rawMessage = error.message || '';
+  const message = rawMessage.toLowerCase();
+  if (error.code === 'invalid_credentials' || message.includes('invalid login credentials')) {
+    return new Error('Correo o contraseña incorrectos. Si ya registraste este correo, usa “Recuperar contraseña” para crear una nueva clave.');
+  }
+  if (message.includes('user already registered') || message.includes('already registered')) {
+    return new Error('Este correo ya está registrado. Inicia sesión o usa “Recuperar contraseña” si no recuerdas la clave.');
+  }
+  if (message.includes('email not confirmed')) {
+    return new Error('Tu correo todavía no está confirmado. Solicita un nuevo enlace o usa “Recuperar contraseña”.');
+  }
+  return new Error(rawMessage || 'No pudimos completar el acceso. Inténtalo de nuevo.');
+};
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -138,17 +155,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    const { data, error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
+    if (error) throw getFriendlyAuthError(error);
+    if (data.session) applySessionState(data.session);
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
+    const cleanEmail = normalizeEmail(email);
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: cleanEmail,
       password,
       options: { emailRedirectTo: window.location.origin },
     });
-    if (error) throw error;
+    if (error) throw getFriendlyAuthError(error);
+    if (data.user?.identities && data.user.identities.length === 0) {
+      throw new Error('Este correo ya está registrado. Inicia sesión o usa “Recuperar contraseña” si no recuerdas la clave.');
+    }
+    if (data.session) {
+      applySessionState(data.session);
+      return { needsConfirmation: false };
+    }
+
+    const loginResult = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+    if (!loginResult.error && loginResult.data.session) {
+      applySessionState(loginResult.data.session);
+      return { needsConfirmation: false };
+    }
+
     if (data.user && !data.session) {
       return { needsConfirmation: true };
     }
@@ -156,10 +189,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) throw error;
+    if (error) throw getFriendlyAuthError(error);
   };
 
   const updatePassword = async (password: string) => {
