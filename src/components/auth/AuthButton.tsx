@@ -101,6 +101,29 @@ export const AuthButton = ({
     }
   };
 
+  const handleForgotPassword = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!email.trim()) {
+      setErrors({ email: 'El email es obligatorio' });
+      return;
+    }
+    if (!validateEmail(email)) {
+      setErrors({ email: 'Formato de email inválido' });
+      return;
+    }
+    try {
+      setIsSigningIn(true);
+      await resetPassword(email);
+      toast.success('Te enviamos un enlace para recuperar tu contraseña. Revisa tu correo.');
+      setShowDialog(false);
+      resetForm();
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al enviar el enlace de recuperación');
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     try {
       setIsSigningIn(true);
