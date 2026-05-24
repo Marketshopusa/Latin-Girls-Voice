@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogIn, LogOut, Loader2, User, Mail, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { LogIn, LogOut, Loader2, User, Mail, Eye, EyeOff, UserPlus, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
