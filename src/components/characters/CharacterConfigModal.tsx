@@ -7,6 +7,8 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
+import { useNsfw } from '@/contexts/NsfwContext';
+import { AgeConfirmModal } from '@/components/modals/AgeConfirmModal';
 
 interface CharacterConfigModalProps {
   character: Character;
@@ -29,8 +31,10 @@ export const CharacterConfigModal = ({
   const [welcomeMessage, setWelcomeMessage] = useState(character.welcomeMessage);
   const [voice, setVoice] = useState<VoiceType>(normalizeVoiceType(character.voice));
   const [nsfw, setNsfw] = useState(character.nsfw);
-  const { limits, plan } = useSubscription();
+  const { limits } = useSubscription();
+  const { hasConfirmedAge, confirmAge } = useNsfw();
   const [showEspaña, setShowEspaña] = useState(false);
+  const [showAgeModal, setShowAgeModal] = useState(false);
   
   // Voice preview state
   const [previewingVoice, setPreviewingVoice] = useState<VoiceType | null>(null);
@@ -149,6 +153,20 @@ export const CharacterConfigModal = ({
   const handleSave = () => {
     onSave({ history, welcomeMessage, voice, nsfw });
     onClose();
+  };
+
+  const handlePlusToggle = (checked: boolean) => {
+    if (checked && !hasConfirmedAge) {
+      setShowAgeModal(true);
+      return;
+    }
+    setNsfw(checked);
+  };
+
+  const handleAgeConfirm = async () => {
+    await confirmAge();
+    setNsfw(true);
+    setShowAgeModal(false);
   };
 
   // Reusable voice card renderer
@@ -302,7 +320,24 @@ export const CharacterConfigModal = ({
             </div>
           </div>
 
-          {/* NSFW Toggle - hidden by kill switch */}
+          {/* Plus Mode */}
+          <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={cn(
+                  'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
+                  nsfw ? 'bg-destructive/20 text-destructive' : 'bg-secondary text-muted-foreground'
+                )}>
+                  <Shield className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">Modo Plus (+18)</p>
+                  <p className="text-xs text-muted-foreground">Activa o desactiva el estilo Plus para este personaje.</p>
+                </div>
+              </div>
+              <Switch checked={nsfw} onCheckedChange={handlePlusToggle} />
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
@@ -315,6 +350,11 @@ export const CharacterConfigModal = ({
           </button>
         </div>
       </div>
+      <AgeConfirmModal
+        isOpen={showAgeModal}
+        onConfirm={handleAgeConfirm}
+        onCancel={() => setShowAgeModal(false)}
+      />
     </div>
   );
 };

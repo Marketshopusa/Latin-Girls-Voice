@@ -87,11 +87,13 @@ export const Sidebar = () => {
           {/* NSFW Toggle - only visible when feature is enabled */}
           {featureVisible && (
             <div className="p-2 lg:p-3 rounded-lg bg-muted/50 border border-border">
-              <button 
-                onClick={handleNsfwToggle}
-                className="w-full flex items-center gap-2 justify-center lg:justify-between"
-              >
-                <div className="flex items-center gap-2">
+              <div className="w-full flex items-center gap-2 justify-center lg:justify-between">
+                <button
+                  type="button"
+                  onClick={handleNsfwToggle}
+                  className="flex items-center gap-2 rounded-lg transition-colors hover:text-foreground"
+                  title={nsfwEnabled ? 'Desactivar Plus +18' : 'Activar Plus +18'}
+                >
                   <Shield className={cn(
                     "h-5 w-5 transition-colors",
                     nsfwEnabled ? "text-destructive" : "text-muted-foreground"
@@ -100,18 +102,18 @@ export const Sidebar = () => {
                     "hidden lg:block text-sm font-medium",
                     nsfwEnabled ? "text-destructive" : "text-muted-foreground"
                   )}>
-                    NSFW +18
+                    Plus +18
                   </span>
-                </div>
+                </button>
                 <Switch
                   checked={nsfwEnabled}
                   onCheckedChange={handleNsfwToggle}
                   className="hidden lg:flex"
                 />
-              </button>
+              </div>
               {nsfwEnabled && (
                 <p className="hidden lg:block text-xs text-destructive/70 mt-1.5">
-                  Contenido adulto activado
+                  Modo Plus activado
                 </p>
               )}
             </div>

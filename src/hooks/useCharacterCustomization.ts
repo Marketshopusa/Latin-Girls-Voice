@@ -30,6 +30,9 @@ export const useCharacterCustomization = (characterId: string | undefined) => {
   // Cargar personalización existente
   useEffect(() => {
     const loadCustomization = async () => {
+      setLoading(true);
+      setCustomization(null);
+
       if (!user || !characterId) {
         setLoading(false);
         return;
@@ -52,9 +55,12 @@ export const useCharacterCustomization = (characterId: string | undefined) => {
             voice: data.voice ? (normalizeVoiceType(data.voice) as VoiceType) : undefined,
             nsfw: data.nsfw ?? undefined,
           });
+        } else {
+          setCustomization(null);
         }
       } catch (err) {
         console.error('Error:', err);
+        setCustomization(null);
       } finally {
         setLoading(false);
       }
