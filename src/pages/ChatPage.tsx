@@ -39,6 +39,7 @@ const ChatPage = () => {
   const [characterLoading, setCharacterLoading] = useState(true);
   const [lastAIMessageId, setLastAIMessageId] = useState<string | null>(null);
   const [isVoiceCallOpen, setIsVoiceCallOpen] = useState(false);
+  const [voiceCallStream, setVoiceCallStream] = useState<MediaStream | null>(null);
   const [showConversationList, setShowConversationList] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -80,11 +81,29 @@ const ChatPage = () => {
   // Hook for voice calls
   const { canUseVoiceCalls, checkVoiceCallAccess } = useVoiceCall({ characterName: character?.name });
 
-  const handleStartVoiceCall = () => {
+  const handleStartVoiceCall = async () => {
     if (!checkVoiceCallAccess()) {
       return;
     }
-    setIsVoiceCallOpen(true);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+      setVoiceCallStream(stream);
+      setIsVoiceCallOpen(true);
+    } catch (error) {
+      console.error('[VoiceCall] Could not open microphone from call button:', error);
+      toast.error('No se pudo activar el micrófono', {
+        description: 'Revisa permisos de micrófono y vuelve a tocar el botón de llamada.',
+      });
+    }
+  };
+
+  const handleCloseVoiceCall = () => {
+    voiceCallStream?.getTracks().forEach(track => track.stop());
+    setVoiceCallStream(null);
+    setIsVoiceCallOpen(false);
   };
 
   // Load character data - first check mocks, then DB (using characters_public view)
