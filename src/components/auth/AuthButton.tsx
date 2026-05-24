@@ -154,6 +154,10 @@ export const AuthButton = ({
     }
   };
 
+  const handleEmailChange = (value: string) => {
+    setEmail(value.trim().toLowerCase());
+  };
+
   if (isLoading) {
     return (
       <Button variant={buttonVariant} size={buttonSize} className={className} disabled>
@@ -195,7 +199,7 @@ export const AuthButton = ({
                   type="email"
                   placeholder="Email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => handleEmailChange(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-lg border border-border bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   autoComplete="email"
                 />
