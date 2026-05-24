@@ -34,7 +34,7 @@ export const AuthButton = ({
   buttonSize = 'default',
   title,
 }: AuthButtonProps) => {
-  const { user, isLoading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut } = useAuth();
+  const { user, isLoading, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, signOut } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('login');
