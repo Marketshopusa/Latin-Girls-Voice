@@ -324,7 +324,7 @@ INTERPRETACIÓN VOCAL:
       }
     }
 
-    // Si el modelo bloquea en NSFW, reintentar una vez con prompt suavizado
+    // Si el modelo bloquea en NSFW, reintentar con prompt suavizado (mismo modelo)
     if (!aiResponse.length && isNsfw) {
       console.log("NSFW response blocked, retrying with softened prompt...");
       const retryMessages = [
@@ -348,6 +348,53 @@ INTERPRETACIÓN VOCAL:
       if (retryResp.ok) {
         const retryData = await retryResp.json();
         aiResponse = extractAssistantText(retryData).trim();
+      }
+    }
+
+    // Segundo reintento: cambiar de modelo (gemini-2.5-flash suele aceptar lo que 3-flash-preview bloquea)
+    if (!aiResponse.length) {
+      console.log("Empty response, retrying with alternate model gemini-2.5-flash...");
+      const altBody = {
+        model: "google/gemini-2.5-flash",
+        temperature: 0.9,
+        max_tokens: 240,
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+      };
+      const altResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(altBody),
+      });
+      if (altResp.ok) {
+        const altData = await altResp.json();
+        aiResponse = extractAssistantText(altData).trim();
+        if (aiResponse) console.log("gemini-2.5-flash rescued the response");
+      }
+    }
+
+    // Tercer reintento: gpt-5-mini como último recurso antes del fallback
+    if (!aiResponse.length) {
+      console.log("Still empty, final retry with openai/gpt-5-mini...");
+      const finalBody = {
+        model: "openai/gpt-5-mini",
+        max_tokens: 240,
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+      };
+      const finalResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(finalBody),
+      });
+      if (finalResp.ok) {
+        const finalData = await finalResp.json();
+        aiResponse = extractAssistantText(finalData).trim();
+        if (aiResponse) console.log("gpt-5-mini rescued the response");
       }
     }
 
