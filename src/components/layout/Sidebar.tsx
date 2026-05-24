@@ -88,7 +88,12 @@ export const Sidebar = () => {
           {featureVisible && (
             <div className="p-2 lg:p-3 rounded-lg bg-muted/50 border border-border">
               <div className="w-full flex items-center gap-2 justify-center lg:justify-between">
-                <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleNsfwToggle}
+                  className="flex items-center gap-2 rounded-lg transition-colors hover:text-foreground"
+                  title={nsfwEnabled ? 'Desactivar Plus +18' : 'Activar Plus +18'}
+                >
                   <Shield className={cn(
                     "h-5 w-5 transition-colors",
                     nsfwEnabled ? "text-destructive" : "text-muted-foreground"
@@ -99,20 +104,12 @@ export const Sidebar = () => {
                   )}>
                     Plus +18
                   </span>
-                </div>
+                </button>
                 <Switch
                   checked={nsfwEnabled}
                   onCheckedChange={handleNsfwToggle}
                   className="hidden lg:flex"
                 />
-                <button
-                  type="button"
-                  onClick={handleNsfwToggle}
-                  className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors"
-                  title={nsfwEnabled ? 'Desactivar Plus +18' : 'Activar Plus +18'}
-                >
-                  <span className="sr-only">{nsfwEnabled ? 'Desactivar Plus +18' : 'Activar Plus +18'}</span>
-                </button>
               </div>
               {nsfwEnabled && (
                 <p className="hidden lg:block text-xs text-destructive/70 mt-1.5">
