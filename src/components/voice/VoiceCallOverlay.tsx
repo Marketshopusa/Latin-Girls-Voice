@@ -588,7 +588,7 @@ export const VoiceCallOverlay = ({
       setIsListening(false);
       setAudioLevel(0);
     };
-  }, [isOpen, conversationHistory, transcribeAudioBlob]);
+  }, [isOpen, transcribeAudioBlob]);
 
   // Call duration timer
   useEffect(() => {
@@ -605,12 +605,20 @@ export const VoiceCallOverlay = ({
 
   // Stop/restart recognition when speaking state changes
   useEffect(() => {
-    if (!recognitionRef.current || !isCallActiveRef.current) return;
+    if (!isCallActiveRef.current) return;
     
     if (isSpeaking) {
-      try { recognitionRef.current.stop(); } catch (e) { /* ignore */ }
-    } else if (isConnected && !isMuted) {
-      try { recognitionRef.current.start(); } catch (e) { /* already started */ }
+      try { recognitionRef.current?.stop(); } catch (e) { /* ignore */ }
+      if (recorderStopTimerRef.current) clearTimeout(recorderStopTimerRef.current);
+      if (recorderRestartTimerRef.current) clearTimeout(recorderRestartTimerRef.current);
+      if (mediaRecorderRef.current?.state === 'recording') {
+        try { mediaRecorderRef.current.stop(); } catch (e) { /* ignore */ }
+      }
+    } else if (isConnected && !isMuted && !isProcessingRef.current) {
+      window.setTimeout(() => {
+        try { recognitionRef.current?.start(); } catch (e) { /* already started */ }
+      }, 500);
+      window.setTimeout(() => startRecordingSnippetRef.current(), 600);
     }
   }, [isSpeaking, isConnected, isMuted]);
 
