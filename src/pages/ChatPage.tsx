@@ -423,7 +423,8 @@ const ChatPage = () => {
         <VoiceCallOverlay
           character={character}
           isOpen={isVoiceCallOpen}
-          onClose={() => setIsVoiceCallOpen(false)}
+          onClose={handleCloseVoiceCall}
+          initialStream={voiceCallStream}
           conversationHistory={messages.map(m => ({ role: m.role, content: m.text }))}
           addMessageToChat={addMessage}
         />
@@ -555,7 +556,8 @@ const ChatPage = () => {
       <VoiceCallOverlay
         character={character}
         isOpen={isVoiceCallOpen}
-        onClose={() => setIsVoiceCallOpen(false)}
+        onClose={handleCloseVoiceCall}
+        initialStream={voiceCallStream}
         conversationHistory={messages.map(m => ({ role: m.role, content: m.text }))}
         addMessageToChat={addMessage}
       />
