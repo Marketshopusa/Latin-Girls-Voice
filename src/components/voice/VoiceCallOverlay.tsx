@@ -12,6 +12,7 @@ interface VoiceCallOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   initialStream?: MediaStream | null;
+  initialAudioContext?: AudioContext | null;
   conversationHistory: Array<{ role: string; content: string }>;
   addMessageToChat: (role: 'user' | 'assistant', text: string, audioDuration?: number) => Promise<Message | null>;
 }
@@ -66,6 +67,7 @@ export const VoiceCallOverlay = ({
   isOpen, 
   onClose,
   initialStream,
+  initialAudioContext,
   conversationHistory,
   addMessageToChat
 }: VoiceCallOverlayProps) => {
@@ -362,25 +364,36 @@ export const VoiceCallOverlay = ({
       content: msg.content,
     }));
 
-    const startAudioMeter = (stream: MediaStream) => {
+    const startAudioMeter = async (stream: MediaStream) => {
       try {
         const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioContextCtor) return;
-        const audioContext = new AudioContextCtor();
+        const audioContext = initialAudioContext || new AudioContextCtor();
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume().catch(() => undefined);
+        }
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         source.connect(analyser);
         audioContextRef.current = audioContext;
         const samples = new Uint8Array(analyser.frequencyBinCount);
+        const timeSamples = new Uint8Array(analyser.fftSize);
 
         const tick = () => {
           if (!isCallActiveRef.current) return;
           analyser.getByteFrequencyData(samples);
+          analyser.getByteTimeDomainData(timeSamples);
           const average = samples.reduce((sum, value) => sum + value, 0) / samples.length;
-          const level = Math.min(1, average / 90);
+          const rms = Math.sqrt(
+            timeSamples.reduce((sum, value) => {
+              const centered = value - 128;
+              return sum + centered * centered;
+            }, 0) / timeSamples.length
+          );
+          const level = Math.min(1, Math.max(average / 80, rms / 18));
           setAudioLevel(level);
-          if (level > 0.08 && !isSpeakingRef.current && !isMutedRef.current) {
+          if (level > 0.035 && !isSpeakingRef.current && !isMutedRef.current) {
             hasSpeechInSnippetRef.current = true;
           }
           analyserFrameRef.current = requestAnimationFrame(tick);
@@ -533,7 +546,7 @@ export const VoiceCallOverlay = ({
         mediaStreamRef.current = stream;
         setIsConnected(true);
         setIsListening(true);
-        startAudioMeter(stream);
+        await startAudioMeter(stream);
         startBrowserRecognition();
         startServerRecording(stream);
       } catch (error) {
@@ -592,7 +605,7 @@ export const VoiceCallOverlay = ({
       setIsListening(false);
       setAudioLevel(0);
     };
-  }, [isOpen, initialStream, transcribeAudioBlob]);
+  }, [isOpen, initialStream, initialAudioContext, transcribeAudioBlob]);
 
   // Call duration timer
   useEffect(() => {
