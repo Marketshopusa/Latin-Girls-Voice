@@ -89,6 +89,7 @@ export const VoiceCallOverlay = ({
   const startRecordingSnippetRef = useRef<() => void>(() => undefined);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserFrameRef = useRef<number | null>(null);
+  const audioLevelRef = useRef(0);
   const isRecordingSnippetRef = useRef(false);
   const hasSpeechInSnippetRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -392,6 +393,7 @@ export const VoiceCallOverlay = ({
             }, 0) / timeSamples.length
           );
           const level = Math.min(1, Math.max(average / 80, rms / 18));
+          audioLevelRef.current = level;
           setAudioLevel(level);
           if (level > 0.035 && !isSpeakingRef.current && !isMutedRef.current) {
             hasSpeechInSnippetRef.current = true;
@@ -505,9 +507,10 @@ export const VoiceCallOverlay = ({
               recorderStopTimerRef.current = null;
             }
 
-            if (isCallActiveRef.current && chunks.length && hasSpeechInSnippetRef.current && !isProcessingRef.current && !isSpeakingRef.current) {
+            if (isCallActiveRef.current && chunks.length && !isProcessingRef.current && !isSpeakingRef.current) {
               const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
               if (blob.size > 1200) {
+                console.log('[VoiceCall] Sending microphone snippet:', blob.size, 'bytes, level:', audioLevelRef.current.toFixed(3), 'speech:', hasSpeechInSnippetRef.current);
                 const transcript = await transcribeAudioBlob(blob);
                 if (transcript) await handleUserMessageRef.current?.(transcript);
               }
@@ -518,9 +521,12 @@ export const VoiceCallOverlay = ({
             }
           };
 
-          recorder.start();
+          recorder.start(1000);
           recorderStopTimerRef.current = setTimeout(() => {
-            if (recorder.state === 'recording') recorder.stop();
+            if (recorder.state === 'recording') {
+              try { recorder.requestData(); } catch (e) { /* ignore */ }
+              recorder.stop();
+            }
           }, 4200);
         } catch (error) {
           isRecordingSnippetRef.current = false;
