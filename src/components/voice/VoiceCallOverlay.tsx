@@ -365,13 +365,13 @@ export const VoiceCallOverlay = ({
       content: msg.content,
     }));
 
-    const startAudioMeter = async (stream: MediaStream) => {
+    const startAudioMeter = (stream: MediaStream) => {
       try {
         const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioContextCtor) return;
         const audioContext = initialAudioContext || new AudioContextCtor();
         if (audioContext.state === 'suspended') {
-          await audioContext.resume().catch(() => undefined);
+          void audioContext.resume().catch(() => undefined);
         }
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
@@ -550,9 +550,16 @@ export const VoiceCallOverlay = ({
         }
 
         mediaStreamRef.current = stream;
+        stream.getAudioTracks().forEach((track) => {
+          console.log('[VoiceCall] Microphone track ready:', track.label || 'micrófono', track.readyState, 'enabled:', track.enabled, 'muted:', track.muted);
+          track.enabled = true;
+          track.onmute = () => console.warn('[VoiceCall] Microphone track muted by device/browser');
+          track.onunmute = () => console.log('[VoiceCall] Microphone track receiving audio');
+          track.onended = () => console.warn('[VoiceCall] Microphone track ended');
+        });
         setIsConnected(true);
         setIsListening(true);
-        await startAudioMeter(stream);
+        startAudioMeter(stream);
         startBrowserRecognition();
         startServerRecording(stream);
       } catch (error) {
