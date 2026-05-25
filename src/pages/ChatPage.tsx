@@ -40,6 +40,7 @@ const ChatPage = () => {
   const [lastAIMessageId, setLastAIMessageId] = useState<string | null>(null);
   const [isVoiceCallOpen, setIsVoiceCallOpen] = useState(false);
   const [voiceCallStream, setVoiceCallStream] = useState<MediaStream | null>(null);
+  const [voiceCallAudioContext, setVoiceCallAudioContext] = useState<AudioContext | null>(null);
   const [showConversationList, setShowConversationList] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -86,13 +87,23 @@ const ChatPage = () => {
       return;
     }
 
+    let audioContext: AudioContext | null = null;
+
     try {
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextCtor) {
+        audioContext = new AudioContextCtor();
+        void audioContext.resume().catch(() => undefined);
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
       setVoiceCallStream(stream);
+      setVoiceCallAudioContext(audioContext);
       setIsVoiceCallOpen(true);
     } catch (error) {
+      void audioContext?.close().catch(() => undefined);
       console.error('[VoiceCall] Could not open microphone from call button:', error);
       toast.error('No se pudo activar el micrófono', {
         description: 'Revisa permisos de micrófono y vuelve a tocar el botón de llamada.',
@@ -102,7 +113,9 @@ const ChatPage = () => {
 
   const handleCloseVoiceCall = () => {
     voiceCallStream?.getTracks().forEach(track => track.stop());
+    void voiceCallAudioContext?.close().catch(() => undefined);
     setVoiceCallStream(null);
+    setVoiceCallAudioContext(null);
     setIsVoiceCallOpen(false);
   };
 
@@ -425,6 +438,7 @@ const ChatPage = () => {
           isOpen={isVoiceCallOpen}
           onClose={handleCloseVoiceCall}
           initialStream={voiceCallStream}
+          initialAudioContext={voiceCallAudioContext}
           conversationHistory={messages.map(m => ({ role: m.role, content: m.text }))}
           addMessageToChat={addMessage}
         />
@@ -558,6 +572,7 @@ const ChatPage = () => {
         isOpen={isVoiceCallOpen}
         onClose={handleCloseVoiceCall}
         initialStream={voiceCallStream}
+        initialAudioContext={voiceCallAudioContext}
         conversationHistory={messages.map(m => ({ role: m.role, content: m.text }))}
         addMessageToChat={addMessage}
       />

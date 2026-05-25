@@ -12,6 +12,7 @@ interface VoiceCallOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   initialStream?: MediaStream | null;
+  initialAudioContext?: AudioContext | null;
   conversationHistory: Array<{ role: string; content: string }>;
   addMessageToChat: (role: 'user' | 'assistant', text: string, audioDuration?: number) => Promise<Message | null>;
 }
@@ -66,6 +67,7 @@ export const VoiceCallOverlay = ({
   isOpen, 
   onClose,
   initialStream,
+  initialAudioContext,
   conversationHistory,
   addMessageToChat
 }: VoiceCallOverlayProps) => {
@@ -87,6 +89,7 @@ export const VoiceCallOverlay = ({
   const startRecordingSnippetRef = useRef<() => void>(() => undefined);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserFrameRef = useRef<number | null>(null);
+  const audioLevelRef = useRef(0);
   const isRecordingSnippetRef = useRef(false);
   const hasSpeechInSnippetRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -366,21 +369,33 @@ export const VoiceCallOverlay = ({
       try {
         const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioContextCtor) return;
-        const audioContext = new AudioContextCtor();
+        const audioContext = initialAudioContext || new AudioContextCtor();
+        if (audioContext.state === 'suspended') {
+          void audioContext.resume().catch(() => undefined);
+        }
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         source.connect(analyser);
         audioContextRef.current = audioContext;
         const samples = new Uint8Array(analyser.frequencyBinCount);
+        const timeSamples = new Uint8Array(analyser.fftSize);
 
         const tick = () => {
           if (!isCallActiveRef.current) return;
           analyser.getByteFrequencyData(samples);
+          analyser.getByteTimeDomainData(timeSamples);
           const average = samples.reduce((sum, value) => sum + value, 0) / samples.length;
-          const level = Math.min(1, average / 90);
+          const rms = Math.sqrt(
+            timeSamples.reduce((sum, value) => {
+              const centered = value - 128;
+              return sum + centered * centered;
+            }, 0) / timeSamples.length
+          );
+          const level = Math.min(1, Math.max(average / 80, rms / 18));
+          audioLevelRef.current = level;
           setAudioLevel(level);
-          if (level > 0.08 && !isSpeakingRef.current && !isMutedRef.current) {
+          if (level > 0.035 && !isSpeakingRef.current && !isMutedRef.current) {
             hasSpeechInSnippetRef.current = true;
           }
           analyserFrameRef.current = requestAnimationFrame(tick);
@@ -492,9 +507,10 @@ export const VoiceCallOverlay = ({
               recorderStopTimerRef.current = null;
             }
 
-            if (isCallActiveRef.current && chunks.length && hasSpeechInSnippetRef.current && !isProcessingRef.current && !isSpeakingRef.current) {
+            if (isCallActiveRef.current && chunks.length && !isProcessingRef.current && !isSpeakingRef.current) {
               const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
               if (blob.size > 1200) {
+                console.log('[VoiceCall] Sending microphone snippet:', blob.size, 'bytes, level:', audioLevelRef.current.toFixed(3), 'speech:', hasSpeechInSnippetRef.current);
                 const transcript = await transcribeAudioBlob(blob);
                 if (transcript) await handleUserMessageRef.current?.(transcript);
               }
@@ -505,9 +521,12 @@ export const VoiceCallOverlay = ({
             }
           };
 
-          recorder.start();
+          recorder.start(1000);
           recorderStopTimerRef.current = setTimeout(() => {
-            if (recorder.state === 'recording') recorder.stop();
+            if (recorder.state === 'recording') {
+              try { recorder.requestData(); } catch (e) { /* ignore */ }
+              recorder.stop();
+            }
           }, 4200);
         } catch (error) {
           isRecordingSnippetRef.current = false;
@@ -531,6 +550,13 @@ export const VoiceCallOverlay = ({
         }
 
         mediaStreamRef.current = stream;
+        stream.getAudioTracks().forEach((track) => {
+          console.log('[VoiceCall] Microphone track ready:', track.label || 'micrófono', track.readyState, 'enabled:', track.enabled, 'muted:', track.muted);
+          track.enabled = true;
+          track.onmute = () => console.warn('[VoiceCall] Microphone track muted by device/browser');
+          track.onunmute = () => console.log('[VoiceCall] Microphone track receiving audio');
+          track.onended = () => console.warn('[VoiceCall] Microphone track ended');
+        });
         setIsConnected(true);
         setIsListening(true);
         startAudioMeter(stream);
@@ -592,7 +618,7 @@ export const VoiceCallOverlay = ({
       setIsListening(false);
       setAudioLevel(0);
     };
-  }, [isOpen, initialStream, transcribeAudioBlob]);
+  }, [isOpen, initialStream, initialAudioContext, transcribeAudioBlob]);
 
   // Call duration timer
   useEffect(() => {
