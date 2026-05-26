@@ -257,6 +257,17 @@ export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
      provider: 'elevenlabs',
      tier: 'premium',
    },
+   {
+     id: 'el-paola-cheerful',
+     label: 'Paola Cheerful',
+     icon: '🌟',
+     description: 'Argentina brillante y enérgica, sonrisa en la voz',
+     gender: 'FEMALE',
+     region: 'ARGENTINA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
 ];
  
 // === GOOGLE CLOUD TTS - CHIRP 3: HD (Reemplazo completo de Neural2) ===
