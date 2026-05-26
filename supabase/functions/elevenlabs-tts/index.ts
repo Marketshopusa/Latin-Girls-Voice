@@ -61,6 +61,13 @@ const corsHeaders = {
     name: "ARG Dulce",
     description: "Argentina suave, tierna y soñadora",
   },
+
+  // Paola Cheerful - Brillante y enérgica (es-AR)
+  "el-paola-cheerful": {
+    voiceId: "oMtcuusPYvELKy2OYBJy",
+    name: "Paola Cheerful",
+    description: "Argentina brillante y enérgica, sonrisa en la voz",
+  },
   
   // Vanessa - Paisa accent
   "el-colombiana-paisa": {
