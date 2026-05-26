@@ -20,6 +20,7 @@ export type VoiceType =
   | 'el-vzla-candy'         // VZLA Candy - Dulce venezolana de San Cristóbal
   | 'el-paisa-dulce'        // Paisa Dulce - Colombiana paisa tierna
   | 'el-arg-dulce'          // ARG Dulce - Argentina suave y soñadora
+  | 'el-paola-cheerful'     // Paola Cheerful - Brillante y enérgica (es-AR)
  // === GOOGLE CLOUD TTS - Chirp 3: HD Latinas (es-US) ===
   | 'es-US-Chirp3-HD-Achernar'
   | 'es-US-Chirp3-HD-Aoede'
