@@ -20,6 +20,7 @@ export type VoiceType =
   | 'el-vzla-candy'         // VZLA Candy - Dulce venezolana de San Cristóbal
   | 'el-paisa-dulce'        // Paisa Dulce - Colombiana paisa tierna
   | 'el-arg-dulce'          // ARG Dulce - Argentina suave y soñadora
+  | 'el-paola-cheerful'     // Paola Cheerful - Brillante y enérgica (es-AR)
  // === GOOGLE CLOUD TTS - Chirp 3: HD Latinas (es-US) ===
   | 'es-US-Chirp3-HD-Achernar'
   | 'es-US-Chirp3-HD-Aoede'
@@ -250,6 +251,17 @@ export const ELEVENLABS_VOICE_CATALOG: VoiceConfig[] = [
      label: 'ARG Dulce',
      icon: '💕',
      description: 'Argentina suave, tierna y soñadora',
+     gender: 'FEMALE',
+     region: 'ARGENTINA',
+     quality: 'FLASH_V2_5',
+     provider: 'elevenlabs',
+     tier: 'premium',
+   },
+   {
+     id: 'el-paola-cheerful',
+     label: 'Paola Cheerful',
+     icon: '🌟',
+     description: 'Argentina brillante y enérgica, sonrisa en la voz',
      gender: 'FEMALE',
      region: 'ARGENTINA',
      quality: 'FLASH_V2_5',
