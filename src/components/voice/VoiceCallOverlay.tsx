@@ -371,7 +371,8 @@ export const VoiceCallOverlay = ({
         recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = true;
-        recognition.lang = 'es-ES';
+        recognition.lang = 'es-US';
+
 
         recognition.onstart = () => {
           if (isCallActiveRef.current) {
