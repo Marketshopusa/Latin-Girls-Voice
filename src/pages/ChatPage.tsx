@@ -100,11 +100,12 @@ const ChatPage = () => {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: false,
+          autoGainControl: true,
           channelCount: 1,
           sampleRate: 48000,
         } as MediaTrackConstraints,
       });
+
 
       setVoiceCallStream(stream);
       setVoiceCallAudioContext(audioContext);
