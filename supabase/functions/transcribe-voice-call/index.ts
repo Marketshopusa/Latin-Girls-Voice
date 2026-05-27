@@ -140,17 +140,18 @@ serve(async (req) => {
 
     let text = "";
     try {
-      text = await transcribeWithGemini(audio);
-      console.log(`Voice call Gemini STT success: ${audio.size} bytes -> ${text.length} chars`);
-    } catch (geminiError) {
-      console.warn("Voice call Gemini STT failed, trying ElevenLabs fallback:", geminiError);
+      text = await transcribeWithElevenLabs(audio);
+      console.log(`Voice call ElevenLabs Scribe success: ${audio.size} bytes -> ${text.length} chars`);
+    } catch (elevenLabsError) {
+      console.warn("Voice call ElevenLabs STT failed, trying Gemini fallback:", elevenLabsError);
       try {
-        text = await transcribeWithElevenLabs(audio);
-        console.log(`Voice call ElevenLabs STT fallback success: ${audio.size} bytes -> ${text.length} chars`);
-      } catch (elevenLabsError) {
-        console.warn("Voice call ElevenLabs STT fallback failed:", elevenLabsError);
+        text = await transcribeWithGemini(audio);
+        console.log(`Voice call Gemini STT fallback success: ${audio.size} bytes -> ${text.length} chars`);
+      } catch (geminiError) {
+        console.warn("Voice call Gemini STT fallback failed:", geminiError);
       }
     }
+
 
     return new Response(JSON.stringify({ text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
