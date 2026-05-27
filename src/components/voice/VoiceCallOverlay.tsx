@@ -396,10 +396,9 @@ export const VoiceCallOverlay = ({
           if (interimTranscript || finalTranscript) hasSpeechInSnippetRef.current = true;
           setCurrentTranscript(interimTranscript || finalTranscript);
 
-          if (finalTranscript && !isProcessingRef.current && !isSpeakingRef.current && isCallActiveRef.current) {
-            console.log('[VoiceCall] Final transcript detected:', finalTranscript);
-            handleUserMessageRef.current?.(finalTranscript);
-          }
+          // NOTA: NO enviamos el transcript del navegador a la IA — es muy impreciso.
+          // El envío real lo hace la transcripción del servidor (ElevenLabs Scribe) en startServerRecording.
+
         };
 
         recognition.onerror = (event: any) => {
