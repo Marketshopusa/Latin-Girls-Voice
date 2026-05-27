@@ -623,9 +623,9 @@ export const DEFAULT_VOICE: VoiceType = 'es-US-Chirp3-HD-Leda';
  };
  
  // Helper para determinar el proveedor de una voz
- export const getVoiceProvider = (voiceId: string): TTSProvider => {
-   const voice = VOICE_CATALOG.find(v => v.id === voiceId);
-   return voice?.provider || 'google';
+ // FORZADO a 'elevenlabs' en toda la app — Google Cloud TTS está deshabilitado.
+ export const getVoiceProvider = (_voiceId: string): TTSProvider => {
+   return 'elevenlabs';
  };
 
 export const LEGACY_VOICE_MAP: Record<string, VoiceType> = {
