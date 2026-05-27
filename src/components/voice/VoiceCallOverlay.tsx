@@ -499,7 +499,7 @@ export const VoiceCallOverlay = ({
               audio: {
                 echoCancellation: true,
                 noiseSuppression: true,
-                autoGainControl: false,
+                autoGainControl: true,
                 channelCount: 1,
                 sampleRate: 48000,
               } as MediaTrackConstraints,
@@ -509,30 +509,8 @@ export const VoiceCallOverlay = ({
           return;
         }
 
-        // Apply ~3x software gain to boost low-volume microphones (phone mics in noisy rooms)
-        let boostedStream: MediaStream = stream;
-        try {
-          const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
-          if (AudioContextCtor) {
-            const gainContext: AudioContext = initialAudioContext || new AudioContextCtor();
-            if (gainContext.state === 'suspended') {
-              await gainContext.resume().catch(() => undefined);
-            }
-            audioContextRef.current = gainContext;
-            const src = gainContext.createMediaStreamSource(stream);
-            const gainNode = gainContext.createGain();
-            gainNode.gain.value = 3.0;
-            const dest = gainContext.createMediaStreamDestination();
-            src.connect(gainNode);
-            gainNode.connect(dest);
-            if (dest.stream.getAudioTracks().length) {
-              boostedStream = dest.stream;
-              console.log('[VoiceCall] Microphone gain boost enabled (x3)');
-            }
-          }
-        } catch (gainError) {
-          console.warn('[VoiceCall] Could not apply microphone gain, using raw stream:', gainError);
-        }
+        // Use raw stream directly — manual gain boost caused audio to stop reaching recognition.
+        const boostedStream: MediaStream = stream;
 
         mediaStreamRef.current = stream;
         stream.getAudioTracks().forEach((track) => {
@@ -547,6 +525,7 @@ export const VoiceCallOverlay = ({
         startAudioMeter(boostedStream);
         startBrowserRecognition();
         startServerRecording(boostedStream);
+
 
       } catch (error) {
         console.error('[VoiceCall] Microphone permission/error:', error);
