@@ -288,9 +288,9 @@ const PRESET_TO_VOICE_TEXT: Record<SfxPreset, string> = {
 
         const voiceType = options.voiceType || DEFAULT_VOICE;
 
-        // Usar Google Cloud TTS con el prompt como texto expresivo
+        // Usar ElevenLabs TTS con el prompt como texto expresivo
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
           {
             method: "POST",
             headers: {
