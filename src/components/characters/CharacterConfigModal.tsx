@@ -72,11 +72,9 @@ export const CharacterConfigModal = ({
     setPreviewingVoice(voiceId);
 
     try {
-      const provider = getVoiceProvider(voiceId);
+      // FORZADO a ElevenLabs — Google Cloud TTS desactivado.
       const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const endpoint = provider === 'elevenlabs' 
-        ? `${baseUrl}/functions/v1/elevenlabs-tts`
-        : `${baseUrl}/functions/v1/google-cloud-tts`;
+      const endpoint = `${baseUrl}/functions/v1/elevenlabs-tts`;
 
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
