@@ -211,10 +211,10 @@ const PRESET_TO_VOICE_TEXT: Record<SfxPreset, string> = {
         const voiceText = PRESET_TO_VOICE_TEXT[preset] || "¡Oh!...";
         const voiceType = options.voiceType || DEFAULT_VOICE;
 
-        console.log(`[SFX] Generando con Google TTS: "${voiceText}" | Voz: ${voiceType}`);
+        console.log(`[SFX] Generando con ElevenLabs TTS: "${voiceText}" | Voz: ${voiceType}`);
 
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
           {
             method: "POST",
             headers: {
@@ -288,9 +288,9 @@ const PRESET_TO_VOICE_TEXT: Record<SfxPreset, string> = {
 
         const voiceType = options.voiceType || DEFAULT_VOICE;
 
-        // Usar Google Cloud TTS con el prompt como texto expresivo
+        // Usar ElevenLabs TTS con el prompt como texto expresivo
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-cloud-tts`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
           {
             method: "POST",
             headers: {
