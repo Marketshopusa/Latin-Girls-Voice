@@ -72,7 +72,7 @@ export const useUserConversations = () => {
       let dbChars: Character[] = [];
       if (dbCharacterIds.length > 0) {
         const { data: dbCharData } = await supabase
-          .from('characters')
+          .from('characters_public')
           .select('id, name, age, tagline, history, welcome_message, voice, nsfw, image_url, is_public, created_at, updated_at')
           .in('id', dbCharacterIds);
 
