@@ -1,23 +1,48 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ResetPasswordPage = () => {
-  const { updatePassword, session } = useAuth();
+  const { updatePassword, session, isLoading } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [exchanging, setExchanging] = useState(true);
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
-      setIsRecovery(true);
-    }
+    const run = async () => {
+      try {
+        const hash = window.location.hash || '';
+        const search = window.location.search || '';
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get('code');
+        const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+        const type = hashParams.get('type') || url.searchParams.get('type');
+
+        if (type === 'recovery' || code || hash.includes('access_token') || search.includes('code=')) {
+          setIsRecovery(true);
+        }
+
+        // PKCE flow: exchange ?code= for a session
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) console.warn('[ResetPassword] exchangeCodeForSession error:', error.message);
+          // Clean URL
+          window.history.replaceState({}, document.title, '/reset-password');
+        }
+      } catch (e) {
+        console.error('[ResetPassword] init error:', e);
+      } finally {
+        setExchanging(false);
+      }
+    };
+    void run();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +66,15 @@ const ResetPasswordPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (exchanging || isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Validando enlace de recuperación...</p>
+      </div>
+    );
+  }
 
   if (!session && !isRecovery) {
     return (
