@@ -6,6 +6,7 @@ const CAP_REFRESH_TOKEN_KEY = '__cap_oauth_refresh_token';
 const CAP_CODE_KEY = '__cap_oauth_code';
 const AUTH_CALLBACK_TIMEOUT_MS = 8000;
 const AUTH_CALLBACK_POLL_MS = 250;
+let restoreSessionPromise: Promise<Session | null> | null = null;
 
 const clearStoredNativeAuth = () => {
   sessionStorage.removeItem(CAP_ACCESS_TOKEN_KEY);
@@ -34,6 +35,8 @@ const getBrowserAuthCallbackState = () => {
   if (typeof window === 'undefined') {
     return {
       authCode: null,
+      tokenHash: null,
+      authType: null,
       hasAuthError: false,
       hasTokensInHash: false,
       isAuthReturn: false,
@@ -44,13 +47,17 @@ const getBrowserAuthCallbackState = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const hasTokensInHash = hash.includes('access_token') || hash.includes('refresh_token');
   const authCode = searchParams.get('code');
+  const tokenHash = searchParams.get('token_hash');
+  const authType = searchParams.get('type');
   const hasAuthError = searchParams.has('error') || hash.includes('error=');
 
   return {
     authCode,
+    tokenHash,
+    authType,
     hasAuthError,
     hasTokensInHash,
-    isAuthReturn: hasTokensInHash || Boolean(authCode) || hasAuthError,
+    isAuthReturn: hasTokensInHash || Boolean(authCode) || Boolean(tokenHash) || hasAuthError,
   };
 };
 
@@ -155,7 +162,7 @@ const waitForBrowserSession = async (): Promise<Session | null> => {
 };
 
 const restoreBrowserSession = async (): Promise<Session | null> => {
-  const { authCode, hasAuthError, hasTokensInHash, isAuthReturn } = getBrowserAuthCallbackState();
+  const { authCode, tokenHash, authType, hasAuthError, hasTokensInHash, isAuthReturn } = getBrowserAuthCallbackState();
 
   if (!isAuthReturn) {
     return getExistingSession();
@@ -212,11 +219,43 @@ const restoreBrowserSession = async (): Promise<Session | null> => {
     }
   }
 
+  if (tokenHash) {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: authType === 'signup' ? 'signup' : 'recovery',
+      });
+
+      cleanAuthUrl();
+      if (error) throw error;
+      return data.session ?? (await waitForBrowserSession());
+    } catch (error) {
+      const fallbackSession = await getExistingSession();
+      cleanAuthUrl();
+
+      if (fallbackSession || isRecoverableExchangeError(error)) {
+        return fallbackSession;
+      }
+
+      throw error;
+    }
+  }
+
   return getExistingSession();
 };
 
 export const restorePersistedSession = async () => {
-  return (await restoreNativeSession()) ?? restoreBrowserSession();
+  if (!restoreSessionPromise) {
+    restoreSessionPromise = (async () => {
+      try {
+        return (await restoreNativeSession()) ?? restoreBrowserSession();
+      } finally {
+        restoreSessionPromise = null;
+      }
+    })();
+  }
+
+  return restoreSessionPromise;
 };
 
 export const clearPersistedAuthArtifacts = () => {
