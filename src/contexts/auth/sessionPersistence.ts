@@ -6,6 +6,7 @@ const CAP_REFRESH_TOKEN_KEY = '__cap_oauth_refresh_token';
 const CAP_CODE_KEY = '__cap_oauth_code';
 const AUTH_CALLBACK_TIMEOUT_MS = 8000;
 const AUTH_CALLBACK_POLL_MS = 250;
+let restoreSessionPromise: Promise<Session | null> | null = null;
 
 const clearStoredNativeAuth = () => {
   sessionStorage.removeItem(CAP_ACCESS_TOKEN_KEY);
@@ -216,7 +217,17 @@ const restoreBrowserSession = async (): Promise<Session | null> => {
 };
 
 export const restorePersistedSession = async () => {
-  return (await restoreNativeSession()) ?? restoreBrowserSession();
+  if (!restoreSessionPromise) {
+    restoreSessionPromise = (async () => {
+      try {
+        return (await restoreNativeSession()) ?? restoreBrowserSession();
+      } finally {
+        restoreSessionPromise = null;
+      }
+    })();
+  }
+
+  return restoreSessionPromise;
 };
 
 export const clearPersistedAuthArtifacts = () => {
