@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
-import { lovable } from '@/integrations/lovable/index';
 import { supabase } from '@/integrations/supabase/client';
 import { clearPersistedAuthArtifacts, hasPendingAuthCallback, restorePersistedSession } from './auth/sessionPersistence';
 
@@ -147,18 +146,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     const redirectTo = new URL(WEB_OAUTH_CALLBACK_PATH, window.location.origin).toString();
-    console.log('[Auth] Starting managed Google OAuth (web):', redirectTo);
+    console.log('[Auth] Starting Google OAuth (web):', redirectTo);
 
-    const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: redirectTo,
-      extraParams: {
-        prompt: 'select_account',
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        queryParams: {
+          prompt: 'select_account',
+        },
       },
     });
 
-    if (result.error) {
-      console.error('[Auth] Managed OAuth error:', result.error);
-      throw result.error;
+    if (error) {
+      console.error('[Auth] Google OAuth error:', error);
+      throw error;
     }
   };
 

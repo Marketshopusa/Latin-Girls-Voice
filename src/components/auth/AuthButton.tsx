@@ -197,6 +197,7 @@ export const AuthButton = ({
               <div>
                 <input
                   type="email"
+                  name="email"
                   placeholder="Email"
                   value={email}
                   onChange={(e) => handleEmailChange(e.target.value)}
@@ -212,6 +213,7 @@ export const AuthButton = ({
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
+                        name="password"
                         placeholder="Contraseña"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -229,6 +231,7 @@ export const AuthButton = ({
                     <div>
                       <input
                         type={showPassword ? 'text' : 'password'}
+                        name="confirmPassword"
                         placeholder="Confirmar contraseña"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}

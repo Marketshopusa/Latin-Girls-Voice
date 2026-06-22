@@ -127,6 +127,7 @@ export const ChatLoginGate = ({ characterName, onBack }: ChatLoginGateProps) => 
           <div className="flex flex-col gap-1 text-left">
             <input
               type="email"
+              name="email"
               placeholder="Email"
               value={email}
               onChange={(e) => handleEmailChange(e.target.value)}
@@ -141,6 +142,7 @@ export const ChatLoginGate = ({ characterName, onBack }: ChatLoginGateProps) => 
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  name="password"
                   placeholder={viewMode === 'register' ? 'Contraseña (mín. 6 caracteres)' : 'Contraseña'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -159,6 +161,7 @@ export const ChatLoginGate = ({ characterName, onBack }: ChatLoginGateProps) => 
             <div className="flex flex-col gap-1 text-left">
               <input
                 type={showPassword ? 'text' : 'password'}
+                name="confirmPassword"
                 placeholder="Confirmar contraseña"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

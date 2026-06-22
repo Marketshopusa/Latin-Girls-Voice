@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 const CAP_ACCESS_TOKEN_KEY = '__cap_oauth_access_token';
 const CAP_REFRESH_TOKEN_KEY = '__cap_oauth_refresh_token';
 const CAP_CODE_KEY = '__cap_oauth_code';
-const AUTH_CALLBACK_TIMEOUT_MS = 8000;
+const AUTH_CALLBACK_TIMEOUT_MS = 4000;
 const AUTH_CALLBACK_POLL_MS = 250;
 let restoreSessionPromise: Promise<Session | null> | null = null;
 
@@ -175,57 +175,21 @@ const restoreBrowserSession = async (): Promise<Session | null> => {
     return getExistingSession();
   }
 
-  if (hasTokensInHash) {
-    const params = new URLSearchParams(window.location.hash.slice(1));
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
-
-    if (accessToken && refreshToken) {
-      const { data, error } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
-
-      cleanAuthUrl();
-      if (error) throw error;
-      return data.session;
-    }
-  }
-
   if (hasAuthError) {
     cleanAuthUrl();
     return getExistingSession();
   }
 
-  if (authCode) {
-    try {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
-
-      if (error) {
-        if (!isRecoverableExchangeError(error)) {
-          throw error;
-        }
-
-        const restoredSession = await waitForBrowserSession();
-        cleanAuthUrl();
-        return restoredSession;
-      }
-
-      cleanAuthUrl();
-      return data.session ?? (await waitForBrowserSession());
-    } catch (error) {
-      const fallbackSession = await getExistingSession();
-
-      if (fallbackSession || isRecoverableExchangeError(error)) {
-        cleanAuthUrl();
-        return fallbackSession;
-      }
-
-      cleanAuthUrl();
-      throw error;
-    }
+  // Case 1: OAuth Callback (Tokens in Hash or Auth Code)
+  if (hasTokensInHash || authCode) {
+    // Let Supabase client process the URL parameters natively.
+    // We just wait for the session to be established.
+    const session = await waitForBrowserSession();
+    cleanAuthUrl();
+    return session;
   }
 
+  // Case 2: Email OTP / Verification / Reset Link (token_hash)
   if (tokenHash) {
     try {
       const { data, error } = await supabase.auth.verifyOtp({
