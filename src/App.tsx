@@ -25,7 +25,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 const isCapacitor = Capacitor.isNativePlatform();
-const INTRO_BLOCKED_PATHS = new Set(["/", "/privacy", "/terms", "/age-policy", "/reset-password"]);
+const INTRO_BLOCKED_PATHS = new Set(["/", "/privacy", "/terms", "/age-policy", "/reset-password", "/auth/callback"]);
 
 function getInitialIntroState() {
   if (typeof window === 'undefined') return false;
