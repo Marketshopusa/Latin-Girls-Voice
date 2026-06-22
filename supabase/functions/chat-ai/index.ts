@@ -73,35 +73,26 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // --- Auth check ---
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ error: 'No autorizado' }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+  let authenticatedUserId: string | null = null;
+  if (authHeader?.startsWith('Bearer ')) {
+    const _sb = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user } } = await _sb.auth.getUser();
+    authenticatedUserId = user?.id ?? null;
   }
-  const _sb = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  );
-  const { data: { user: _authUser }, error: _userErr } = await _sb.auth.getUser();
-  if (_userErr || !_authUser) {
-    console.error('Auth failed:', _userErr?.message);
-    return new Response(JSON.stringify({ error: 'No autorizado' }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
-  }
-  // --- End auth check ---
 
-  // --- Rate limit check ---
-  const allowed = await checkRateLimit(_authUser.id, "chat-ai");
-  if (!allowed) {
-    return new Response(JSON.stringify({ error: "Límite de peticiones alcanzado. Intenta de nuevo en unos segundos." }), {
-      status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+  if (authenticatedUserId) {
+    const allowed = await checkRateLimit(authenticatedUserId, "chat-ai");
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: "Límite de peticiones alcanzado. Intenta de nuevo en unos segundos." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
   }
-  // --- End rate limit ---
 
   const startTime = Date.now();
 

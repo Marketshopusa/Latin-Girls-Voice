@@ -10,7 +10,6 @@ import { NsfwProvider } from "./contexts/NsfwContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import { IntroVideoScreen } from "./components/intro/IntroVideoScreen";
-import { RequireAuth } from "./components/auth/RequireAuth";
 import InstallPrompt from "./components/pwa/InstallPrompt";
 import DiscoverPage from "./pages/DiscoverPage";
 import ChatPage from "./pages/ChatPage";
@@ -118,16 +117,16 @@ const App = () => {
                 <Routes>
                   <Route element={<MainLayout />}>
                     <Route path="/" element={<DiscoverPage />} />
-                    <Route path="/messages" element={<RequireAuth pageName="Mensajes"><MessagesPage /></RequireAuth>} />
-                    <Route path="/create" element={<RequireAuth pageName="Crear Personaje"><CreateCharacterPage /></RequireAuth>} />
-                    <Route path="/subscription" element={<RequireAuth pageName="Suscripción"><SubscriptionPage /></RequireAuth>} />
+                    <Route path="/messages" element={<MessagesPage />} />
+                    <Route path="/create" element={<CreateCharacterPage />} />
+                    <Route path="/subscription" element={<SubscriptionPage />} />
                   </Route>
                   <Route path="/privacy" element={<PrivacyPolicyStandalone />} />
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/age-policy" element={<AgePolicyPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
-                  <Route path="/chat/:id" element={<RequireAuth pageName="Chat"><ChatPage /></RequireAuth>} />
+                  <Route path="/chat/:id" element={<ChatPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
