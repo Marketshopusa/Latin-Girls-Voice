@@ -9,7 +9,6 @@ import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { MobileChatOverlay } from '@/components/chat/MobileChatOverlay';
 import { VoiceCallOverlay } from '@/components/voice/VoiceCallOverlay';
-import { ChatLoginGate } from '@/components/chat/ChatLoginGate';
 import { useConversation } from '@/hooks/useConversation';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useChatAI } from '@/hooks/useChatAI';
@@ -19,7 +18,6 @@ import { useVoiceCall } from '@/hooks/useVoiceCall';
 import { useIsMobileOrTablet } from '@/hooks/use-mobile';
 import { useNsfw } from '@/contexts/NsfwContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/contexts/SubscriptionContext';
 import { mockCharacters } from '@/data/characters';
 import { Character, VoiceType, normalizeVoiceType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,7 +29,6 @@ const ChatPage = () => {
   const navigate = useNavigate();
   const isMobileOrTablet = useIsMobileOrTablet();
   const { user } = useAuth();
-  const { plan } = useSubscription();
   
   const [baseCharacter, setBaseCharacter] = useState<Character | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -225,18 +222,6 @@ const ChatPage = () => {
   const handleSendMessage = async (text: string) => {
     if (!character) return;
 
-    // Block non-authenticated users from chatting
-    if (!user) {
-      toast.error('Inicia sesión para chatear', {
-        description: 'Necesitas una cuenta para conversar con los personajes.',
-        action: {
-          label: 'Iniciar sesión',
-          onClick: () => navigate('/'),
-        },
-      });
-      return;
-    }
-
     const currentHistory = [...messages];
 
     // Add user message
@@ -303,11 +288,6 @@ const ChatPage = () => {
         <p className="text-muted-foreground">Cargando...</p>
       </div>
     );
-  }
-
-  // Block access for non-authenticated users - show login prompt with sign-in button
-  if (!user) {
-    return <ChatLoginGate characterName={character.name} onBack={() => navigate('/')} />;
   }
 
   // Helper function to check if URL is a video

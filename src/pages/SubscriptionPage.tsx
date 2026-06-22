@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription, PLAN_PRICES, PlanType } from '@/contexts/SubscriptionContext';
+import { AuthButton } from '@/components/auth/AuthButton';
 import { toast } from 'sonner';
 
 interface PlanFeature {
@@ -139,7 +140,7 @@ const FeatureRow = ({ feature }: { feature: PlanFeature }) => {
 };
 
 export default function SubscriptionPage() {
-  const { user, signInWithGoogle } = useAuth();
+  const { user } = useAuth();
   const { plan, subscriptionEnd, isLoading, checkout, openCustomerPortal, refreshSubscription } = useSubscription();
   const [searchParams] = useSearchParams();
   const [checkingOut, setCheckingOut] = useState(false);
@@ -212,10 +213,8 @@ export default function SubscriptionPage() {
         <div className="max-w-md mx-auto mb-8 px-4">
           <Card className="bg-muted/50 border-primary/20">
             <CardContent className="py-4 text-center">
-              <p className="text-muted-foreground mb-3">Inicia sesión para suscribirte a un plan</p>
-              <Button onClick={signInWithGoogle} className="bg-gradient-to-r from-primary to-accent">
-                Iniciar Sesión con Google
-              </Button>
+              <p className="text-muted-foreground mb-3">Crea una cuenta o inicia sesión para suscribirte a un plan</p>
+              <AuthButton buttonVariant="default" className="bg-gradient-to-r from-primary to-accent" />
             </CardContent>
           </Card>
         </div>

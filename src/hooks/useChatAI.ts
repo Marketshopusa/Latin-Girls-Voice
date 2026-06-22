@@ -56,10 +56,7 @@ export const useChatAI = ({ character, onResponse }: UseChatAIOptions) => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token;
-      if (!authToken) {
-        throw new Error('Debes iniciar sesión para chatear');
-      }
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
       const requestHistory = buildRequestHistory(userMessage, conversationHistory);
 
