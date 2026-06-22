@@ -1,9 +1,25 @@
 import { useState, useEffect } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { restorePersistedSession } from '@/contexts/auth/sessionPersistence';
 import { Loader2, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
+
+const hasRecoveryIntent = () => {
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+  const url = new URL(window.location.href);
+  const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+
+  return (
+    hashParams.get('type') === 'recovery' ||
+    url.searchParams.get('type') === 'recovery' ||
+    url.searchParams.has('code') ||
+    hash.includes('access_token') ||
+    search.includes('code=')
+  );
+};
 
 const ResetPasswordPage = () => {
   const { updatePassword, session, isLoading } = useAuth();
@@ -12,37 +28,35 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRecovery, setIsRecovery] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(hasRecoveryIntent);
+  const [recoveredSession, setRecoveredSession] = useState<Session | null>(null);
   const [exchanging, setExchanging] = useState(true);
+  const activeSession = session ?? recoveredSession;
 
   useEffect(() => {
+    let isActive = true;
+
     const run = async () => {
       try {
-        const hash = window.location.hash || '';
-        const search = window.location.search || '';
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
-        const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
-        const type = hashParams.get('type') || url.searchParams.get('type');
-
-        if (type === 'recovery' || code || hash.includes('access_token') || search.includes('code=')) {
+        if (hasRecoveryIntent()) {
           setIsRecovery(true);
         }
 
-        // PKCE flow: exchange ?code= for a session
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) console.warn('[ResetPassword] exchangeCodeForSession error:', error.message);
-          // Clean URL
-          window.history.replaceState({}, document.title, '/reset-password');
+        const restoredSession = await restorePersistedSession();
+        if (isActive) {
+          setRecoveredSession(restoredSession);
         }
       } catch (e) {
         console.error('[ResetPassword] init error:', e);
       } finally {
-        setExchanging(false);
+        if (isActive) setExchanging(false);
       }
     };
     void run();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,7 +90,7 @@ const ResetPasswordPage = () => {
     );
   }
 
-  if (!session && !isRecovery) {
+  if (!activeSession && !isRecovery) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center gap-4">
         <h2 className="text-xl font-bold">Enlace inválido o expirado</h2>
@@ -84,6 +98,15 @@ const ResetPasswordPage = () => {
         <button onClick={() => navigate('/')} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90">
           Ir al inicio
         </button>
+      </div>
+    );
+  }
+
+  if (!activeSession) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Preparando recuperación de contraseña...</p>
       </div>
     );
   }
