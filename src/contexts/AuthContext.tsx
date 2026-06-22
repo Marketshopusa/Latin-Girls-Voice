@@ -80,6 +80,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const initializeAuth = async () => {
       try {
+        const resetPageOwnsCallback =
+          typeof window !== 'undefined' &&
+          window.location.pathname === '/reset-password' &&
+          hasPendingAuthCallback();
+
+        if (resetPageOwnsCallback) {
+          if (!isMounted || hasAuthEvent) return;
+          setIsLoading(false);
+          return;
+        }
+
         const currentSession = await restorePersistedSession();
         if (!isMounted || hasAuthEvent) return;
         applySessionState(currentSession ?? null);
