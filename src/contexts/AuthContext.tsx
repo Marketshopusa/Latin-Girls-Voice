@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { lovable } from '@/integrations/lovable/index';
 import { supabase } from '@/integrations/supabase/client';
-import { clearPersistedAuthArtifacts, restorePersistedSession } from './auth/sessionPersistence';
+import { clearPersistedAuthArtifacts, hasPendingAuthCallback, restorePersistedSession } from './auth/sessionPersistence';
 
 interface AuthContextType {
   user: User | null;
@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     let hasAuthEvent = false;
 
     const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION' && !session && hasPendingAuthCallback()) return;
       console.log('Auth state changed:', event, session?.user?.email);
       hasAuthEvent = Boolean(session) || event !== 'INITIAL_SESSION';
       if (!isMounted) return;
