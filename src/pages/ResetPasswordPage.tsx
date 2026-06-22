@@ -34,6 +34,8 @@ const getRecoveryParams = () => {
   return {
     code: url.searchParams.get('code'),
     tokenHash: url.searchParams.get('token_hash') || hashParams.get('token_hash'),
+    token: url.searchParams.get('token') || hashParams.get('token'),
+    email: url.searchParams.get('email') || hashParams.get('email'),
     type: url.searchParams.get('type') || hashParams.get('type'),
     accessToken: hashParams.get('access_token'),
     refreshToken: hashParams.get('refresh_token'),
@@ -62,7 +64,7 @@ const ResetPasswordPage = () => {
           setIsRecovery(true);
         }
 
-        const { code, tokenHash, type, accessToken, refreshToken } = getRecoveryParams();
+        const { code, tokenHash, token, email, type, accessToken, refreshToken } = getRecoveryParams();
         let restoredSession: Session | null = session;
 
         if (accessToken && refreshToken) {
@@ -82,6 +84,15 @@ const ResetPasswordPage = () => {
           const { data, error } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: type === 'signup' ? 'signup' : 'recovery',
+          });
+          if (error) throw error;
+          restoredSession = data.session;
+          cleanResetUrl();
+        } else if (token && email) {
+          const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: 'recovery',
           });
           if (error) throw error;
           restoredSession = data.session;
