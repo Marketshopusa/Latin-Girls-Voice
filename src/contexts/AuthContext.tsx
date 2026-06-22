@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
+import { lovable } from '@/integrations/lovable/index';
 import { supabase } from '@/integrations/supabase/client';
 import { clearPersistedAuthArtifacts, restorePersistedSession } from './auth/sessionPersistence';
 
@@ -69,7 +70,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
-      hasAuthEvent = true;
+      hasAuthEvent = Boolean(session) || event !== 'INITIAL_SESSION';
       if (!isMounted) return;
       applySessionState(session);
     });
@@ -134,23 +135,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     const redirectTo = new URL(WEB_OAUTH_CALLBACK_PATH, window.location.origin).toString();
-    console.log('[Auth] Starting Google OAuth (web) with direct callback:', redirectTo);
+    console.log('[Auth] Starting managed Google OAuth (web):', redirectTo);
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        skipBrowserRedirect: false,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: redirectTo,
+      extraParams: {
+        prompt: 'select_account',
       },
     });
 
-    if (error) {
-      console.error('[Auth] OAuth error:', error);
-      throw error;
+    if (result.error) {
+      console.error('[Auth] Managed OAuth error:', result.error);
+      throw result.error;
     }
   };
 
