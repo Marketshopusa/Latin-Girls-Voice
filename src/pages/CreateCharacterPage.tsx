@@ -148,7 +148,7 @@ const CreateCharacterPage = () => {
 
   const handleCreate = async () => {
     if (!user) {
-      toast.error('Debes iniciar sesión para crear un personaje');
+      toast.error('Crea una cuenta o inicia sesión para guardar personajes nuevos');
       return;
     }
 
