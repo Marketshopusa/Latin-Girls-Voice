@@ -32,6 +32,7 @@ const ResetPasswordPage = () => {
   const [isRecovery, setIsRecovery] = useState(hasRecoveryIntent);
   const [recoveredSession, setRecoveredSession] = useState<Session | null>(null);
   const [exchanging, setExchanging] = useState(true);
+  const [recoveryFailed, setRecoveryFailed] = useState(false);
   const activeSession = session ?? recoveredSession;
 
   useEffect(() => {
@@ -46,9 +47,11 @@ const ResetPasswordPage = () => {
         const restoredSession = await restorePersistedSession();
         if (isActive) {
           setRecoveredSession(restoredSession);
+          setRecoveryFailed(hasRecoveryIntent() && !restoredSession);
         }
       } catch (e) {
         console.error('[ResetPassword] init error:', e);
+        if (isActive) setRecoveryFailed(true);
       } finally {
         if (isActive) setExchanging(false);
       }
@@ -91,11 +94,11 @@ const ResetPasswordPage = () => {
     );
   }
 
-  if (!activeSession && !isRecovery) {
+  if (!activeSession && (!isRecovery || recoveryFailed)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center gap-4">
         <h2 className="text-xl font-bold">Enlace inválido o expirado</h2>
-        <p className="text-muted-foreground">Solicita un nuevo enlace de recuperación.</p>
+        <p className="text-muted-foreground max-w-sm">Solicita un nuevo enlace y abre solamente el correo más reciente.</p>
         <button onClick={() => navigate('/')} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90">
           Ir al inicio
         </button>
