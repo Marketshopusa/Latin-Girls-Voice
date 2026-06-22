@@ -17,7 +17,9 @@ const hasRecoveryIntent = () => {
     url.searchParams.get('type') === 'recovery' ||
     url.searchParams.has('code') ||
     url.searchParams.has('token_hash') ||
+    url.searchParams.has('token') ||
     hash.includes('access_token') ||
+    hash.includes('token=') ||
     search.includes('code=')
   );
 };
