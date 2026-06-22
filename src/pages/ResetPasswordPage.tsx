@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { restorePersistedSession } from '@/contexts/auth/sessionPersistence';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,6 +20,24 @@ const hasRecoveryIntent = () => {
     hash.includes('access_token') ||
     search.includes('code=')
   );
+};
+
+const cleanResetUrl = () => {
+  window.history.replaceState({}, document.title, '/reset-password');
+};
+
+const getRecoveryParams = () => {
+  const url = new URL(window.location.href);
+  const hash = window.location.hash || '';
+  const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+
+  return {
+    code: url.searchParams.get('code'),
+    tokenHash: url.searchParams.get('token_hash') || hashParams.get('token_hash'),
+    type: url.searchParams.get('type') || hashParams.get('type'),
+    accessToken: hashParams.get('access_token'),
+    refreshToken: hashParams.get('refresh_token'),
+  };
 };
 
 const ResetPasswordPage = () => {
@@ -44,7 +62,35 @@ const ResetPasswordPage = () => {
           setIsRecovery(true);
         }
 
-        const restoredSession = await restorePersistedSession();
+        const { code, tokenHash, type, accessToken, refreshToken } = getRecoveryParams();
+        let restoredSession: Session | null = session;
+
+        if (accessToken && refreshToken) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+          restoredSession = data.session;
+          cleanResetUrl();
+        } else if (code) {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          restoredSession = data.session;
+          cleanResetUrl();
+        } else if (tokenHash) {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type === 'signup' ? 'signup' : 'recovery',
+          });
+          if (error) throw error;
+          restoredSession = data.session;
+          cleanResetUrl();
+        } else {
+          const { data } = await supabase.auth.getSession();
+          restoredSession = data.session;
+        }
+
         if (isActive) {
           setRecoveredSession(restoredSession);
           setRecoveryFailed(hasRecoveryIntent() && !restoredSession);
