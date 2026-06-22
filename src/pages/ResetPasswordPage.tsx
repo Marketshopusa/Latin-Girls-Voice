@@ -94,13 +94,27 @@ const ResetPasswordPage = () => {
     );
   }
 
-  if (!activeSession && (!isRecovery || recoveryFailed)) {
+  if (!activeSession && !isRecovery) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center gap-4">
         <h2 className="text-xl font-bold">Enlace inválido o expirado</h2>
         <p className="text-muted-foreground max-w-sm">Solicita un nuevo enlace y abre solamente el correo más reciente.</p>
         <button onClick={() => navigate('/')} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90">
           Ir al inicio
+        </button>
+      </div>
+    );
+  }
+
+  if (!activeSession && recoveryFailed) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center gap-4">
+        <h2 className="text-xl font-bold">No se pudo validar este enlace</h2>
+        <p className="text-muted-foreground max-w-sm">
+          Por seguridad, solicita un enlace nuevo y abre únicamente el correo más reciente.
+        </p>
+        <button onClick={() => navigate('/')} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90">
+          Solicitar otro enlace
         </button>
       </div>
     );
