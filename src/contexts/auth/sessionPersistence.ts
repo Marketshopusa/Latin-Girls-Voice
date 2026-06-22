@@ -71,7 +71,14 @@ const isRecoverableExchangeError = (error: unknown) => {
   return [
     'auth code and code verifier should be non-empty',
     'code verifier',
+    'bad code verifier',
+    'bad_code_verifier',
     'invalid flow state',
+    'invalid grant',
+    'invalid_grant',
+    'invalid code',
+    'expired',
+    'revoked',
     'already been used',
     'flow state not found',
   ].some((fragment) => message.includes(fragment));
