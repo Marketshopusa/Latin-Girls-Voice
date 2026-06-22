@@ -166,7 +166,7 @@ export const useCreateCharacter = () => {
       // Require authentication
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        setError('Debes iniciar sesión para crear un personaje');
+        setError('Crea una cuenta o inicia sesión para guardar personajes nuevos');
         return null;
       }
       
