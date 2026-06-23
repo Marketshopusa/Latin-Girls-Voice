@@ -27,6 +27,7 @@ const queryClient = new QueryClient();
 const isCapacitor = Capacitor.isNativePlatform();
 const INTRO_BLOCKED_PATHS = new Set(["/", "/privacy", "/terms", "/age-policy", "/reset-password", "/auth/callback"]);
 
+// Triggering a clean Vercel rebuild to apply the new Supabase environment variables
 function getInitialIntroState() {
   if (typeof window === 'undefined') return false;
   if (INTRO_BLOCKED_PATHS.has(window.location.pathname)) return false;
