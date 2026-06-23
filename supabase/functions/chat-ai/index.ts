@@ -119,10 +119,14 @@ async function callAiService(
   apiKey: string
 ): Promise<string> {
   if (useGeminiDirect) {
-    let nativeModel = "gemini-2.5-flash";
+    let nativeModel = "gemini-2.0-flash";
     const modelStr = model.toLowerCase();
     if (modelStr.includes("2.5-pro")) {
-      nativeModel = "gemini-2.5-pro";
+      nativeModel = "gemini-2.0-flash"; // Map to 2.0-flash to avoid thinking latency/503
+    } else if (modelStr.includes("2.5-flash")) {
+      nativeModel = "gemini-2.0-flash"; // Map to 2.0-flash to avoid thinking latency/503
+    } else if (modelStr.includes("2.0-flash")) {
+      nativeModel = "gemini-2.0-flash";
     } else if (modelStr.includes("1.5-pro")) {
       nativeModel = "gemini-1.5-pro";
     } else if (modelStr.includes("1.5-flash")) {
@@ -372,7 +376,7 @@ INTERPRETACIÓN VOCAL:
 
     let aiResponse = "";
     let errorLogs: string[] = [];
-    const primaryModel = isNsfw ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash";
+    const primaryModel = isNsfw ? "google/gemini-2.0-flash" : "google/gemini-2.0-flash";
     const apiToken = useGeminiDirect ? GEMINI_API_KEY! : LOVABLE_API_KEY!;
 
     try {
@@ -490,7 +494,7 @@ INTERPRETACIÓN VOCAL:
     const finalResponse = aiResponse.length
       ? aiResponse
       : isNsfw
-        ? `${nsfwFallbacks[Math.floor(Math.random() * nsfwFallbacks.length)]}\n\n[DEBUG ERROR: ${errorLogs.join(" | ")}]`
+        ? nsfwFallbacks[Math.floor(Math.random() * nsfwFallbacks.length)]
         : sfwFallback;
 
     const totalElapsed = Date.now() - startTime;
