@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Volume2, Shield, Sparkles, Loader2, Wand2 } from 'lucide-react';
-import { VOICE_OPTIONS, VoiceType, DEFAULT_VOICE } from '@/types';
+import { ArrowLeft, Upload, Volume2, Shield, Sparkles, Loader2, Wand2, Crown } from 'lucide-react';
+import { VoiceType, DEFAULT_VOICE, ELEVENLABS_VOICE_CATALOG, GOOGLE_VOICE_CATALOG, getVoiceProvider } from '@/types';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useCreateCharacter } from '@/hooks/useCharacters';
@@ -16,7 +16,6 @@ const CreateCharacterPage = () => {
   const { createCharacter, loading, error } = useCreateCharacter();
   
   const [name, setName] = useState('');
-  const [age, setAge] = useState('');
   const [tagline, setTagline] = useState('');
   const [history, setHistory] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('');
@@ -26,6 +25,87 @@ const CreateCharacterPage = () => {
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [isAnimatedImage, setIsAnimatedImage] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
+
+  // Voice preview state
+  const [previewingVoice, setPreviewingVoice] = useState<VoiceType | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+
+  const stopPreview = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+    setPreviewingVoice(null);
+  };
+
+  const previewVoice = async (voiceId: VoiceType) => {
+    if (previewingVoice === voiceId) {
+      stopPreview();
+      return;
+    }
+
+    stopPreview();
+    setIsPreviewLoading(true);
+    setPreviewingVoice(voiceId);
+
+    try {
+      const provider = getVoiceProvider(voiceId);
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const endpoint = `${baseUrl}/functions/v1/${provider === 'elevenlabs' ? 'elevenlabs-tts' : 'google-cloud-tts'}`;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ 
+          text: "Hola, así suena mi voz. ¿Te gusta cómo hablo?", 
+          voiceType: voiceId,
+        }),
+      });
+
+      if (!response.ok) throw new Error(`Error: ${response.status}`);
+
+      const audioBlob = await response.blob();
+      const playableBlob = audioBlob.type.includes('audio')
+        ? audioBlob
+        : new Blob([audioBlob], { type: 'audio/mpeg' });
+
+      const audioUrl = URL.createObjectURL(playableBlob);
+      audioUrlRef.current = audioUrl;
+
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => setPreviewingVoice(null);
+      audio.onerror = () => {
+        setPreviewingVoice(null);
+        toast.error('Error al reproducir la voz');
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error('Voice preview error:', error);
+      toast.error('No se pudo reproducir la voz');
+      setPreviewingVoice(null);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => { stopPreview(); };
+  }, []);
 
   const generateStoryWithAI = async () => {
     if (!mediaUrl) {
@@ -59,7 +139,6 @@ const CreateCharacterPage = () => {
           body: JSON.stringify({
             imageBase64: imageForAI,
             name: name || undefined,
-            age: age ? parseInt(age) : undefined,
           }),
         }
       );
@@ -82,7 +161,7 @@ const CreateCharacterPage = () => {
       
       if (data.tagline) setTagline(data.tagline);
       if (data.history) setHistory(data.history);
-      if (data.welcomeMessage) setWelcomeMessage(data.welcomeMessage);
+      if (data.welcome_message || data.welcomeMessage) setWelcomeMessage(data.welcome_message || data.welcomeMessage);
       
       toast.success('¡Historia generada con IA! Puedes editarla si lo deseas.');
     } catch (err) {
@@ -152,20 +231,13 @@ const CreateCharacterPage = () => {
       return;
     }
 
-    if (!name || !age || !history || !tagline || !welcomeMessage) {
+    if (!name || !history || !tagline || !welcomeMessage) {
       toast.error('Por favor completa todos los campos requeridos');
-      return;
-    }
-
-    const ageNum = parseInt(age);
-    if (ageNum < 18) {
-      toast.error('El personaje debe tener al menos 18 años');
       return;
     }
 
     const result = await createCharacter({
       name,
-      age: ageNum,
       tagline,
       history,
       welcomeMessage,
@@ -181,6 +253,9 @@ const CreateCharacterPage = () => {
       toast.error(error);
     }
   };
+
+  const isCurrentVoiceElevenLabs = getVoiceProvider(voice) === 'elevenlabs';
+  const isCurrentVoiceGoogle = getVoiceProvider(voice) === 'google';
 
   return (
     <div className="min-h-screen">
@@ -242,28 +317,16 @@ const CreateCharacterPage = () => {
 
           {/* Right Column - Form */}
           <div className="space-y-6">
-            {/* Name & Age */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2 space-y-2">
-                <label className="text-sm text-muted-foreground">Nombre</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ej: Sofia"
-                  className="w-full px-4 py-3 rounded-lg bg-muted input-dark text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Edad</label>
-                <input
-                  type="number"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  placeholder="Ej: 22"
-                  className="w-full px-4 py-3 rounded-lg bg-muted input-dark text-sm"
-                />
-              </div>
+            {/* Nombre */}
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Nombre</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ej: Sofia"
+                className="w-full px-4 py-3 rounded-lg bg-muted input-dark text-sm"
+              />
             </div>
 
             {/* Tagline */}
@@ -351,53 +414,130 @@ const CreateCharacterPage = () => {
               />
             </div>
 
-            {/* NSFW Toggle - hidden by kill switch */}
+            {/* NSFW Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted border border-border">
+              <div className="space-y-0.5">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Shield className={cn("h-4 w-4", nsfw ? "text-destructive" : "text-muted-foreground")} />
+                  <span>Personaje +18 (NSFW)</span>
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Activa esta opción si el personaje contiene contenido adulto o explícito.
+                </p>
+              </div>
+              <Switch
+                checked={nsfw}
+                onCheckedChange={setNsfw}
+              />
+            </div>
 
             {/* Voice Selection */}
-            <div className="space-y-3">
-              <label className="text-sm text-muted-foreground flex items-center gap-2">
+            <div className="space-y-4">
+              <label className="text-sm font-medium flex items-center gap-2">
                 <Volume2 className="h-4 w-4 text-primary" />
                 <span>Configuración de Voz (Latino)</span>
               </label>
               <p className="text-xs text-muted-foreground">
-                Selecciona el acento y tono de voz de tu personaje.
+                Selecciona la voz de ElevenLabs (Premium) o de Google Cloud (Estándar).
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                {VOICE_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() => setVoice(option.id)}
-                    className={cn(
-                      'voice-chip text-left p-3',
-                      voice === option.id && 'voice-chip-active'
-                    )}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-base">
-                        {option.icon}
-                      </span>
-                      <span className={cn(
-                        'font-medium text-sm',
-                        voice === option.id ? 'text-primary' : 'text-foreground'
-                      )}>
-                        {option.label}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      {option.description}
-                    </p>
-                    <button className="mt-2 text-xs text-primary hover:underline">
-                      🎧 Escuchar muestra
+
+              <div className="space-y-3">
+                {/* ElevenLabs Select */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs text-primary">
+                    <Crown className="h-3.5 w-3.5" />
+                    <span className="font-medium">Voces de ElevenLabs (Premium)</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={isCurrentVoiceElevenLabs ? voice : ''}
+                      onChange={(e) => {
+                        const selectedVal = e.target.value as VoiceType;
+                        if (selectedVal) {
+                          setVoice(selectedVal);
+                          stopPreview();
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 bg-muted border border-border rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary dark:text-foreground"
+                    >
+                      <option value="">-- Seleccionar voz de ElevenLabs --</option>
+                      {ELEVENLABS_VOICE_CATALOG.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.icon} {v.label} ({v.region})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!voice || !isCurrentVoiceElevenLabs || isPreviewLoading}
+                      onClick={() => previewVoice(voice)}
+                      className={cn(
+                        "px-3 py-2 text-xs font-semibold rounded-lg bg-secondary border border-border hover:bg-primary hover:text-primary-foreground flex items-center gap-1 transition-colors min-w-[90px] justify-center",
+                        (previewingVoice === voice && isCurrentVoiceElevenLabs) && "bg-primary text-primary-foreground"
+                      )}
+                    >
+                      {isPreviewLoading && previewingVoice === voice && isCurrentVoiceElevenLabs ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : previewingVoice === voice && isCurrentVoiceElevenLabs ? (
+                        "Pausar"
+                      ) : (
+                        "Escuchar"
+                      )}
                     </button>
-                  </button>
-                ))}
+                  </div>
+                </div>
+
+                {/* Google Cloud Select */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span className="font-medium">Voces de Google Cloud (Estándar)</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={isCurrentVoiceGoogle ? voice : ''}
+                      onChange={(e) => {
+                        const selectedVal = e.target.value as VoiceType;
+                        if (selectedVal) {
+                          setVoice(selectedVal);
+                          stopPreview();
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 bg-muted border border-border rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary dark:text-foreground"
+                    >
+                      <option value="">-- Seleccionar voz de Google Cloud --</option>
+                      {GOOGLE_VOICE_CATALOG.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.icon} {v.label} ({v.region})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!voice || !isCurrentVoiceGoogle || isPreviewLoading}
+                      onClick={() => previewVoice(voice)}
+                      className={cn(
+                        "px-3 py-2 text-xs font-semibold rounded-lg bg-secondary border border-border hover:bg-primary hover:text-primary-foreground flex items-center gap-1 transition-colors min-w-[90px] justify-center",
+                        (previewingVoice === voice && isCurrentVoiceGoogle) && "bg-primary text-primary-foreground"
+                      )}
+                    >
+                      {isPreviewLoading && previewingVoice === voice && isCurrentVoiceGoogle ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : previewingVoice === voice && isCurrentVoiceGoogle ? (
+                        "Pausar"
+                      ) : (
+                        "Escuchar"
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Create Button */}
             <button
               onClick={handleCreate}
-              disabled={loading || !name || !age || !history || !tagline || !welcomeMessage}
+              disabled={loading || !name || !history || !tagline || !welcomeMessage}
               className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-glow flex items-center justify-center gap-2"
             >
               {loading ? (

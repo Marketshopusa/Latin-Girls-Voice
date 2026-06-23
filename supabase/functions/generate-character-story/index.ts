@@ -47,7 +47,7 @@ serve(async (req) => {
     const body = await req.json();
     const imageBase64 = typeof body.imageBase64 === 'string' ? body.imageBase64 : '';
     const name = typeof body.name === 'string' ? body.name.slice(0, 100) : '';
-    const age = typeof body.age === 'number' ? Math.min(Math.max(Math.floor(body.age), 18), 150) : undefined;
+    const age = typeof body.age === 'number' ? Math.min(Math.max(Math.floor(body.age), 1), 150) : undefined;
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -80,67 +80,129 @@ IMPORTANTE: Responde SOLO con el JSON, sin texto adicional.`;
 
     const userPrompt = name && age 
       ? `Genera la historia para un personaje llamado "${name}" de ${age} años basándote en esta imagen.`
-      : `Genera la historia para este personaje basándote en la imagen.`;
+      : name
+        ? `Genera la historia para un personaje llamado "${name}" basándote en esta imagen.`
+        : `Genera la historia para este personaje basándote en la imagen.`;
 
     // Prepare the image for the API
     const imageUrl = imageBase64.startsWith('data:') 
       ? imageBase64 
       : `data:image/jpeg;base64,${imageBase64}`;
 
-    const apiEndpoint = useGeminiDirect 
-      ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-      : "https://ai.gateway.lovable.dev/v1/chat/completions";
+    let aiResponse = "";
 
-    const apiToken = useGeminiDirect ? GEMINI_API_KEY : LOVABLE_API_KEY;
-    const finalModel = useGeminiDirect ? "gemini-2.5-flash" : "google/gemini-2.5-flash";
+    if (useGeminiDirect) {
+      // Clean base64 and mime type
+      let mimeType = "image/jpeg";
+      let cleanBase64 = imageBase64;
+      if (imageBase64.startsWith("data:")) {
+        const match = imageBase64.match(/^data:([^;]+);base64,(.*)$/);
+        if (match) {
+          mimeType = match[1];
+          cleanBase64 = match[2];
+        }
+      }
 
-    console.log(`Calling AI gateway (${useGeminiDirect ? 'Gemini Direct' : 'Lovable Proxy'}) with image analysis...`);
-
-    const response = await fetch(apiEndpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: finalModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { 
-            role: "user", 
-            content: [
-              { type: "text", text: userPrompt },
-              { type: "image_url", image_url: { url: imageUrl } }
-            ]
-          }
+      const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      const geminiPayload = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: userPrompt },
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: cleanBase64,
+                },
+              },
+            ],
+          },
         ],
-        temperature: 0.8,
-        max_tokens: 800,
-      }),
-    });
+        systemInstruction: {
+          parts: [{ text: systemPrompt }],
+        },
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 800,
+          responseMimeType: "application/json",
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" },
+        ],
+      };
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Límite de peticiones alcanzado, intenta de nuevo en unos segundos." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      console.log("Calling Gemini Direct API for story generation with safety threshold BLOCK_NONE...");
+      const response = await fetch(geminiEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(geminiPayload),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`Gemini Direct API error: ${response.status}`, errText);
+        throw new Error(`Gemini Direct API error: ${response.status}`);
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Se requiere agregar créditos a la cuenta." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+
+      const data = await response.json();
+      aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    } else {
+      // Lovable API Proxy mode
+      const apiEndpoint = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      const finalModel = "google/gemini-2.5-flash";
+
+      console.log("Calling Lovable AI gateway with image analysis...");
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: finalModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { 
+              role: "user", 
+              content: [
+                { type: "text", text: userPrompt },
+                { type: "image_url", image_url: { url: imageUrl } }
+              ]
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 800,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Límite de peticiones alcanzado, intenta de nuevo en unos segundos." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "Se requiere agregar créditos a la cuenta." }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const errorText = await response.text();
+        console.error("AI gateway error:", response.status, errorText);
+        throw new Error("Error en el servicio de IA");
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("Error en el servicio de IA");
+
+      const data = await response.json();
+      aiResponse = data.choices?.[0]?.message?.content || "";
     }
-
-    const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content || "";
     
-    console.log("AI Response:", aiResponse);
+    console.log("AI Response length:", aiResponse.length);
 
     // Parse the JSON response
     let parsedResponse;
@@ -158,7 +220,7 @@ IMPORTANTE: Responde SOLO con el JSON, sin texto adicional.`;
       parsedResponse = {
         tagline: "Un personaje misterioso esperando ser descubierto",
         history: "Este personaje tiene una historia fascinante que aún está por escribirse. Basándote en la imagen, puedes imaginar su pasado, sus sueños y sus secretos.",
-        welcomeMessage: "*Te observa con curiosidad* **_Hola... no esperaba encontrarte aquí. ¿Qué te trae por estos lares?_**"
+        welcome_message: "*Te observa con curiosidad* **_Hola... no esperaba encontrarte aquí. ¿Qué te trae por estos lares?_**"
       };
     }
 

@@ -17,10 +17,6 @@ interface CharacterConfigModalProps {
   onSave: (updates: Partial<Character>) => void;
 }
 
-// Split Google voices into Latinas and España
-const GOOGLE_LATINAS = GOOGLE_VOICE_CATALOG.filter(v => v.region === 'LATINO');
-const GOOGLE_ESPAÑA = GOOGLE_VOICE_CATALOG.filter(v => v.region === 'ESPAÑA');
-
 export const CharacterConfigModal = ({
   character,
   isOpen,
@@ -33,7 +29,6 @@ export const CharacterConfigModal = ({
   const [nsfw, setNsfw] = useState(character.nsfw);
   const { limits } = useSubscription();
   const { hasConfirmedAge, confirmAge } = useNsfw();
-  const [showEspaña, setShowEspaña] = useState(false);
   const [showAgeModal, setShowAgeModal] = useState(false);
   
   // Voice preview state
@@ -72,9 +67,9 @@ export const CharacterConfigModal = ({
     setPreviewingVoice(voiceId);
 
     try {
-      // FORZADO a ElevenLabs — Google Cloud TTS desactivado.
+      const provider = getVoiceProvider(voiceId);
       const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const endpoint = `${baseUrl}/functions/v1/elevenlabs-tts`;
+      const endpoint = `${baseUrl}/functions/v1/${provider === 'elevenlabs' ? 'elevenlabs-tts' : 'google-cloud-tts'}`;
 
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -141,7 +136,6 @@ export const CharacterConfigModal = ({
       setWelcomeMessage(character.welcomeMessage);
       setVoice(normalizeVoiceType(character.voice));
       setNsfw(character.nsfw);
-      setShowEspaña(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, character.id]);
@@ -167,61 +161,8 @@ export const CharacterConfigModal = ({
     setShowAgeModal(false);
   };
 
-  // Reusable voice card renderer
-  const renderVoiceCard = (option: VoiceConfig, isLocked = false) => {
-    const isPreviewing = previewingVoice === option.id;
-    const isLoadingThis = isPreviewLoading && previewingVoice === option.id;
-    return (
-      <div
-        key={option.id}
-        className={cn(
-          'voice-chip text-left p-2 relative group',
-          voice === option.id && 'voice-chip-active',
-          isLocked && 'opacity-60'
-        )}
-      >
-        {isLocked && (
-          <div className="absolute top-1 right-1">
-            <Crown className="h-3 w-3 text-primary" />
-          </div>
-        )}
-        <div className="cursor-pointer" onClick={() => handleVoiceSelect(option.id)}>
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-sm">{option.icon}</span>
-            <span className={cn(
-              'font-medium text-xs truncate flex-1',
-              voice === option.id ? 'text-primary' : 'text-foreground'
-            )}>
-              {option.label}
-            </span>
-          </div>
-          <p className="text-[10px] text-muted-foreground line-clamp-1">
-            {option.description}
-          </p>
-        </div>
-        <button
-          onClick={(e) => { e.stopPropagation(); previewVoice(option.id); }}
-          disabled={isLocked}
-          className={cn(
-            'absolute bottom-1.5 right-1.5 p-1 rounded-full transition-all',
-            isPreviewing 
-              ? 'bg-primary text-primary-foreground' 
-              : 'bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary',
-            isLocked && 'opacity-40 cursor-not-allowed'
-          )}
-          title="Escuchar voz"
-        >
-          {isLoadingThis ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : isPreviewing ? (
-            <Pause className="h-3 w-3" />
-          ) : (
-            <Play className="h-3 w-3" />
-          )}
-        </button>
-      </div>
-    );
-  };
+  const isCurrentVoiceElevenLabs = getVoiceProvider(voice) === 'elevenlabs';
+  const isCurrentVoiceGoogle = getVoiceProvider(voice) === 'google';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -268,53 +209,106 @@ export const CharacterConfigModal = ({
           </div>
 
           {/* Voice Selection */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <label className="text-sm text-muted-foreground flex items-center gap-2">
-              <Volume2 className="h-4 w-4" />
+              <Volume2 className="h-4 w-4 text-primary" />
               <span>Voz y Acento</span>
             </label>
-             
-            {/* ═══ ElevenLabs Premium Voices ═══ */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs text-primary">
-                <Crown className="h-3.5 w-3.5" />
-                <span className="font-medium">Voces Premium (ElevenLabs)</span>
-                <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-primary border-0">PREMIUM</Badge>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {ELEVENLABS_VOICE_CATALOG.map((option) => renderVoiceCard(option, !limits.hasPremiumVoices))}
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Selecciona la voz de ElevenLabs (Premium) o de Google Cloud (Estándar).
+            </p>
 
-            {/* ═══ Google Cloud Chirp 3: HD — Latinas ═══ */}
-            <div className="space-y-2 mt-4">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="font-medium">🌎 Voces Chirp 3 HD — Latinas</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {GOOGLE_LATINAS.map((option) => renderVoiceCard(option))}
-              </div>
-            </div>
-
-            {/* ═══ Google Cloud Chirp 3: HD — España (Collapsible) ═══ */}
-            <div className="space-y-2 mt-3">
-              <button
-                onClick={() => setShowEspaña(!showEspaña)}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="font-medium">🇪🇸 Voces Chirp 3 HD — España</span>
-                <ChevronDown className={cn(
-                  "h-3.5 w-3.5 ml-auto transition-transform",
-                  showEspaña && "rotate-180"
-                )} />
-              </button>
-              {showEspaña && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 animate-fade-in">
-                  {GOOGLE_ESPAÑA.map((option) => renderVoiceCard(option))}
+            <div className="space-y-3">
+              {/* ElevenLabs Select */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-primary">
+                  <Crown className="h-3.5 w-3.5" />
+                  <span className="font-medium">Voces de ElevenLabs (Premium)</span>
+                  <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-primary border-0">PREMIUM</Badge>
                 </div>
-              )}
+                <div className="flex gap-2">
+                  <select
+                    value={isCurrentVoiceElevenLabs ? voice : ''}
+                    onChange={(e) => {
+                      const selectedVal = e.target.value as VoiceType;
+                      if (selectedVal) {
+                        handleVoiceSelect(selectedVal);
+                        stopPreview();
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 bg-muted border border-border rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">-- Seleccionar voz de ElevenLabs --</option>
+                    {ELEVENLABS_VOICE_CATALOG.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.icon} {v.label} ({v.region})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!voice || !isCurrentVoiceElevenLabs || isPreviewLoading}
+                    onClick={() => previewVoice(voice)}
+                    className={cn(
+                      "px-3 py-2 text-xs font-semibold rounded-lg bg-secondary border border-border hover:bg-primary hover:text-primary-foreground flex items-center gap-1 transition-colors min-w-[90px] justify-center",
+                      (previewingVoice === voice && isCurrentVoiceElevenLabs) && "bg-primary text-primary-foreground"
+                    )}
+                  >
+                    {isPreviewLoading && previewingVoice === voice && isCurrentVoiceElevenLabs ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : previewingVoice === voice && isCurrentVoiceElevenLabs ? (
+                      "Pausar"
+                    ) : (
+                      "Escuchar"
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Google Cloud Select */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="font-medium">Voces de Google Cloud (Estándar)</span>
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={isCurrentVoiceGoogle ? voice : ''}
+                    onChange={(e) => {
+                      const selectedVal = e.target.value as VoiceType;
+                      if (selectedVal) {
+                        handleVoiceSelect(selectedVal);
+                        stopPreview();
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 bg-muted border border-border rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">-- Seleccionar voz de Google Cloud --</option>
+                    {GOOGLE_VOICE_CATALOG.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.icon} {v.label} ({v.region})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!voice || !isCurrentVoiceGoogle || isPreviewLoading}
+                    onClick={() => previewVoice(voice)}
+                    className={cn(
+                      "px-3 py-2 text-xs font-semibold rounded-lg bg-secondary border border-border hover:bg-primary hover:text-primary-foreground flex items-center gap-1 transition-colors min-w-[90px] justify-center",
+                      (previewingVoice === voice && isCurrentVoiceGoogle) && "bg-primary text-primary-foreground"
+                    )}
+                  >
+                    {isPreviewLoading && previewingVoice === voice && isCurrentVoiceGoogle ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : previewingVoice === voice && isCurrentVoiceGoogle ? (
+                      "Pausar"
+                    ) : (
+                      "Escuchar"
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

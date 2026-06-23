@@ -6,11 +6,21 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { useNsfw } from '@/contexts/NsfwContext';
+import { useState, useEffect } from 'react';
 
 const DiscoverPage = () => {
   const navigate = useNavigate();
   const { characters, loading } = useCharacters();
   const isMobile = useIsMobile();
+  const { nsfwEnabled } = useNsfw();
+  const [activeTab, setActiveTab] = useState<'sfw' | 'nsfw'>('sfw');
+
+  useEffect(() => {
+    if (!nsfwEnabled) {
+      setActiveTab('sfw');
+    }
+  }, [nsfwEnabled]);
 
   const handleCharacterClick = (character: Character) => {
     navigate(`/chat/${character.id}`);
@@ -19,6 +29,10 @@ const DiscoverPage = () => {
   const handleBannerCta = () => {
     navigate('/subscription');
   };
+
+  const sfwCharacters = characters.filter((c) => !c.nsfw);
+  const nsfwCharacters = characters.filter((c) => c.nsfw);
+  const displayedCharacters = activeTab === 'sfw' ? sfwCharacters : nsfwCharacters;
 
   return (
     <div className="min-h-screen">
@@ -45,6 +59,36 @@ const DiscoverPage = () => {
         </header>
       )}
 
+      {/* Separate Tabs for SFW / NSFW when Plus+18 is enabled */}
+      {nsfwEnabled && (
+        <div className="flex justify-center border-b border-border bg-background/50 sticky top-14 lg:top-0 z-20 backdrop-blur-sm">
+          <div className="flex gap-4 p-2">
+            <button
+              onClick={() => setActiveTab('sfw')}
+              className={cn(
+                "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200",
+                activeTab === 'sfw'
+                  ? "bg-primary text-primary-foreground shadow-glow font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              Normales ({sfwCharacters.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('nsfw')}
+              className={cn(
+                "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5",
+                activeTab === 'nsfw'
+                  ? "bg-destructive text-destructive-foreground shadow-glow font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              Plus +18 ({nsfwCharacters.length})
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Character Grid */}
       <main className={cn(
         isMobile ? "p-3" : "p-6"
@@ -53,11 +97,13 @@ const DiscoverPage = () => {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : characters.length === 0 ? (
+        ) : displayedCharacters.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-            <p className="text-muted-foreground">No hay personajes disponibles</p>
+            <p className="text-muted-foreground">No hay personajes disponibles en esta categoría</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Crea tu primer personaje o inicia sesión para ver más
+              {activeTab === 'sfw' 
+                ? "Crea tu primer personaje SFW para empezar." 
+                : "Crea tu primer personaje NSFW para empezar."}
             </p>
           </div>
         ) : (
@@ -70,7 +116,7 @@ const DiscoverPage = () => {
               ? "grid-cols-2" 
               : "grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
           )}>
-            {characters.map((character) => (
+            {displayedCharacters.map((character) => (
               <CharacterCard 
                 key={character.id} 
                 character={character} 

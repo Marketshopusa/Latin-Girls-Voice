@@ -33,8 +33,8 @@ async function transcribeWithGemini(audio: File): Promise<string> {
                 text: "Transcribe exactamente la voz humana en este audio. Devuelve solo las palabras habladas en español. Si no hay voz clara, devuelve una cadena vacía.",
               },
               {
-                inline_data: {
-                  mime_type: audio.type || "audio/webm",
+                inlineData: {
+                  mimeType: audio.type || "audio/webm",
                   data: btoa(binary),
                 },
               },

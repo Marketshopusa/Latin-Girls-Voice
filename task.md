@@ -1,0 +1,10 @@
+- [x] Migrar `chat-ai` a la API nativa de Gemini REST con `BLOCK_NONE`
+- [x] Optimizar la longitud de respuestas a un límite de 250 tokens en `chat-ai`
+- [x] Migrar `generate-character-story` a la API nativa de Gemini con lectura de imágenes `inlineData`
+- [x] Corregir formato de payload de `transcribe-voice-call` (camelCase en Gemini STT)
+- [x] Desplegar Edge Functions a Supabase (`chat-ai`, `generate-character-story`, `transcribe-voice-call`)
+- [x] Modificar formulario de creación de personajes en el frontend (remover campo Edad y restaurar switch NSFW)
+- [x] Actualizar hook `useCharacters.ts` para hacer la edad opcional
+- [x] Enlazar toggle Plus +18 en `Sidebar.tsx` a un chequeo de autenticación
+- [x] Implementar pestañas selectoras "Normales" / "Plus +18" en `DiscoverPage.tsx`
+- [x] Proveer comandos SQL para remover restricción de base de datos en Supabase

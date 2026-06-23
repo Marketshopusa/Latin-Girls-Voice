@@ -7,6 +7,8 @@ import { useNsfw } from '@/contexts/NsfwContext';
 import { AgeConfirmModal } from '@/components/modals/AgeConfirmModal';
 import { Switch } from '@/components/ui/switch';
 import { AuthButton } from '@/components/auth/AuthButton';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const navigation = [
   { name: 'Descubrir', href: '/', icon: Home },
@@ -17,10 +19,18 @@ const navigation = [
 
 export const Sidebar = () => {
   const location = useLocation();
+  const { user } = useAuth();
   const { nsfwEnabled, toggleNsfw, hasConfirmedAge, confirmAge, featureVisible } = useNsfw();
   const [showAgeModal, setShowAgeModal] = useState(false);
 
   const handleNsfwToggle = () => {
+    if (!user) {
+      toast.error('Acceso Restringido', {
+        description: 'Debes registrarte o iniciar sesión con tu correo para activar el modo +18.',
+      });
+      return;
+    }
+
     if (!nsfwEnabled && !hasConfirmedAge) {
       setShowAgeModal(true);
     } else {

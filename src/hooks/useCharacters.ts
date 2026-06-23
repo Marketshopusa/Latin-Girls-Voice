@@ -9,7 +9,7 @@ interface DbCharacter {
   id: string;
   creator_id: string | null;
   name: string;
-  age: number;
+  age: number | null;
   tagline: string;
   history: string;
   welcome_message: string;
@@ -24,7 +24,7 @@ interface DbCharacter {
 const mapDbToCharacter = (db: DbCharacter): Character => ({
   id: db.id,
   name: db.name,
-  age: db.age,
+  age: db.age ?? undefined,
   tagline: db.tagline,
   history: db.history,
   welcomeMessage: db.welcome_message,
@@ -151,7 +151,7 @@ export const useCreateCharacter = () => {
 
   const createCharacter = async (characterData: {
     name: string;
-    age: number;
+    age?: number | null;
     tagline: string;
     history: string;
     welcomeMessage: string;
@@ -187,7 +187,7 @@ export const useCreateCharacter = () => {
         .from('characters' as any)
         .insert({
           name: characterData.name,
-          age: characterData.age,
+          age: characterData.age ?? null,
           tagline: characterData.tagline,
           history: characterData.history,
           welcome_message: characterData.welcomeMessage,
