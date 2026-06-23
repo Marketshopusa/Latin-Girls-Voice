@@ -354,6 +354,7 @@ INTERPRETACIÓN VOCAL:
     console.log(`Request: ${char?.name || "(unknown)"}, history: ${messages.length} msgs`);
 
     let aiResponse = "";
+    let errorLogs: string[] = [];
     const primaryModel = isNsfw ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash";
     const apiToken = useGeminiDirect ? GEMINI_API_KEY! : LOVABLE_API_KEY!;
 
@@ -370,6 +371,7 @@ INTERPRETACIÓN VOCAL:
       );
     } catch (e) {
       console.error("Primary AI call failed:", e);
+      errorLogs.push(`Primary (${primaryModel}): ${e instanceof Error ? e.message : String(e)}`);
     }
 
     // Si la respuesta salió repetida (evitar bucles)
@@ -388,6 +390,7 @@ INTERPRETACIÓN VOCAL:
         );
       } catch (e) {
         console.error("Anti-repeat retry failed:", e);
+        errorLogs.push(`Anti-repeat retry: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -411,6 +414,7 @@ INTERPRETACIÓN VOCAL:
         );
       } catch (e) {
         console.error("Softened prompt retry failed:", e);
+        errorLogs.push(`Softened prompt: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -431,6 +435,7 @@ INTERPRETACIÓN VOCAL:
         );
       } catch (e) {
         console.error("Alternate model retry failed:", e);
+        errorLogs.push(`Alt model (${altModel}): ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -451,6 +456,7 @@ INTERPRETACIÓN VOCAL:
         );
       } catch (e) {
         console.error("Backup model retry failed:", e);
+        errorLogs.push(`Backup model (${backupModel}): ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -467,7 +473,7 @@ INTERPRETACIÓN VOCAL:
     const finalResponse = aiResponse.length
       ? aiResponse
       : isNsfw
-        ? nsfwFallbacks[Math.floor(Math.random() * nsfwFallbacks.length)]
+        ? `${nsfwFallbacks[Math.floor(Math.random() * nsfwFallbacks.length)]}\n\n[DEBUG ERROR: ${errorLogs.join(" | ")}]`
         : sfwFallback;
 
     const totalElapsed = Date.now() - startTime;
