@@ -123,15 +123,14 @@ export const VoiceCallOverlay = ({
     try {
       const char = characterRef.current;
       const voiceId = char.voice || 'es-US-Neural2-A';
-      // FORZADO a ElevenLabs — Google Cloud TTS está desactivado en toda la app.
-      const provider: 'elevenlabs' = 'elevenlabs';
+      const provider = getVoiceProvider(voiceId);
 
       // Get auth token
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
       const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const endpoint = `${baseUrl}/functions/v1/elevenlabs-tts`;
+      const endpoint = `${baseUrl}/functions/v1/${provider === 'elevenlabs' ? 'elevenlabs-tts' : 'google-cloud-tts'}`;
 
       console.log(`[VoiceCall] TTS request: voice=${voiceId}, provider=${provider}, chars=${text.length}`);
 
@@ -146,7 +145,7 @@ export const VoiceCallOverlay = ({
       });
 
       if (!response.ok) {
-        console.error(`[VoiceCall] ElevenLabs TTS failed (${response.status}) — no Google fallback (desactivado)`);
+        console.error(`[VoiceCall] ${provider} TTS failed (${response.status})`);
         throw new Error('TTS request failed');
       }
 

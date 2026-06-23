@@ -78,10 +78,34 @@ interface GeminiContent {
 }
 
 function convertMessagesToGemini(messages: Message[]): GeminiContent[] {
-  return messages.map((msg) => ({
-    role: msg.role === "assistant" ? "model" : "user",
-    parts: [{ text: msg.content }],
-  }));
+  const formatted: GeminiContent[] = [];
+  let lastRole = "";
+  
+  for (const msg of messages) {
+    const role = msg.role === "assistant" ? "model" : "user";
+    
+    // El primer mensaje en Gemini debe ser del rol 'user'
+    if (formatted.length === 0 && role !== "user") {
+      continue;
+    }
+    
+    // Evitar roles duplicados consecutivos combinándolos
+    if (role === lastRole) {
+      if (formatted.length > 0 && formatted[formatted.length - 1].parts?.[0]) {
+        formatted[formatted.length - 1].parts[0].text = 
+          (formatted[formatted.length - 1].parts[0].text || "") + "\n" + msg.content;
+      }
+      continue;
+    }
+    
+    formatted.push({
+      role,
+      parts: [{ text: msg.content }],
+    });
+    lastRole = role;
+  }
+  
+  return formatted;
 }
 
 async function callAiService(
