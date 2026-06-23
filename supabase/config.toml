@@ -1,4 +1,4 @@
-project_id = "mwrahnkynhfulzkljeqs"
+project_id = "ojxllshyslealwbeqdrg"
 
 [functions.elevenlabs-tts]
 verify_jwt = false
@@ -16,9 +16,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.gemini-tts]
-verify_jwt = false
-
-[functions.gemini-cloud-tts]
 verify_jwt = false
 
 [functions.gemini-cloud-tts]
