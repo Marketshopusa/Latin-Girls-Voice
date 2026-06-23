@@ -49,10 +49,12 @@ serve(async (req) => {
     const name = typeof body.name === 'string' ? body.name.slice(0, 100) : '';
     const age = typeof body.age === 'number' ? Math.min(Math.max(Math.floor(body.age), 18), 150) : undefined;
 
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GEMINI_API_KEY && !LOVABLE_API_KEY) {
+      throw new Error("Neither GEMINI_API_KEY nor LOVABLE_API_KEY is configured");
     }
+    const useGeminiDirect = !!GEMINI_API_KEY;
 
     if (!imageBase64) {
       throw new Error("Se requiere una imagen para generar la historia");
@@ -65,26 +67,15 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = `Eres un escritor creativo especializado en crear personajes para roleplay y chat interactivo para adultos (+18).
-
-TAREA: Analiza la imagen proporcionada y genera una descripción de personaje completa.
-
-INSTRUCCIONES:
-1. Observa la imagen: vestimenta (o falta de ella), entorno, pose, expresión, actividad
-2. Infiere una personalidad coherente con lo visual
-3. Crea una historia de fondo interesante y atrevida
-4. El personaje SIEMPRE debe ser mayor de 18 años
-5. La historia debe ser en español
-6. Sé creativo, sensual y coherente con la imagen
-7. Si la imagen muestra contenido adulto, incorpóralo naturalmente en la personalidad del personaje
-
-FORMATO DE RESPUESTA (JSON):
+    const systemPrompt = `Eres un escritor creativo experto en descripciones de personajes e historias de rol.
+Genera la historia detallada del personaje basándote en la imagen provista.
+Tu respuesta debe ser un objeto JSON con los siguientes campos en español:
 {
-  "tagline": "Una frase corta y provocativa que describe al personaje (máx 60 caracteres)",
-  "history": "Historia de fondo y personalidad del personaje (2-3 párrafos, incluye: quién es, su personalidad seductora, qué le gusta, su situación actual)",
-  "welcomeMessage": "El primer mensaje que dirá el personaje al usuario, en primera persona, coqueto e intrigante"
+  "name": "Nombre sugerido para el personaje (basado en su apariencia o estilo)",
+  "tagline": "Una frase corta, coqueta e intrigante que describa su personalidad",
+  "history": "Un perfil detallado del personaje de al menos 3 párrafos. Describe su origen, personalidad, pasatiempos, deseos y estilo de vida de forma inmersiva.",
+  "welcome_message": "El primer mensaje de bienvenida que enviará al usuario para abrir la conversación, muy coqueta y provocativa"
 }
-
 IMPORTANTE: Responde SOLO con el JSON, sin texto adicional.`;
 
     const userPrompt = name && age 
@@ -96,16 +87,23 @@ IMPORTANTE: Responde SOLO con el JSON, sin texto adicional.`;
       ? imageBase64 
       : `data:image/jpeg;base64,${imageBase64}`;
 
-    console.log("Calling Lovable AI with image analysis...");
+    const apiEndpoint = useGeminiDirect 
+      ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+      : "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const apiToken = useGeminiDirect ? GEMINI_API_KEY : LOVABLE_API_KEY;
+    const finalModel = useGeminiDirect ? "gemini-2.5-flash" : "google/gemini-2.5-flash";
+
+    console.log(`Calling AI gateway (${useGeminiDirect ? 'Gemini Direct' : 'Lovable Proxy'}) with image analysis...`);
+
+    const response = await fetch(apiEndpoint, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${apiToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: finalModel,
         messages: [
           { role: "system", content: systemPrompt },
           { 
