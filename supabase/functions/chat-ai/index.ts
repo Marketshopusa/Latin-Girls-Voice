@@ -251,21 +251,6 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    // TEMPORARY DEBUG: Test the API key validity and models list
-    if (message === "debug_gemini_key") {
-      try {
-        const testResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
-        const testStatus = testResp.status;
-        const testData = await testResp.json();
-        return new Response(JSON.stringify({ response: `[DEBUG STATUS: ${testStatus} | DATA: ${JSON.stringify(testData).slice(0, 1000)}]` }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch (err) {
-        return new Response(JSON.stringify({ response: `[DEBUG ERROR FETCHING: ${err instanceof Error ? err.message : String(err)}]` }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
 
     if (!GEMINI_API_KEY && !LOVABLE_API_KEY) {
       throw new Error("Neither GEMINI_API_KEY nor LOVABLE_API_KEY is configured");
